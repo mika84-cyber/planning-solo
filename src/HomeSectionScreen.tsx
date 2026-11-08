@@ -33,7 +33,7 @@ type Props = {
   ownNoteAuthorLabel: string;
   /** Ce que l'accueil montre du jour, des congés et des notes. */
   overview: Pick<ReturnType<typeof useWorkedDaysOverview>, "todayOverview" | "nextExtraWork">
-    & Pick<ReturnType<typeof useNoteLists>, "upcoming" | "hasAnyNote" | "noteSearchResults">
+    & Pick<ReturnType<typeof useNoteLists>, "upcoming">
     & Pick<ReturnType<typeof useLeaveBalances>, "totalLeaveRemaining">;
   /** Ce qui reste à renseigner dans les premières étapes. */
   setup: {
@@ -41,10 +41,7 @@ type Props = {
     missingHolidayChoices: number;
     missingPayValues: boolean;
   };
-  shell: Pick<
-    ReturnType<typeof useAppShellUiState>,
-    "noteQuery" | "setNoteQuery" | "setHomeSection" | "setGroupChooserOpen"
-  >;
+  shell: Pick<ReturnType<typeof useAppShellUiState>, "setHomeSection" | "setGroupChooserOpen">;
   pay: Pick<
     ReturnType<typeof usePayUiState>,
     "setPayScreen" | "setPayProfileOpen" | "setPayAdvancedOpen" | "setPayProfileFocusRequested" | "setPayVerificationRequested"
@@ -124,15 +121,10 @@ export function HomeSectionScreen({
               },
             },
           ]}
-          hasAnyNote={overview.hasAnyNote}
-          noteQuery={shell.noteQuery}
-          onNoteQueryChange={shell.setNoteQuery}
-          noteSearchResults={overview.noteSearchResults}
           upcoming={overview.upcoming}
-          renderNoteItems={(items, searching) => (
+          renderNoteItems={(items) => (
             <UpcomingNoteList
               items={items}
-              monthsOpen={searching}
               authorColors={isProgramAdmin}
               entries={entries}
               ownNoteAuthorLabel={ownNoteAuthorLabel}

@@ -60,4 +60,15 @@ describe("LeaveBalancesSection", () => {
     expect(html).toMatch(/<button type="button" class="cet"[^>]*><span>[^<]+<\/span><strong>0<i>pris<\/i><\/strong><small>déduit du solde CET<\/small>/);
     expect(html).toMatch(/<button type="button" class="strike"[^>]*>[\s\S]*?<small>retenue estimée dans Ma paie<\/small>/);
   });
+
+  it("donne à chaque solde à stock la part déjà consommée, pour sa jauge", () => {
+    const html = renderSection();
+
+    // 2 pris ou à venir sur 30 : 7 % ; rien de pris : 0 %. Les absences
+    // seulement comptées (maladie, grève…) n'ont pas de jauge.
+    expect(html).toMatch(/class="annual" style="--used:7%"/);
+    expect(html).toMatch(/class="rtt" style="--used:0%"/);
+    expect(html).toMatch(/class="fraction" style="--used:0%"/);
+    expect(html).not.toMatch(/class="sick" style=/);
+  });
 });

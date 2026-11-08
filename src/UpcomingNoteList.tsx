@@ -26,8 +26,6 @@ export type UpcomingNoteListProps = {
   onOpenDate: (date: Date) => void;
   onDeleteOwnNotes: (dates: string[]) => void;
   onDeleteAgnesNote: (date: string) => void;
-  /** Pendant une recherche, les mois s'ouvrent pour montrer les résultats. */
-  monthsOpen?: boolean;
   /** Compte principal : chaque note sur le fond de la couleur de son auteur. */
   authorColors?: boolean;
 };
@@ -41,7 +39,6 @@ export function UpcomingNoteList({
   onOpenDate,
   onDeleteOwnNotes,
   onDeleteAgnesNote,
-  monthsOpen = false,
   authorColors = false,
 }: UpcomingNoteListProps) {
   const renderItem = (item: NoteListItem) => {
@@ -179,7 +176,7 @@ export function UpcomingNoteList({
   return (
     <div className="upcoming-list note-month-list">
       {[...months.entries()].sort(([first], [second]) => first.localeCompare(second)).map(([key, month]) => (
-        <details className="note-month" key={`${monthsOpen ? "recherche" : "liste"}-${key}`} open={monthsOpen}>
+        <details className="note-month" key={key}>
           <summary>
             <span><strong>{month.label}</strong><small>{month.count} note{month.count > 1 ? "s" : ""}</small></span>
             <i aria-hidden="true">⌄</i>

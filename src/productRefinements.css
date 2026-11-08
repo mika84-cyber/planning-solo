@@ -59,7 +59,6 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .app-shell :is(.primary-action, .validate-button, .save-button):not(:disabled):not(.update-now-button):not(.danger):not(.warning-button):hover { background: var(--accent-strong); }
 }
 @media (max-width: 520px) {
-  .app-shell .top-header:not(.top-header-colleagues) { height: 175px; min-height: 175px; }
   .leave-tool-disclosure > summary > b { font-size: .65rem; }
   .leave-tool-copy { min-height: 68px; }
 }
@@ -87,7 +86,8 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 }
 .app-shell .pay-app-screen { background: #fff; }
 .app-shell .leave-balances-direct .leave-balance-grid > button {
-  border-width: 1px;
+  /* Bords fins, sauf le filet de gauche, à la couleur du type (19-leave-page.css). */
+  border-width: 1px 1px 1px 4px;
 }
 .app-shell .overtime-balance-summary > article { border-width: 1px; }
 .app-shell .pay-missing-guidance {

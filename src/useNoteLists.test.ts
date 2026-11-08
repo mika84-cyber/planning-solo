@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyEntry, type Entries, type PartnerCalendarEntries } from "./appModel";
-import { noteSearchItems, upcomingNoteItems } from "./useNoteLists";
+import { upcomingNoteItems } from "./useNoteLists";
 
 const note = (text: string, groupId = "") => ({ ...emptyEntry(), noteText: text, noteGroupId: groupId });
 const agnes = (text: string, groupId = ""): PartnerCalendarEntries[string] => ({
@@ -31,13 +31,5 @@ describe("notes à venir", () => {
     // Les notes passées n'y sont pas ; sans notes affichées, rien.
     expect(items.some((item) => item.date === "2026-10-20")).toBe(false);
     expect(upcomingNoteItems(entries, partner, "2026-11-01", false)).toEqual([]);
-  });
-
-  it("la recherche liste aussi chaque jour, passés compris", () => {
-    const found = noteSearchItems(entries, partner, "maman");
-    expect(found.map((item) => item.date)).toEqual(["2026-11-02", "2026-11-03", "2026-11-04"]);
-    expect(noteSearchItems(entries, partner, "pass").map((item) => item.date)).toEqual(["2026-10-20"]);
-    expect(noteSearchItems(entries, partner, "coiffeur").map((item) => item.date)).toEqual(["2026-11-03", "2026-11-04"]);
-    expect(noteSearchItems(entries, partner, "  ")).toEqual([]);
   });
 });

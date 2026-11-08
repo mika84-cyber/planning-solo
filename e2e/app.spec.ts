@@ -705,17 +705,37 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   expect(openedBox?.width).toBeGreaterThan(boxes[0].width * 2.8);
 });
 
-test("les congés reportables au 30 avril s'affichent l'un sous l'autre", async ({ page }) => {
+test("les congés reportables au 30 avril se lisent en une phrase, sans séparateur orphelin", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
   await page.locator(".leave-info-card > summary").click();
   const tags = page.getByRole("list", { name: "Congés reportables" }).getByRole("listitem");
   await expect(tags).toHaveText(["Congés annuels", "Jours de fractionnement", "Fériés en récupération"]);
-  const boxes = await tags.evaluateAll((items) => items.map((item) => item.getBoundingClientRect().toJSON()));
-  for (let index = 1; index < boxes.length; index += 1) {
-    expect(boxes[index].y).toBeGreaterThanOrEqual(boxes[index - 1].y + boxes[index - 1].height - 1);
-    expect(Math.abs(boxes[index].x - boxes[0].x)).toBeLessThanOrEqual(1);
-  }
+  // Depuis le 8 novembre 2026, plus d'empilement ni de point médian : les trois
+  // éléments coulent dans la même phrase, « Congés annuels, jours de
+  // fractionnement et fériés en récupération » ; la virgule et le « et » sont
+  // portés par le CSS, collés au mot qui précède, si bien qu'aucune ligne ne
+  // peut commencer par un séparateur seul.
+  const flow = await tags.evaluateAll((items) => items.map((item) => {
+    const rects = Array.from(item.getClientRects(), (rect) => ({ top: Math.round(rect.top), left: Math.round(rect.left) }));
+    return {
+      display: getComputedStyle(item).display,
+      transform: getComputedStyle(item).textTransform,
+      separator: getComputedStyle(item, "::before").content,
+      first: rects[0],
+      last: rects[rects.length - 1],
+    };
+  }));
+  expect(flow.map((item) => item.display)).toEqual(["inline", "inline", "inline"]);
+  expect(flow.map((item) => item.transform)).toEqual(["none", "lowercase", "lowercase"]);
+  expect(flow.map((item) => item.separator)).toEqual(["none", "\", \"", "\" et \""]);
+  // La virgule qui ouvre le deuxième élément reste sur la ligne du premier.
+  expect(flow[1].first.top).toBe(flow[0].last.top);
+  // Lorsque la phrase passe à la ligne, elle le fait devant un mot (« et »,
+  // « fériés »…), jamais plus bas que trois lignes sur les écrans testés.
+  const list = page.getByRole("list", { name: "Congés reportables" });
+  const metrics = await list.evaluate((node) => ({ height: node.getBoundingClientRect().height, lineHeight: Number.parseFloat(getComputedStyle(node).lineHeight) }));
+  expect(metrics.height).toBeLessThanOrEqual(metrics.lineHeight * 3 + 1);
 });
 
 test("toutes les briques de congés tiennent dans une grille équilibrée, sans volet", async ({ page }) => {
@@ -1965,7 +1985,9 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   expect(await payHeader.evaluate((header) => getComputedStyle(header).backgroundImage)).toContain("linear-gradient");
   expect(await payHeader.evaluate((header) => getComputedStyle(header, "::before").display)).toBe("none");
   const titleTransform = await payHeader.locator(".top-header-title").evaluate((node) => getComputedStyle(node).transform);
-  expect(titleTransform).not.toBe("none");
+  // Sur téléphone, le titre se pose sous les commandes, sans décalage.
+  if ((page.viewportSize()?.width ?? 1000) <= 600) expect(titleTransform).toBe("none");
+  else expect(titleTransform).not.toBe("none");
   expect(await payScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pay-art.jpg");
   await expect(payScreen.locator(".pay-bulletin-month h2")).toHaveText(/^[a-zûéèàôîç]+ 2026$/i);
   await expect(payScreen.locator(".pay-bulletin-hero").getByText("Net estimé", { exact: true })).toBeVisible();
@@ -2326,9 +2348,11 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   expect(Math.abs(formsScreenBox.width - resourcesScreenBox.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(formsHeaderBox.height - homeHeaderBox.height)).toBeLessThan(0.5);
   expect(Math.abs(formsHeaderBox.width - homeHeaderBox.width)).toBeLessThan(0.5);
-  // La hauteur commune des en-têtes : 170 px sur téléphone, 176 en grand pour
-  // laisser un titre de deux lignes au-dessus de « Liste des raccourcis ».
-  expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 600 ? 170 : 176))).toBeLessThan(0.5);
+  // La hauteur commune des en-têtes : 150 px sur téléphone (l'étiquette en
+  // haut, le titre centré dans la colonne de gauche, sur deux lignes s'il est
+  // long), 176 en grand pour laisser un titre de deux lignes au-dessus de
+  // « Liste des raccourcis ».
+  expect(Math.abs(formsHeaderBox.height - ((page.viewportSize()?.width ?? 1000) <= 600 ? 150 : 176))).toBeLessThan(0.5);
   await expect(formsHeader.locator(".header-update-button")).toHaveCount(1);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
     // Le même corps de titre sur toutes les pages, sur deux lignes au besoin.
@@ -6929,11 +6953,6 @@ test("Mika et Agnès peuvent supprimer chaque note partagée après confirmation
   await agnesDeleteButtons.first().click();
   await answerConfirm(page, true, "Supprimer la note d’Agnès du");
   await expect(agnesDeleteButtons).toHaveCount(1);
-
-  // Une recherche ouvre les mois qui contiennent ses résultats.
-  await page.getByRole("searchbox", { name: "Rechercher dans les notes" }).fill("colis");
-  await expect(page.locator(".home-notes-content .note-month[open]")).toHaveCount(1);
-  await expect(page.locator(".home-notes-content .note-month[open]")).toContainText("Récupérer le colis");
 });
 
 test("le détail des dimanches suit le report d'une paie primée à la suivante", async ({ page }) => {

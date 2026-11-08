@@ -123,8 +123,11 @@
   border-radius: 18px;
 }
 
-/* Les tuiles des soldes : deux colonnes de même hauteur, chacune dans la
-   couleur de son type de congé. */
+/* Les tuiles des soldes : deux colonnes de même hauteur, blanches. Chacune
+   garde la couleur de son type de congé sur un filet à gauche, sur le chiffre
+   et sa mention, et sur la jauge de ce qui est déjà consommé (depuis le
+   8 novembre 2026 : dix fonds pâles différents se confondaient, surtout en
+   sombre). */
 .leave-balance-grid {
   display: grid;
   gap: 9px;
@@ -135,7 +138,7 @@
 }
 .leave-balance-grid button {
   border-radius: 12px;
-  background: color-mix(in srgb, var(--balance-color) 8%, white);
+  background: #fff;
   color: inherit;
   font: inherit;
   text-align: left;
@@ -143,9 +146,9 @@
   transition: transform 140ms ease, box-shadow 140ms ease;
 }
 .leave-balances-direct .leave-balance-grid button {
-  border: 1px solid color-mix(in srgb, var(--balance-color) 52%, var(--border-card));
+  border: 1px solid var(--border-card);
+  border-left: 4px solid var(--balance-color);
   padding: 11px 12px;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.72);
 }
 .leave-balance-grid button:hover {
   transform: translateY(-1px);
@@ -174,10 +177,10 @@
   line-height: 1;
 }
 .leave-balances-direct .leave-balance-grid strong {
-  margin-bottom: 5px;
-  border-bottom: 1px solid color-mix(in srgb, var(--balance-color) 24%, transparent);
-  padding-bottom: 7px;
-  color: color-mix(in srgb, var(--balance-color) 58%, #2c2621);
+  margin-bottom: 7px;
+  /* Assez foncé pour contraster à 3:1 au moins sur blanc (texte large), même
+     en bleu ciel ou en saumon ; la mention, petite, est plus foncée (4,5:1). */
+  color: color-mix(in srgb, var(--balance-color) 66%, #2c2621);
   font-size: 23px;
   font-weight: 950;
 }
@@ -189,8 +192,19 @@
   font-style: normal;
 }
 .leave-balances-direct .leave-balance-grid strong i {
-  color: color-mix(in srgb, var(--balance-color) 48%, #3a332c);
+  color: color-mix(in srgb, var(--balance-color) 45%, #2c2621);
   font-weight: 900;
+}
+/* Sous le chiffre des soldes à stock, une fine jauge de la part déjà
+   consommée (--used, posée par le composant) ; les absences seulement
+   comptées (maladie, grève…) n'en ont pas. */
+.leave-balances-direct .leave-balance-grid button:is(.annual, .rtt, .fraction) strong::after {
+  content: "";
+  display: block;
+  height: 4px;
+  margin: 9px 0 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--balance-color) var(--used, 0%), color-mix(in srgb, var(--balance-color) 16%, #fff) var(--used, 0%));
 }
 .leave-balances-direct .leave-balance-grid small {
   color: var(--muted);
@@ -262,9 +276,9 @@
 .leave-info-card {
   margin: 0 0 12px;
   overflow: hidden;
-  border: 1px solid #000;
+  border: 1px solid var(--border-card);
   border-radius: 12px;
-  background: #eef2f6;
+  background: #fbf6ef;
   box-shadow: none;
 }
 .leave-info-card > summary {
@@ -359,16 +373,18 @@
   display: none;
 }
 
-/* Le détail : le report en terracotta, le fractionnement en vert, les congés
-   exceptionnels en violet, chacun avec son liseré et ses pastilles. */
+/* Le détail (allégé le 8 novembre 2026) : fond sable, trois cartes blanches
+   sans liseré — le report en terracotta, le fractionnement en vert, les congés
+   exceptionnels en violet, un point de couleur devant chaque titre, plus de
+   pastilles. */
 .leave-info-content {
-  border-top: 1px solid #cfd8e3;
-  padding: 12px;
-  background: #f3f6f9;
+  border-top: 1px solid var(--border-card);
+  padding: 12px 10px;
+  background: #fbf6ef;
 }
 .leave-info-content .sunday-dates-close {
-  border-color: #cfd8e3;
-  color: #3f5670;
+  border-color: var(--border-card);
+  color: var(--accent-strong);
 }
 .leave-info-sections {
   display: grid;
@@ -381,28 +397,38 @@
   --info-ink: #8a3d22;
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 9px;
   border: 1px solid #e6ded3;
-  border-left: 4px solid var(--info-accent);
-  border-radius: 18px;
-  padding: 14px;
+  border-radius: 14px;
+  padding: 13px 12px 12px;
   background: #fff;
 }
 .leave-info-content section.leave-info-fraction { --info-accent: #2f7a5e; --info-soft: #dff0e8; --info-ink: #1f5c45; }
 .leave-info-content section.leave-info-exceptional { --info-accent: #6a4fa3; --info-soft: #ebe5f6; --info-ink: #4d3780; }
 .leave-info-content h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   border-bottom: 0;
   padding-bottom: 0;
   color: var(--info-ink);
   font-family: var(--font-display);
-  font-size: 1.08rem;
+  font-size: 1.04rem;
   font-weight: 600;
+}
+.leave-info-content h3::before {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--info-accent);
 }
 .leave-info-content p {
   margin: 0;
   color: var(--muted);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
 }
 .leave-info-rows {
   display: grid;
@@ -416,10 +442,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px 10px;
-  padding: 8px 0;
+  padding: 7px 0;
 }
 .leave-info-rows li + li {
-  border-top: 1px dashed #e6ded3;
+  border-top: 1px solid #efe8de;
 }
 .leave-info-rows li > span {
   display: grid;
@@ -436,68 +462,71 @@
   font-size: 0.74rem;
   line-height: 1.3;
 }
+/* Les jours, en chiffres de la couleur de l'encadré, sans pastille. */
 .leave-info-rows b,
 .leave-info-steps b {
   flex: none;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.76rem;
-  font-weight: 850;
+  font-size: 0.88rem;
+  font-weight: 900;
   white-space: nowrap;
 }
 .leave-info-content section .leave-info-rows b,
 .leave-info-content section .leave-info-steps b {
-  background: var(--info-soft);
   color: var(--info-ink);
 }
 .leave-info-months {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 3px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
+/* Les mois qui comptent, pleins ; les autres, en creux. */
 .leave-info-months li {
-  border-radius: 6px;
-  padding: 5px 0;
-  background: #f4efe8;
+  border: 1px solid #e6ded3;
+  border-radius: 7px;
+  padding: 4px 0;
+  background: #fff;
   color: #b3a697;
   font-size: 0.68rem;
   font-weight: 800;
   text-align: center;
 }
 .leave-info-content section .leave-info-months li.counts {
-  background: var(--info-soft);
-  color: var(--info-ink);
+  border-color: var(--info-accent);
+  background: var(--info-accent);
+  color: #fff;
 }
+/* Les deux paliers, une ligne chacun : « 4 jours posés … +1 jour ». */
 .leave-info-steps {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.leave-info-steps p {
-  display: grid;
-  justify-items: start;
-  gap: 2px;
+  overflow: hidden;
   border: 1px solid #efe8de;
   border-radius: 12px;
-  padding: 10px;
 }
-.leave-info-content section .leave-info-steps p {
-  border-color: color-mix(in srgb, var(--info-accent) 18%, #fff);
-  background: color-mix(in srgb, var(--info-soft) 35%, #fff);
+.leave-info-steps p {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 12px;
+  background: #fff;
+}
+.leave-info-steps p + p {
+  border-top: 1px solid #efe8de;
 }
 .leave-info-steps strong {
   color: var(--text);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
 }
 .leave-info-steps span {
+  flex: 1;
   color: var(--muted);
   font-size: 0.74rem;
 }
 .leave-info-steps b {
-  margin-top: 4px;
+  font-size: 0.95rem;
 }
 .leave-info-content .leave-info-note {
   color: var(--muted);
@@ -507,36 +536,36 @@
 /* Report : une échéance par bloc, la date en éphéméride à gauche. */
 .leave-info-deadline {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr);
   align-items: start;
-  gap: 12px;
+  gap: 10px;
 }
 .leave-info-deadline + .leave-info-deadline {
-  border-top: 1px dashed #e6ded3;
+  border-top: 1px solid #efe8de;
   padding-top: 10px;
 }
+/* L'éphéméride : le jour et le mois dans un carré pâle de la couleur de
+   l'encadré. */
 .leave-info-date {
   display: grid;
   justify-items: center;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--info-accent) 30%, #fff);
-  border-radius: 10px;
-  background: #fff;
+  border-radius: 9px;
+  padding: 5px 0 4px;
+  background: var(--info-soft);
   line-height: 1;
 }
 .leave-info-date b {
-  padding: 6px 0 3px;
   color: var(--info-ink);
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 .leave-info-deadline .leave-info-date small {
   width: 100%;
-  padding: 3px 0;
-  background: var(--info-accent);
-  color: #fff;
-  font-size: 0.62rem;
+  padding: 2px 0 0;
+  color: var(--info-ink);
+  font-size: 0.56rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-align: center;
@@ -544,7 +573,7 @@
 }
 .leave-info-deadline > span:last-child {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 .leave-info-deadline strong {
@@ -557,23 +586,30 @@
   font-size: 0.74rem;
   line-height: 1.35;
 }
-/* Congés reportables l'un sous l'autre, quelle que soit la largeur de l'écran. */
+/* Congés reportables : une phrase dans la couleur de l'encadré, qui passe à la
+   ligne sans séparateur orphelin (« Congés annuels, jours de fractionnement
+   et fériés en récupération »). */
 .leave-info-tags {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
+  display: block;
   margin: 0;
   padding: 0;
+  color: var(--info-ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
   list-style: none;
 }
 .leave-info-tags li {
-  border-radius: 999px;
-  padding: 3px 9px;
-  background: var(--info-soft);
-  color: var(--info-ink);
-  font-size: 0.74rem;
-  font-weight: 800;
+  display: inline;
+}
+.leave-info-tags li + li {
+  text-transform: lowercase;
+}
+.leave-info-tags li + li::before {
+  content: ", ";
+}
+.leave-info-tags li:last-child::before {
+  content: " et ";
 }
 
 /* ---- Zone d'outils : heures, mécénats, CET -------------------------------- */
@@ -955,7 +991,7 @@
     padding: 10px;
   }
   .leave-balances-direct .leave-balance-grid strong {
-    font-size: 20px;
+    font-size: 22px;
   }
   .leave-balances-direct .leave-balance-grid small {
     line-height: 1.3;
@@ -986,8 +1022,6 @@
   }
   .leave-balances-direct .leave-balance-grid button.strike > strong {
     margin: 5px 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--balance-color) 24%, transparent);
-    padding-bottom: 7px;
   }
   .leave-balances-direct .leave-balance-grid button.strike > small {
     grid-column: auto;
@@ -1107,10 +1141,6 @@
   }
   .leave-info-content section {
     padding: 12px;
-  }
-  .leave-info-deadline {
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 10px;
   }
 }
 

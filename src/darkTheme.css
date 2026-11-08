@@ -27,6 +27,7 @@ html[data-theme="dark"] .work-exchange-cycle-calendar .exchange-cycle-day.select
    et le repère gardent la couleur du type de congé, éclaircie pour rester
    lisible sur sombre. */
 html[data-theme="dark"] .leave-balance-grid > button strong { color: color-mix(in srgb, var(--balance-color) 72%, #fff); }
+html[data-theme="dark"] .leave-balance-grid > button strong i { color: inherit; }
 /* Les repères de type de congé gardent la couleur du mode clair. */
 html[data-theme="dark"] .leave-choices button > i { background: var(--person-color); }
 
@@ -190,9 +191,7 @@ html[data-theme="dark"] .pay-bulletin .pay-bulletin-group.variable { background:
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-group.withheld { background: color-mix(in srgb, #e88aa0 11%, #22201d); }
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-bar .meal,
 html[data-theme="dark"] .pay-bulletin .pay-bulletin-legend .meal::before { background: #d9a27e; }
-/* Règles des congés : le liseré noir devient clair sur fond sombre. */
-html[data-theme="dark"] .leave-info-card { border-color: rgba(255, 255, 255, 0.55); }
-/* Chaque encadré garde sa couleur : pastilles, éphémérides et intitulé
+/* Règles des congés. Chaque encadré garde sa couleur : pastilles, éphémérides et intitulé
    teintés de son accent, au lieu du même brun sombre partout. */
 html[data-theme="dark"] .leave-info-content section {
   --info-soft: color-mix(in srgb, var(--info-accent) 34%, #1f1d1b);
@@ -251,6 +250,9 @@ html[data-theme="dark"] .pay-bulletin .pay-bulletin-shortcut em { background: #3
 /* « Liste des raccourcis » : texte clair sur la surface sombre des commandes. */
 html[data-theme="dark"] .app-shell .top-header > .header-help-button { color: #f3eee8; }
 html[data-theme="dark"] .header-help-mark { background: #f3eee8; color: var(--header-a); }
+/* Les bandeaux : le pan clair, à droite de la diagonale, perd de sa lumière
+   sur la page sombre ; le filet entre les deux pans s'assombrit avec lui. */
+html[data-theme="dark"] .app-shell .top-header { background: linear-gradient(112deg, var(--header-a) 0 57%, color-mix(in srgb, var(--header-b) 72%, #fff) 57% 61%, color-mix(in srgb, var(--header-c) 52%, #16120f) 61% 100%) !important; }
 /* La fenêtre d'aide : chaque thème garde sa couleur, éclaircie, sur un fond
    à peine teinté. */
 html[data-theme="dark"] .group-docs { --g: #8fbce0; --g-line: rgba(143, 188, 224, 0.35); --g-bg: rgba(110, 160, 210, 0.08); --g-icon: rgba(110, 160, 210, 0.18); }

@@ -13,48 +13,18 @@ const WEEKDAYS = [
 ] as const;
 const CALENDAR_CELL_KEYS = Array.from({ length: 42 }, (_, index) => `cell-${index + 1}`);
 
+/** Le contenu de « Mes notes » : les notes à venir, rangées par mois (la
+ *  barre de recherche a été retirée le 8 novembre 2026). */
 export function NotesPanelContent({
-  hasAnyNote,
-  query,
-  onQueryChange,
-  searchResults,
   upcoming,
   renderItems,
 }: {
-  hasAnyNote: boolean;
-  query: string;
-  onQueryChange: (query: string) => void;
-  searchResults: NoteListItem[];
   upcoming: NoteListItem[];
-  /** `searching` : les résultats d'une recherche, à montrer dépliés. */
-  renderItems: (items: NoteListItem[], searching?: boolean) => ReactNode;
+  renderItems: (items: NoteListItem[]) => ReactNode;
 }) {
-  const normalizedQuery = query.trim();
   return (
     <div className="request-archive-content">
-      {hasAnyNote && (
-        <input
-          type="search"
-          className="note-search-input"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Rechercher dans les notes…"
-          aria-label="Rechercher dans les notes"
-        />
-      )}
-      {normalizedQuery ? (
-        searchResults.length ? (
-          renderItems(searchResults, true)
-        ) : (
-          <p className="upcoming-empty">
-            Aucune note ne correspond à « {normalizedQuery} ».
-          </p>
-        )
-      ) : upcoming.length ? (
-        renderItems(upcoming)
-      ) : (
-        <p className="upcoming-empty">Aucune note à venir.</p>
-      )}
+      {upcoming.length ? renderItems(upcoming) : <p className="upcoming-empty">Aucune note à venir.</p>}
     </div>
   );
 }

@@ -25,6 +25,7 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   fondue dans le sombre : règles des congés (`--info-soft` / `--info-ink`),
   frise et groupes de Ma paie et du détail du calcul, états des dimanches,
   onglets et salles des Expos, dossiers et annuaires, bouton de compte,
+  pan clair des bandeaux fondu de moitié dans le sombre (8 novembre 2026),
   date des notes en petit calendrier terracotta, rubrique ouverte du dock à
   sa couleur (`--tone` par `data-section` : Accueil bordeaux, Congés bleu,
   Ma paie vert, Docs ocre, Expos prune, Collègues terracotta ; depuis le
@@ -39,7 +40,15 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   d’un planning PDF), un bloc par composant, importé après la feuille 14.
 - `src/styles/19-leave-page.css` : page Congés (soldes, règles des congés,
   absence longue, volets heures, mécénats et CET), importée par `main.tsx`
-  après `dataManagement.css`.
+  après `dataManagement.css`. Les dix tuiles des soldes sont blanches depuis
+  le 8 novembre 2026 (dix fonds pâles se confondaient) : la couleur du type
+  reste sur un filet de 4 px à gauche (sa largeur est fixée dans
+  `productRefinements.css`), sur le chiffre (même corps partout, teinte
+  foncée aux deux tiers pour contraster à 3:1) et sa mention (4,5:1), et sur
+  la fine jauge de la part consommée sous CA, RTT et fractionnement. Le mémo
+  « Règles des congés » est allégé le même jour : fond sable, trois cartes
+  blanches sans liseré, un point de couleur devant chaque titre, éphémérides
+  pâles, congés reportables en une phrase, paliers et barème sans pastilles.
 - `src/styles/14-pay-page.css` et `src/styles/14-documents-contacts.css` :
   Ma paie, puis Documents et contacts et les plannings PDF, un bloc par
   composant, importées après `14-planning-commands.css`.
@@ -50,7 +59,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   notes ».
 - `src/LeaveBalancesSection.tsx` : cartes des soldes, choix de l'année et accès
   aux reprises manuelles ; les dix briques se suivent dans une seule grille,
-  sans volet « Autres congés ».
+  sans volet « Autres congés ». Chaque solde à stock pose `--used` (part
+  consommée, de 0 à 100 %) sur sa carte, pour la jauge sous le chiffre.
 - `src/CetSection.tsx` : configuration, simulation, opérations et historique du
   compte épargne-temps.
 - `src/CetFormDialog.tsx` : saisie guidée des formulaires officiels d’ouverture,
@@ -109,7 +119,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   avec la validation serveur des demandes.
 - `src/LeaveInfoCard.tsx` : ligne « Infos congés » au-dessus des soldes
   (report, fractionnement, congés exceptionnels ; les congés reportables au
-  30 avril l'un sous l'autre ; en sombre, les mois qui comptent pour le
+  30 avril en une phrase, virgule et « et » posés par le CSS pour qu'aucune
+  ligne ne commence par un séparateur ; en sombre, les mois qui comptent pour le
   fractionnement gardent un fond vert franc, retouche de `darkTheme.css`) ; `src/longAbsence.ts` et `src/LongAbsenceNotice.tsx` :
   absences de 31 jours et plus et courrier de dérogation.
 - `src/rememberedSession.ts` : « Rester connecté » ; copie de secours de la
@@ -184,7 +195,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   vocal les cite toutes. Sur la fiche du jour et dans « Mes notes », `NoteText`
   affiche un point rond devant chaque ajout (`noteDisplayLines`), même si le
   texte enregistré porte encore un trait ; « Ajouter une note » écrit « • »
-  (`appendNoteBullet`). Les blocs sont des lignes (icône, libellé et
+  (`appendNoteBullet`). La carte « Mes notes » garde son fond sable quadrillé
+  comme un bloc-notes (`productRefinements.css`) ; sa barre de recherche a été
+  retirée le 8 novembre 2026 (`NotesPanelContent`, `useNoteLists`) ; son
+  bouton « Ajouter une note » est posé à 30 px de la flèche, 26 sur écran
+  étroit (`sharedNotes.css`). Les blocs sont des lignes (icône, libellé et
   précision, valeur) : empilées sur téléphone et sur le Z Fold ouvert, en
   deux colonnes lues de haut en bas sur grand écran (`homeOverview.css` :
   deux lignes par colonne jusqu'à quatre blocs, trois au-delà, filet
@@ -192,13 +207,24 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   4 novembre 2026 : à 160 px, libellés sur trois lignes et note illisible.
 - « Liste des raccourcis » (anciennement « Que cherchez-vous ? », renommée le
   1er novembre 2026) : une petite pastille crème au même endroit de
-  chaque en-tête, en bas à gauche, le titre centré au-dessus — loupe dans un
+  chaque en-tête, en bas à gauche — loupe dans un
   rond, flèche au bout, entière dans la partie foncée avant la diagonale (`AppHeader`, style dans
   `src/pageHeaders.css`), même surface que les trois commandes du haut, le
-  texte à la couleur foncée de l’en-tête. Sur téléphone, la zone des
-  commandes de l’en-tête est en `display: contents` : chaque commande (mise à
-  jour, compte, menu) passe elle-même devant le titre, qui s’étend sur toute
-  la largeur (`pageHeaders.css`), sinon le titre intercepte le toucher ; le
+  texte à la couleur foncée de l’en-tête. Sur grand écran, le titre est centré
+  au-dessus (en-tête de 150 à 176 px). Sur téléphone, l'en-tête fait 150 px
+  depuis le 8 novembre 2026 (170 auparavant) : l'étiquette « Planning solo »
+  en haut de la case, à hauteur des commandes ; le titre centré dans la
+  colonne de gauche, sur deux lignes s'il est long (« Congés et
+  récupérations », « Documents et contacts »), jamais sous un bouton ; la
+  pastille à 12 px du bas. Le corps du titre ne dépasse pas 14 % de la largeur
+  de sa colonne (unité `cqi`, le bloc du titre étant un conteneur) : à 344 px,
+  « récupérations » tient même en police agrandie ; 6 px de marge au-dessus
+  et au-dessous font plutôt allonger l'en-tête que toucher l'étiquette ou la
+  pastille (vérifié à 344, 360 et 412 px, police 100 % et 125 %). Sur
+  téléphone, la zone des commandes de l’en-tête est en `display: contents` :
+  chaque commande (mise à jour, compte) est une case de la grille, en haut à
+  droite, et garde son propre `z-index` au-dessus du titre (`pageHeaders.css`,
+  utile tant que le titre s’étendait sur toute la largeur) ; le
   menu du compte, qui fait contexte d’empilement, reste au-dessus de la
   pastille (z-index 4 contre 3), sinon son menu déroulant passe dessous. Elle ouvre `src/HelpSheet.tsx` (`helpSheet.css`, chargée à la
   demande) : « Liste des raccourcis », une fine bande aux couleurs de l’en-tête
@@ -484,10 +510,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/useWorkedDaysOverview.ts` (jours travaillés, prochain extra, aperçu du
   jour), `src/useMecenatDraftCheck.ts` (mécénat en cours de saisie),
   `src/useDayDetailData.ts` (ce que la fiche du jour montre),
-  `src/useNoteLists.ts` (notes à venir, recherche, congés d’Agnès ; une note
-  posée sur plusieurs jours a chacun de ses jours dans la liste et dans la
-  recherche, `upcomingNoteItems` et `noteSearchItems`, fonctions pures
-  testées ; la croix d’une ligne n’efface que ce jour-là),
+  `src/useNoteLists.ts` (notes à venir et congés d’Agnès ; une note posée
+  sur plusieurs jours a chacun de ses jours dans la liste, `upcomingNoteItems`,
+  fonction pure testée ; la croix d’une ligne n’efface que ce jour-là ; la
+  recherche dans les notes a été retirée le 8 novembre 2026),
   `src/usePartnerNoteActions.ts` (suppression d’une note d’Agnès) ; une note
   du planning d’Agnès sans auteur enregistré (les plus anciennes) est la
   sienne (`partnerEntriesFromApi` dans `src/calendarPayload.ts`), seule une

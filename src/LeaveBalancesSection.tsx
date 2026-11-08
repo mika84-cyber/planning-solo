@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { LeaveInfoCard } from "./LeaveInfoCard";
 import type { BalanceType, LeavePeriod } from "./appModel";
@@ -43,6 +44,13 @@ type LeaveBalancesSectionProps = {
   onSelectBalance: (type: BalanceType | CountedOnlyType) => void;
   onOpenManualAdjustments: () => void;
 };
+
+/** Part du solde déjà consommée (pris, à venir et saisies sans date), de 0 à 100. */
+function usedShare(balance: LeaveBalance) {
+  const total = balance.used + balance.remaining;
+  if (total <= 0) return 0;
+  return Math.min(100, Math.max(0, Math.round((balance.used / total) * 100)));
+}
 
 export function LeaveBalancesSection({
   year,
@@ -113,6 +121,8 @@ export function LeaveBalancesSection({
               type="button"
               key={balance.type}
               className={balance.type}
+              // La part déjà consommée du solde, pour la jauge sous le chiffre.
+              style={{ "--used": `${usedShare(balance)}%` } as CSSProperties}
               onClick={() => onSelectBalance(balance.type)}
               aria-label={`Afficher le détail de ${leaveTypeLabel(balance.type)}`}
             >

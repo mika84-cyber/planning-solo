@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import type { NoteListItem } from "./appModel";
 import { MonthCalendar, MonthNavigation, NotesPanelContent } from "./PlanningView";
 
 describe("vues du planning", () => {
@@ -21,18 +22,15 @@ describe("vues du planning", () => {
     expect(html).toContain('<button type="button" class="period-step" aria-label="Mois suivant">');
   });
 
-  it("affiche le résultat vide d’une recherche de note", () => {
-    const html = renderToStaticMarkup(
-      <NotesPanelContent
-        hasAnyNote
-        query="réunion"
-        onQueryChange={vi.fn()}
-        searchResults={[]}
-        upcoming={[]}
-        renderItems={vi.fn()}
-      />,
-    );
+  it("liste les notes à venir, sans barre de recherche, ou dit qu’il n’y en a pas", () => {
+    const empty = renderToStaticMarkup(<NotesPanelContent upcoming={[]} renderItems={vi.fn()} />);
+    expect(empty).toContain('<p class="upcoming-empty">Aucune note à venir.</p>');
+    expect(empty).not.toContain("<input");
 
-    expect(html).toContain("Aucune note ne correspond à « réunion ».");
+    const upcoming = [{ key: "note-2026-11-12", date: "2026-11-12", label: "Dentiste", detail: "", kind: "note", color: "#d65e68", author: "mika" }] as unknown as NoteListItem[];
+    const renderItems = vi.fn(() => <ul className="note-month-list" />);
+    const html = renderToStaticMarkup(<NotesPanelContent upcoming={upcoming} renderItems={renderItems} />);
+    expect(html).toBe('<div class="request-archive-content"><ul class="note-month-list"></ul></div>');
+    expect(renderItems).toHaveBeenCalledWith(upcoming);
   });
 });

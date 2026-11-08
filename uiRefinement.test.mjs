@@ -674,7 +674,8 @@ describe("finitions d’interface", () => {
   });
 
   it("donne la même hauteur à tous les en-têtes, quelle que soit la page", () => {
-    expect(headers.declaresTogether({ height: "170px !important", "min-height": "170px !important" })).toBe(true);
+    // Téléphone : 150 px, l'étiquette en haut et le titre centré, sur deux lignes s'il est long.
+    expect(headers.declaresTogether({ height: "auto !important", "min-height": "150px !important" })).toBe(true);
     expect(headers.declaresTogether({ height: "156px !important", "min-height": "156px !important" })).toBe(true);
     expect(css.declares("border-color", "var(--border-card)")).toBe(true);
   });
@@ -730,7 +731,7 @@ describe("finitions d’interface", () => {
     expect(css.declaresProperty("--app-frame-strong")).toBe(true);
     expect(css.declaresProperty("--app-frame-soft")).toBe(true);
     expect(css.mentions(".cet-subsection")).toBe(true);
-    expect(css.declarations(".leave-balances-direct .leave-balance-grid button").border).toMatch(/^1px solid color-mix\(/);
+    expect(css.declarations(".leave-balances-direct .leave-balance-grid button").border).toBe("1px solid var(--border-card)");
     expect(css.mentions(".request-option-group")).toBe(true);
   });
 

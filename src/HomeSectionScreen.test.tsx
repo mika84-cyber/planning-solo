@@ -22,11 +22,9 @@ const baseProps: ComponentProps<typeof HomeSectionScreen> = {
     nextExtraWork: { kind: "mecenat", date: "2026-09-12", start: "19:00", end: "23:00" },
     totalLeaveRemaining: 20,
     upcoming: [],
-    hasAnyNote: false,
-    noteSearchResults: [],
   },
   setup: { missingCalculationProfile: true, missingHolidayChoices: 3, missingPayValues: true },
-  shell: { noteQuery: "", setNoteQuery: noop, setHomeSection: noop, setGroupChooserOpen: noop },
+  shell: { setHomeSection: noop, setGroupChooserOpen: noop },
   pay: {
     setPayScreen: noop,
     setPayProfileOpen: noop,
@@ -91,7 +89,6 @@ describe("HomeSectionScreen", () => {
         {...baseProps}
         overview={{
           ...baseProps.overview,
-          hasAnyNote: true,
           upcoming: [{ key: "2026-09-10", date: "2026-09-10", label: "Réunion d’équipe", detail: "Jeudi 10 septembre", kind: "note" }],
         }}
       />,
