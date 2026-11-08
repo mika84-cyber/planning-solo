@@ -368,21 +368,24 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/UsefulContactsSection.tsx` : annuaires Pompidou et GP-RMN, appels et e-mails directs.
   Dans l’annuaire GP-RMN, un nom long (« Responsables accueil et caisses »)
   est coupé en deux moitiés qui restent entières (`nameHalves`, la pastille
-  radio collée à la seconde) : il tient sur deux lignes au plus, et ses
-  numéros passent dessous quand la place manque, quelle que soit la police.
-  Sur le serveur Linux de GitHub, plus large que Segoe UI, il passait sur
-  trois lignes (échec e2e mobile du 1er au 4 novembre 2026) ; le scénario
-  rejoue la mesure avec Verdana agrandie à 125 %.
+  radio collée à la seconde) : il tient sur deux lignes au plus, quelle que
+  soit la police. Sur le serveur Linux de GitHub, plus large que Segoe UI, il
+  passait sur trois lignes (échec e2e mobile du 1er au 4 novembre 2026) ; le
+  scénario rejoue la mesure avec Verdana agrandie à 125 %.
   Données : `netlify/lib/usefulContactsData.mts`, en service tant que
   l’administrateur n’a rien modifié depuis l’application (sinon l’annuaire vit
   dans le blob `useful-contacts/admin-directory`). GP-RMN suit la fiche
   « Service de l’accueil des publics » (octobre 2026), rangée par thème
   (`theme` : Urgences, Encadrement, Hall, Rotonde, Visiteurs ; `contactThemes`,
   les contacts ajoutés sans thème en dernier) et affichée par
-  `ContactThemePanels` : un panneau par thème à sa couleur, une ligne par
-  contact (nom sans le thème déjà écrit, `nameWithinTheme` ; numéros de même
-  largeur en colonne ; colonne SMS réservée seulement si un numéro du thème le
-  propose ; un nom long garde sa ligne et ses numéros passent dessous). Le
+  `ContactThemePanels` : depuis le 9 novembre 2026, un titre de chapitre par
+  thème à sa couleur (signe, intitulé, compte), une carte par contact au fin
+  liseré de la même couleur (nom sans le thème déjà écrit, `nameWithinTheme`,
+  crayon de l'administrateur en haut à droite), et sous le nom une barre
+  d'appel pleine largeur par numéro, 40 px de haut, le SMS en bouton à côté du
+  portable (`14-documents-contacts.css`, mode sombre dans `darkTheme.css`).
+  Auparavant : un panneau par thème, des pastilles de 130 px en colonne à
+  droite du nom et une colonne SMS réservée, qui empilaient les numéros. Le
   canal radio (`radioChannel`) est une pastille à côté du nom, la précision
   (`context`) une petite ligne dessous ; `allowSms: false` retire le SMS d’un
   portable (responsables et superviseurs). Une modification depuis

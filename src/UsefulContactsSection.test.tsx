@@ -70,7 +70,7 @@ describe("carte de contact", () => {
     expect(html).toContain('<span class="useful-contact-title"><strong><span class="contact-name-half">Responsables accueil</span> <span class="contact-name-half">et caisses<em class="useful-contact-radio"><span class="visually-hidden">radio, </span>Canal 11</em></span></strong></span>');
   });
 
-  it("présente l’annuaire GP-RMN en panneaux de thème, une ligne par contact", () => {
+  it("présente l’annuaire GP-RMN en chapitres de thème, une carte par contact", () => {
     const contacts = [
       { name: "Sûreté", theme: "Urgences", radioChannel: 2, context: "Malveillance, altercation", phones: [{ number: "0144131750" }] },
       { name: "Superviseur PC", theme: "Encadrement", phones: [{ number: "0611793883" }, { number: "0144131724" }] },
@@ -92,14 +92,13 @@ describe("carte de contact", () => {
     expect(renderToStaticMarkup(<ContactThemePanels contacts={contacts} isAdmin onEdit={vi.fn()} />)).toContain('aria-label="Modifier Billetterie Hall"');
   });
 
-  it("tait le SMS d’un portable marqué sans, et ne réserve alors pas sa colonne", () => {
+  it("tait le SMS d’un portable marqué sans", () => {
     const html = renderToStaticMarkup(<ContactThemePanels contacts={[
       { name: "Superviseur PC", theme: "Encadrement", phones: [{ number: "0611793883", allowSms: false }, { number: "0144131724" }] },
       { name: "RAS-RAI", theme: "Encadrement", phones: [{ number: "0144131774" }] },
     ]} isAdmin={false} onEdit={vi.fn()} />);
     expect(html).toContain('aria-label="Appeler Superviseur PC au 06 11 79 38 83"');
     expect(html).not.toContain("SMS");
-    expect(html).not.toContain("contact-theme-sms-space");
   });
 
   it("n’affiche pas de pastille sans canal", () => {

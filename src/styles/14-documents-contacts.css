@@ -786,39 +786,36 @@
 
 .useful-contact-list { display: grid; gap: 11px; }
 
-/* Annuaire GP-RMN : un panneau par thème, à sa couleur (liseré, signe et
-   en-tête teinté), une ligne par contact ; les numéros passent sous le nom
-   quand la ligne manque de place. */
-.contact-theme-panels { display: grid; gap: 12px; }
+/* Annuaire GP-RMN (depuis le 9 novembre 2026, « barres d'appel ») : un titre
+   de chapitre par thème, à sa couleur (signe, intitulé, compte) ; une carte
+   par contact, un fin liseré de la même couleur ; sous le nom, une barre
+   d'appel pleine largeur par numéro, le SMS en bouton à côté du portable.
+   Avant : un panneau par thème et des pastilles de 130 px à droite du nom,
+   qui empilaient deux numéros et coupaient les noms longs. */
+.contact-theme-panels { display: grid; gap: 16px; }
 .contact-theme-urgences { --tone: #b3261e; }
 .contact-theme-encadrement { --tone: #3a5f8f; }
 .contact-theme-hall { --tone: #2f7a52; }
-.contact-theme-rotonde { --tone: #a45f2d; }
+/* Rotonde et Autres sont un peu plus foncés depuis le 9 novembre 2026 : le
+   titre et le compte, en petit, se lisent à 4,5:1 sur le fond de la page. */
+.contact-theme-rotonde { --tone: #955528; }
 .contact-theme-visiteurs { --tone: #6a4fa3; }
-.contact-theme-autres { --tone: #7a6f5f; }
-.contact-theme-panel {
-  overflow: hidden;
-  border: 1px solid var(--border-control);
-  border-left: 5px solid var(--tone);
-  border-radius: 16px;
-  background: var(--surface);
-}
+.contact-theme-autres { --tone: #6f6456; }
 .contact-theme-head {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 10px 14px;
-  background: color-mix(in srgb, var(--tone) 10%, #fff);
+  padding: 0 2px 8px;
 }
 .contact-theme-head > span {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
   background: var(--tone);
   color: #fff;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
 }
 .contact-theme-head h3 {
@@ -827,68 +824,81 @@
   padding: 0;
   color: var(--tone);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.contact-theme-head small { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 700; }
-.contact-theme-rows { margin: 0; padding: 0; list-style: none; }
+.contact-theme-head small { margin-left: auto; color: var(--tone); font-size: 12px; font-weight: 700; }
+.contact-theme-rows { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+/* La carte : le nom et sa précision à gauche, le crayon de l'administrateur
+   en haut à droite, les numéros dessous sur toute la largeur. */
 .contact-theme-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "who edit" "phones phones";
   gap: 8px;
-  border-top: 1px solid var(--border-control);
-  padding: 11px 14px;
+  border: 1px solid var(--border-card);
+  border-left: 3px solid var(--tone);
+  border-radius: 12px;
+  padding: 11px 12px 12px;
+  background: var(--surface);
 }
-.contact-theme-row:first-child { border-top: 0; }
-/* Le nom se centre en hauteur face à ses numéros, un ou deux l'un sous
-   l'autre : pas de grand vide sous lui. 104 px lui suffisent : dès 360 px, numéros et
-   SMS restent sur sa ligne. Un nom long (« Responsables accueil et
-   caisses ») en demande 150, et il est coupé en deux moitiés qui restent
-   entières (nameHalves) : sa colonne ne descend jamais sous la plus longue,
-   et ses numéros passent dessous plutôt que de le couper en trois, quelle
-   que soit la police (celle du serveur Linux, plus large) ou sa taille. */
-.contact-theme-who { flex: 1 1 104px; min-width: 0; min-height: 36px; display: grid; align-content: center; gap: 2px; }
-.contact-theme-row-long .contact-theme-who { flex-basis: 150px; min-width: min-content; }
+.contact-theme-who { grid-area: who; display: grid; align-content: center; gap: 2px; min-width: 0; }
+.contact-theme-row .useful-contact-title { font-size: 15px; }
+/* Un nom long (« Responsables accueil et caisses ») est coupé en deux
+   moitiés qui restent entières (nameHalves) : deux lignes au plus, jamais
+   trois, quelle que soit la police (celle du serveur Linux, plus large) ou
+   sa taille. */
 .contact-name-half { white-space: nowrap; }
 .contact-theme-who small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; text-wrap: balance; }
-.contact-theme-actions { display: flex; align-items: center; gap: 5px; }
-.contact-theme-phones { display: grid; justify-items: end; gap: 6px; }
-.contact-theme-phone { display: flex; gap: 5px; }
+.contact-theme-actions { display: contents; }
+.contact-theme-phones { grid-area: phones; display: grid; gap: 6px; }
+.contact-theme-phone { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
 .contact-theme-number,
 .contact-theme-sms,
 .contact-theme-edit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
-  border-radius: 11px;
-  font-size: 12.5px;
+  min-height: 40px;
+  border-radius: 9px;
+  font-size: 14px;
   font-weight: 750;
   text-decoration: none;
   white-space: nowrap;
 }
-/* Même largeur pour toutes les pastilles : une colonne de numéros nette. */
+/* La barre d'appel : le combiné (ou l'enveloppe) dans un rond à la couleur
+   du thème, le numéro en chiffres alignés, un fond à peine teinté. */
 .contact-theme-number {
-  gap: 5px;
-  width: 130px;
-  border: 1px solid var(--border-control);
-  padding: 0 8px;
-  background: var(--surface-high);
+  gap: 8px;
+  justify-content: flex-start;
+  border: 0;
+  padding: 0 12px;
+  background: color-mix(in srgb, var(--tone) 8%, #fff);
   color: inherit;
+  font-variant-numeric: tabular-nums;
 }
-.contact-theme-number > span { opacity: 0.7; font-size: 11px; }
-.contact-theme-number.mobile { border-color: #cfe3d7; background: #e9f3ee; }
-.contact-theme-sms-space { flex: none; width: 38px; }
-.contact-theme-sms { width: 38px; padding: 0; background: #3d8a6f; color: #fff; font-size: 11px; font-weight: 800; }
+.contact-theme-number > span {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--tone);
+  color: #fff;
+  font-size: 11px;
+}
+.contact-theme-sms { width: 56px; padding: 0; background: var(--tone); color: #fff; font-size: 12px; font-weight: 800; }
 .contact-theme-edit {
-  width: 30px;
-  border: 1px solid var(--border-control);
+  grid-area: edit;
+  align-self: start;
+  width: 32px;
+  min-height: 32px;
+  border: 1px solid transparent;
   padding: 0;
-  background: var(--surface);
+  background: none;
   color: var(--muted);
   cursor: pointer;
 }

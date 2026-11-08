@@ -4013,7 +4013,7 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   await page.getByRole("button", { name: "Revenir aux contacts Pompidou" }).click();
   await page.getByRole("button", { name: "Revenir aux contacts utiles" }).click();
   await page.getByRole("button", { name: /Contact GP‑RMN/ }).click();
-  // Un panneau par thème, dans cet ordre, une ligne par contact.
+  // Un chapitre par thème, dans cet ordre, une carte par contact.
   await expect(page.locator(".contact-theme-head h3")).toHaveText(["Urgences", "Encadrement", "Hall", "Rotonde", "Visiteurs"]);
   await expect(page.getByRole("region", { name: "Urgences" }).locator(".useful-contact-title strong")).toHaveText(["Sûreté", "Sécurité"]);
   await expect(page.getByRole("region", { name: "Hall" }).locator(".useful-contact-title strong")).toHaveText(["Information", "Accueil groupes", "Billetterie"]);
@@ -4022,14 +4022,19 @@ test("les contacts utiles sont classés, directement appelables et harmonisés s
   await expect(surete.locator(".useful-contact-title")).toHaveText("Sûretéradio, Canal 2");
   await expect(surete.getByRole("link", { name: /^Appeler Sûreté au 01 44 13 17 50/ })).toHaveAttribute("href", "tel:+33144131750");
   await expect(page.locator(".contact-theme-row").filter({ hasText: "Accident, incendie" }).locator(".useful-contact-radio")).toHaveText("radio, Canal 3");
-  // Le numéro d'une ligne de thème reste à l'écran, sans déborder du panneau.
-  const [sureteRow, sureteNumber] = await Promise.all([surete.boundingBox(), surete.locator(".contact-theme-number").boundingBox()]);
-  expect(sureteNumber!.x + sureteNumber!.width).toBeLessThanOrEqual(sureteRow!.x + sureteRow!.width);
-  // La pastille du canal est sur la ligne du nom.
-  const [sureteName, sureteChannel] = await Promise.all([
+  // Depuis le 9 novembre 2026, le numéro est une barre d'appel : sous le nom,
+  // sur toute la largeur de la carte, 40 px de haut, sans en déborder.
+  const [sureteRow, sureteNumber, sureteName, sureteChannel] = await Promise.all([
+    surete.boundingBox(),
+    surete.locator(".contact-theme-number").boundingBox(),
     surete.locator(".useful-contact-title strong").boundingBox(),
     surete.locator(".useful-contact-radio").boundingBox(),
   ]);
+  expect(sureteNumber!.x + sureteNumber!.width).toBeLessThanOrEqual(sureteRow!.x + sureteRow!.width);
+  expect(sureteNumber!.y).toBeGreaterThanOrEqual(sureteName!.y + sureteName!.height - 1);
+  expect(sureteNumber!.width).toBeGreaterThan(sureteRow!.width * 0.8);
+  expect(sureteNumber!.height).toBeGreaterThanOrEqual(40);
+  // La pastille du canal est sur la ligne du nom.
   expect(Math.abs((sureteName!.y + sureteName!.height / 2) - (sureteChannel!.y + sureteChannel!.height / 2))).toBeLessThan(6);
   expect(sureteChannel!.x).toBeGreaterThan(sureteName!.x + sureteName!.width);
   // Les titres tiennent sur une ligne, deux au plus quand la place manque,

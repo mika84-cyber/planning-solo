@@ -112,10 +112,6 @@ export function ContactThemePanels({ contacts, isAdmin, onEdit }: { contacts: Us
       {contactThemes(contacts).map(({ theme, contacts: themed }, index) => {
         const style = CONTACT_THEME_STYLES[theme] ?? { slug: "autres", icon: "•" };
         const headingId = `gprmn-theme-${index}`;
-        // Un thème qui a des portables réserve la colonne du SMS à chaque
-        // numéro : les numéros s'alignent en colonne, d'une ligne à l'autre.
-        const smsColumn = themed.some((contact) => contact.phones?.some(offersSms));
-        const smsSpace = smsColumn ? <span className="contact-theme-sms-space" aria-hidden="true" /> : null;
         return (
           <section key={theme} className={`contact-theme-panel contact-theme-${style.slug}`} aria-labelledby={headingId}>
             <header className="contact-theme-head">
@@ -154,7 +150,7 @@ export function ContactThemePanels({ contacts, isAdmin, onEdit }: { contacts: Us
                                 <span aria-hidden="true">☎</span>{displayed}
                               </a>
                             ) : <span className={`contact-theme-number${mobile ? " mobile" : ""}`}>{displayed}</span>}
-                            {offersSms(phone) ? <a className="contact-theme-sms" href={smsHref(phone.number)} aria-label={`Envoyer un SMS à ${contact.name} au ${displayed}`}>SMS</a> : smsSpace}
+                            {offersSms(phone) ? <a className="contact-theme-sms" href={smsHref(phone.number)} aria-label={`Envoyer un SMS à ${contact.name} au ${displayed}`}>SMS</a> : null}
                           </span>
                         );
                       })}
@@ -163,7 +159,6 @@ export function ContactThemePanels({ contacts, isAdmin, onEdit }: { contacts: Us
                           <a className="contact-theme-number" href={mailComposeHref(contact.email)} aria-label={`Écrire à ${contact.name} avec l’application de messagerie`}>
                             <span aria-hidden="true">✉</span>Écrire
                           </a>
-                          {smsSpace}
                         </span>
                       ) : null}
                     </span>
