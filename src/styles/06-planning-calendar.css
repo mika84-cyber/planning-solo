@@ -90,9 +90,10 @@
   margin-bottom: 7px;
 }
 /* Le mois en tête du calendrier (MonthNavigation) : depuis le 9 novembre
-   2026, toujours, le nom du mois en sélecteur entre ses deux flèches ; avant,
-   seulement pendant une demande, quand le panneau séparait la barre du mois
-   de la grille. */
+   2026, toujours, et seul endroit où l'on change de période : le titre ouvre
+   le panneau du mois, ses deux flèches l'encadrent ; avant, la barre ne s'y
+   répétait que pendant une demande, quand le panneau séparait la barre du
+   mois de la grille. */
 .month-card-nav {
   display: flex;
   align-items: center;
@@ -148,7 +149,20 @@
   box-shadow: none;
 }
 .month-card-picker .choice-picker-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
-.choice-picker-menu.choice-picker-menu-portal.month-card-picker { width: min(320px, calc(100vw - 40px)); }
+/* Le panneau du mois (le sélecteur en mode panneau, au niveau de la fenêtre
+   sous le titre) : l'année et ses deux flèches en tête, les douze mois sur
+   trois colonnes, « Aujourd'hui » en pied. Le mois affiché est plein, celui
+   d'aujourd'hui cerclé. Le cadre, le fond et les cases viennent de
+   .choice-picker-menu (feuille 02). */
+.choice-picker-menu.month-card-picker { gap: 8px; width: min(320px, calc(100vw - 40px)); padding: 10px; }
+.month-period-year { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
+.month-period-year strong { color: var(--text); font-family: var(--font-display); font-size: 1.12rem; font-weight: 600; letter-spacing: -.01em; }
+.month-card-picker .month-period-year button { display: grid; place-items: center; width: 32px; min-width: 0; height: 32px; min-height: 0; border: 1px solid var(--border-control); border-radius: 50%; padding: 0; background: var(--surface-high); color: var(--accent); box-shadow: none; }
+.month-period-year button svg { width: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.month-card-picker .choice-picker-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.month-card-picker .choice-picker-options button { min-width: 0; min-height: 38px; padding: 6px 4px; font-size: 12.5px; }
+.month-card-picker .choice-picker-options button.today-month { border-color: var(--accent); }
+.month-card-picker .month-period-today { min-width: 0; min-height: 40px; margin-top: 2px; border: 1px solid var(--border-control); border-radius: 10px; background: var(--surface); color: var(--accent-strong); font-size: 14px; font-weight: 850; }
 .weekdays span {
   padding: 8px 2px;
   border-radius: 8px;

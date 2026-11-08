@@ -1,5 +1,5 @@
 /* Commandes du planning (PlanningCommandCenter et le bouton d'effacement de
-   CalendarCleanup) : cadre de la rubrique, barre du mois, jours travaillés,
+   CalendarCleanup) : cadre de la rubrique, flèches du mois, jours travaillés,
    effacement et choix d'un planning. Ces règles étaient réparties entre 02
    et 14 ; elles sont réunies ici, un bloc par composant, juste après la
    feuille 14. Elles l'emportent donc, à spécificité égale, sur les feuilles
@@ -52,8 +52,8 @@
   margin-top: 3px;
   color: var(--text);
 }
-/* Les commandes du mois sont posées à même la page : la période en tête,
-   puis le compteur des jours travaillés. */
+/* Le compteur des jours travaillés puis les vacances scolaires, posés à même
+   la page ; le mois se change en tête du calendrier (feuille 06). */
 .planning-settings-body {
   display: grid;
   gap: 6px;
@@ -104,56 +104,13 @@
   transform: rotate(45deg);
 }
 
-/* ---- Barre du mois ------------------------------------------------------- */
+/* ---- Flèches du mois ----------------------------------------------------- */
 
-/* Hors accueil, la barre garde son propre cadre. */
-.calendar-toolbar {
-  flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 14px;
-  border: 1.5px solid var(--border-card);
-  border-radius: 18px;
-  padding: 12px 14px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-/* La période vient en tête : on arrive ici pour lire un mois. */
-.planning-settings-body .calendar-toolbar.month-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
-  order: -1;
-}
-.planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
-  width: 100%;
-  margin-bottom: 0;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-/* La période se manipule d'un bloc : deux flèches rondes encadrent le mois et
-   l'année. Avancer d'un mois ne demande pas d'ouvrir un menu. */
-.period-navigation {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(145px, 1fr));
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.planning-workspace-shell.framed .planning-settings-body .period-navigation {
-  display: flex;
-  grid-column: 1 / -1;
-  grid-template-columns: none;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  margin: 4px 0 0;
-}
-/* Flèches du mois : le terracotta des boutons ; le violet reste aux vacances
-   scolaires. */
+/* Les flèches de la barre du mois (MonthNavigation, en tête du calendrier) et
+   de la page Collègues : le terracotta des boutons ; le violet reste aux
+   vacances scolaires. La barre de période de cette carte (mois, année,
+   Aujourd'hui) a disparu le 9 novembre 2026 : elle doublait la barre du mois,
+   qui porte désormais le panneau du mois (feuille 06). */
 .period-step {
   display: grid;
   flex: none;
@@ -179,203 +136,6 @@
   stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-/* Mois et année : deux pastilles distinctes, chacune avec son chevron, dans
-   la police des titres. La pastille ouverte (ou survolée) fonce son
-   contour. Le nom du mois est long : la taille suit la place disponible. */
-.period-pickers {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.period-pickers > * {
-  flex: 1 1 0;
-  min-width: 0;
-}
-.period-navigation .choice-picker-trigger {
-  justify-content: center;
-  gap: 6px;
-  min-height: 42px;
-  border-color: transparent;
-  padding: 0 10px;
-  background: var(--surface-high);
-  font-size: clamp(14px, 3.9vw, 17px);
-  font-weight: 850;
-  text-transform: capitalize;
-}
-.period-navigation .choice-picker-trigger svg {
-  width: 15px;
-}
-.period-navigation .choice-picker-trigger:hover,
-.period-navigation .choice-picker-trigger[aria-expanded="true"] {
-  border-color: var(--border-control);
-  color: var(--accent);
-}
-.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger {
-  position: relative;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0;
-  width: 100%;
-  min-height: 44px;
-  border: 1px solid rgba(44, 38, 33, 0.3);
-  border-radius: 12px;
-  padding: 0 16px;
-  background: #fbf6ef;
-  box-shadow: none;
-  color: var(--text);
-  font-family: var(--font-display);
-  font-size: clamp(0.72rem, 3.4vw, 1.15rem);
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: 1.1;
-  text-transform: capitalize;
-}
-.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger svg {
-  position: absolute;
-  top: 50%;
-  right: 7px;
-  display: block;
-  width: 12px;
-  transform: translateY(-50%);
-  opacity: 0.75;
-}
-.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.app-shell .planning-workspace-shell.framed .period-pickers .choice-picker-trigger:is(:hover, [aria-expanded="true"]) {
-  border-color: rgba(44, 38, 33, 0.8);
-  background: var(--accent-soft);
-  color: var(--text);
-}
-.planning-workspace-shell.framed .month-toolbar :is(.toolbar-month-picker, .toolbar-year-picker, .today-button, .choice-picker-trigger) {
-  width: 100%;
-}
-
-/* Menus du mois et de l'année : trois colonnes, ancrés au bord de leur
-   pastille sur ordinateur, au niveau de la fenêtre (portail) sur téléphone
-   et écran tactile. */
-.toolbar-month-picker .choice-picker-menu,
-.choice-picker-menu.choice-picker-menu-portal.toolbar-month-picker {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 286px;
-}
-.toolbar-year-picker .choice-picker-menu,
-.choice-picker-menu.choice-picker-menu-portal.toolbar-year-picker {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 238px;
-}
-.month-toolbar .toolbar-month-picker .choice-picker-menu {
-  left: 0;
-  transform: none;
-}
-.month-toolbar .toolbar-year-picker .choice-picker-menu {
-  right: 0;
-  left: auto;
-  transform: none;
-}
-.toolbar-month-picker .choice-picker-menu button,
-.toolbar-year-picker .choice-picker-menu button {
-  min-width: 0;
-}
-
-/* Revenir au mois courant : le second geste le plus fréquent, sur sa propre
-   ligne juste avant le compteur. */
-.today-button {
-  height: 42px;
-  border-radius: 12px;
-  padding: 0 13px;
-  background: var(--surface-high);
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.planning-workspace-shell.framed .month-toolbar .today-button {
-  min-width: 0;
-}
-.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button {
-  grid-column: 1;
-  width: 100%;
-  min-height: 46px;
-  border: 1px solid var(--border-control);
-  border-radius: 12px;
-  padding: 9px 14px;
-  background: var(--surface);
-  box-shadow: 0 3px 10px rgba(87, 78, 66, 0.055);
-  color: var(--accent-strong);
-  font: inherit;
-  font-size: 16px;
-  font-weight: 900;
-  letter-spacing: 0.01em;
-  text-decoration: none;
-  cursor: pointer;
-}
-.planning-workspace-shell.framed .planning-settings-body .calendar-toolbar .planning-today-button:hover {
-  background: var(--accent-soft);
-}
-
-@media (max-width: 720px) {
-  .calendar-toolbar {
-    padding: 9px;
-  }
-  .period-navigation {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .calendar-toolbar.month-toolbar .period-navigation {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    width: 100%;
-  }
-  .today-button {
-    height: 44px;
-  }
-  .calendar-toolbar.month-toolbar .today-button {
-    grid-column: 1;
-    grid-row: 2;
-    width: 100%;
-    min-width: 0;
-    min-height: 50px;
-  }
-  .planning-workspace-shell.framed .month-toolbar :is(.toolbar-month-picker, .toolbar-year-picker, .today-button, .choice-picker-trigger) {
-    min-width: 0;
-  }
-}
-
-/* Tablette et écran presque carré (Z Fold déplié) : la période se resserre. */
-@media (min-width: 640px) and (max-width: 1000px), (min-width: 900px) and (max-width: 1180px) and (min-aspect-ratio: 4/5) and (max-aspect-ratio: 6/5) {
-  .period-navigation {
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
-  }
-  .calendar-toolbar .today-button {
-    width: auto;
-    padding-right: 10px;
-    padding-left: 10px;
-  }
-}
-
-@media (min-width: 721px) {
-  .planning-workspace-shell.framed .calendar-toolbar.month-toolbar {
-    align-items: stretch;
-    gap: 10px;
-  }
-}
-
-/* Sur ordinateur et sur le Fold ouvert, les pastilles et Aujourd'hui ont la
-   même hauteur. */
-@media (min-width: 1101px), (min-width: 721px) and (max-width: 1100px) and (pointer: coarse) {
-  .planning-workspace-shell.framed .month-toolbar :is(.toolbar-month-picker, .toolbar-year-picker, .today-button, .choice-picker-trigger) {
-    min-width: 0;
-    min-height: 46px;
-    height: 46px;
-  }
 }
 
 /* ---- Jours travaillés ---------------------------------------------------- */

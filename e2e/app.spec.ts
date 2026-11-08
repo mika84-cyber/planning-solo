@@ -263,15 +263,35 @@ async function sectionDock(page: Page) {
   return tabs;
 }
 
-/** Écart, en pixels, entre le centre du texte « MOIS — ANNÉE » et le centre de
- *  l’espace laissé entre les deux flèches violettes. Mesuré sur les deux
- *  pastilles du mois et de l’année. */
+/** Écart, en pixels, entre le centre du titre « Mois année » en tête du
+ *  calendrier et le centre de l’espace laissé entre ses deux flèches. */
 async function periodTextOffset(page: Page) {
   return page.evaluate(() => {
-    const arrows = [...document.querySelectorAll(".period-navigation .period-step")].map((node) => node.getBoundingClientRect());
-    const pills = [...document.querySelectorAll(".period-pickers .choice-picker-trigger")].map((trigger) => trigger.getBoundingClientRect());
-    return (pills[0].left + pills[1].right) / 2 - (arrows[0].right + arrows[1].left) / 2;
+    const [previous, next] = [...document.querySelectorAll(".month-card-nav .period-step")].map((node) => node.getBoundingClientRect());
+    const title = document.querySelector(".month-card-nav .choice-picker-trigger")!.getBoundingClientRect();
+    return (title.left + title.right) / 2 - (previous.right + next.left) / 2;
   });
+}
+
+/** Le panneau du mois (année, douze mois, Aujourd’hui), ouvert depuis le
+ *  titre en tête du calendrier : seul endroit où l’on change de période
+ *  depuis le 9 novembre 2026. */
+const MONTH_PANEL = { name: "Mois et année du calendrier" };
+async function openMonthPanel(page: Page) {
+  await page.locator(".month-card-nav").getByRole("button", { name: "Mois du calendrier" }).click();
+  return page.getByRole("dialog", MONTH_PANEL);
+}
+
+/** Choisit un mois de l’année affichée dans le panneau du mois. */
+async function pickCalendarMonth(page: Page, name: string) {
+  const panel = await openMonthPanel(page);
+  await panel.getByRole("listbox", { name: "Mois du calendrier" }).getByRole("option", { name, exact: true }).click();
+}
+
+/** Revient au mois d’aujourd’hui par le panneau du mois. */
+async function goToCurrentMonth(page: Page) {
+  const panel = await openMonthPanel(page);
+  await panel.getByRole("button", { name: "Aujourd’hui" }).click();
 }
 
 /** Ouvre une rubrique par le dock, seul chemin vers les pages. */
@@ -580,12 +600,15 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   const planning = page.locator(".planning-workspace-shell.framed .planning-command-section");
   await expect(planning).toBeVisible();
   await expect(planning.getByRole("heading", { name: "Mon planning" })).toBeVisible();
-  // Les commandes du mois sont posées à même la page : changer de mois est le
-  // geste le plus courant ici, il ne doit pas demander d’ouvrir un volet.
+  // Le compteur des jours travaillés est posé à même la page, juste sous
+  // l'en-tête : depuis le 9 novembre 2026, la période et « Aujourd'hui » ont
+  // quitté cette carte (ils doublaient la barre du mois en tête du
+  // calendrier, qui porte désormais le panneau du mois).
   await expect(page.locator("details.planning-settings-disclosure")).toHaveCount(0);
   await expect(planning.locator(".controls")).toBeVisible();
-  await expect(planning.getByRole("button", { name: "Mois précédent" })).toBeVisible();
-  await expect(planning.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
+  await expect(planning.locator(".planning-settings-body > :first-child")).toHaveClass(/controls/);
+  await expect(planning.getByRole("button", { name: "Mois précédent" })).toHaveCount(0);
+  await expect(planning.getByRole("button", { name: "Aujourd’hui" })).toHaveCount(0);
   await expect(planning.locator(".worked-days-trigger")).toContainText("travaillé");
   await expect(planning).toHaveCSS("border-left-width", accentSpine(page));
   await expect(planning).toHaveCSS("border-left-color", await cssTokenRgb(page, "--border-card"));
@@ -596,21 +619,15 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
     "background-color",
     "rgb(152, 84, 56)",
   );
-  const todayButton = planning.getByRole("button", { name: "Aujourd’hui" });
-  const [todayButtonBox, workedDaysBox] = await Promise.all([
-    todayButton.boundingBox(),
-    planning.locator(".worked-days-trigger").boundingBox(),
-  ]);
-  expect(todayButtonBox).not.toBeNull();
-  expect(workedDaysBox).not.toBeNull();
-  expect(todayButtonBox!.y + todayButtonBox!.height).toBeLessThanOrEqual(workedDaysBox!.y);
-  expect(todayButtonBox!.width).toBeGreaterThan(workedDaysBox!.width * 0.98);
-  // « Aujourd’hui » : le mot en terracotta dans le même encadré que les jours travaillés.
-  await expect(todayButton).toHaveCSS("background-color", "rgb(251, 246, 239)");
-  await expect(todayButton).toHaveCSS("border-top-width", "1px");
-  await expect(todayButton).toHaveCSS("border-top-left-radius", "12px");
-  await expect(todayButton).toHaveCSS("color", await cssTokenRgb(page, "--accent-strong"));
-  expect(parseFloat(await todayButton.evaluate((node) => getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(15);
+  // Le compteur garde son encadré crème ; « Aujourd'hui » vit dans le panneau
+  // du mois, avec l'année et les douze mois.
+  await expect(planning.locator(".worked-days-trigger")).toHaveCSS("background-color", "rgb(251, 246, 239)");
+  const monthPanel = await openMonthPanel(page);
+  await expect(monthPanel.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
+  await expect(monthPanel.getByRole("button", { name: "Année suivante" })).toBeVisible();
+  await expect(monthPanel.getByRole("listbox", { name: "Mois du calendrier" }).getByRole("option")).toHaveCount(12);
+  await page.keyboard.press("Escape");
+  await expect(monthPanel).toHaveCount(0);
   const trainingDay = page.locator(".month-card .day.training").first();
   await expect(trainingDay).toHaveCSS("background-color", "rgb(180, 180, 180)");
   await expect(trainingDay).toHaveCSS("background-image", "none");
@@ -2683,7 +2700,7 @@ test("la déclaration d’accident réunit les démarches et marque le planning 
   await expect(page.getByText(/Périodes enregistrées/)).toBeVisible();
 
   await goToSection(page, "home");
-  await page.getByRole("button", { name: "Aujourd’hui" }).click();
+  await goToCurrentMonth(page);
   const todayCell = page.getByRole("button", { name: new RegExp(longDate(today), "i") });
   const workAccidentMarker = todayCell.locator(".work-accident-calendar-marker");
   await expect(workAccidentMarker).toBeVisible();
@@ -2983,8 +3000,7 @@ test("pendant le choix des dates, une barre ramène à l’enregistrement resté
   await page.setViewportSize({ width: page.viewportSize()!.width, height: 560 });
   await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
   await prepareDemo(page);
-  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
-  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  await pickCalendarMonth(page, "octobre");
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
   const floating = page.getByRole("region", { name: "Demande en cours" });
@@ -3017,8 +3033,7 @@ test("pendant le choix des dates, une barre ramène à l’enregistrement resté
 test("plusieurs congés souhaités se posent d’un coup puis se transforment en congés au choix", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
   await prepareDemo(page);
-  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
-  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  await pickCalendarMonth(page, "octobre");
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
   const dayDialog = page.locator(".day-modal, [role=dialog]").filter({ hasText: "Que souhaitez-vous faire pour cette journée" });
   const workDays = page.locator(".calendar-grid .day.work");
@@ -3129,32 +3144,49 @@ test("aucun écran ne déborde à droite sur un petit téléphone, même avec la
   })).toBe(0);
 });
 
-test("le mois, son sélecteur et ses flèches se lisent en tête du calendrier, pendant une demande aussi", async ({ page }) => {
+test("le mois, son panneau et ses flèches se lisent en tête du calendrier, pendant une demande aussi", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-09T12:00:00"));
   await prepareDemo(page);
   // Depuis le 9 novembre 2026, la barre du mois est toujours en tête du
-  // calendrier (avant, seulement pendant une demande) : le nom du mois y est
-  // un sélecteur, ses flèches l'encadrent, et elle suit la barre du haut.
+  // calendrier et c'est le seul endroit où l'on change de période : le titre
+  // ouvre le panneau du mois (l'année et ses flèches, les douze mois,
+  // Aujourd'hui), ses flèches l'encadrent ; la carte Mon planning n'a plus de
+  // barre de période.
   const nav = page.locator(".month-card-nav");
   const title = nav.locator(".month-card-title");
   await expect(nav).toBeVisible();
-  const shownPeriod = async () => {
-    const [month, year] = await Promise.all([
-      page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").textContent(),
-      page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").textContent(),
-    ]);
-    return `${month!.trim()} ${year!.trim()}`;
-  };
-  const sameAs = (period: string) => new RegExp(`^${period}$`, "i");
-  await expect(title).toHaveText(sameAs(await shownPeriod()));
-  // Le sélecteur change le mois affiché, barre du haut comprise.
-  await nav.getByRole("button", { name: "Mois du calendrier" }).click();
-  await page.getByRole("listbox", { name: "Mois du calendrier" }).getByRole("option", { name: /^mars$/i }).click();
-  await expect(title).toHaveText(/^mars \d{4}$/i);
-  const start = await shownPeriod();
-  expect(start).toMatch(/^mars /i);
+  await expect(title).toHaveText(/^novembre 2026$/i);
+  await expect(page.locator(".calendar-toolbar")).toHaveCount(0);
+  const panel = page.getByRole("dialog", MONTH_PANEL);
+  const months = panel.getByRole("listbox", { name: "Mois du calendrier" }).getByRole("option");
+  const monthOption = (name: string) => months.filter({ hasText: new RegExp(`^${name}$`) });
+  await openMonthPanel(page);
+  await expect(months).toHaveCount(12);
+  // Le mois affiché est plein ; l'année change tout de suite, sans fermer le
+  // panneau ; un mois choisi le ferme.
+  await expect(monthOption("novembre")).toHaveAttribute("aria-selected", "true");
+  await panel.getByRole("button", { name: "Année suivante" }).click();
+  await expect(title).toHaveText(/^novembre 2027$/i);
+  await expect(panel).toBeVisible();
+  await monthOption("mars").click();
+  await expect(title).toHaveText(/^mars 2027$/i);
+  await expect(panel).toHaveCount(0);
+  // Loin du mois en cours, celui d'aujourd'hui est cerclé, dans son année.
+  await openMonthPanel(page);
+  await expect(monthOption("mars")).toHaveAttribute("aria-selected", "true");
+  await expect(monthOption("novembre")).not.toHaveClass(/today-month/);
+  await panel.getByRole("button", { name: "Année précédente" }).click();
+  await expect(title).toHaveText(/^mars 2026$/i);
+  await expect(monthOption("novembre")).toHaveClass(/today-month/);
+  // « Aujourd'hui » ramène au mois en cours et ferme le panneau.
+  await panel.getByRole("button", { name: "Aujourd’hui" }).click();
+  await expect(title).toHaveText(/^novembre 2026$/i);
+  await expect(panel).toHaveCount(0);
+  await pickCalendarMonth(page, "mars");
+  await expect(title).toHaveText(/^mars 2026$/i);
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
-  // Le panneau de la demande sépare la barre du haut de la grille : la barre
+  // Le panneau de la demande sépare le haut de la carte de la grille : la barre
   // du mois reste juste au-dessus des jours. L'application défile d'abord, en
   // douceur, jusqu'au panneau de la demande ; on descend ensuite aux jours, et
   // l'on recommence si ce défilement nous rattrape (WebKit sous charge).
@@ -3165,14 +3197,13 @@ test("le mois, son sélecteur et ses flèches se lisent en tête du calendrier, 
     await expect(page.locator(".month-card .calendar-grid")).toBeInViewport({ ratio: 0.5, timeout: 1000 });
   }).toPass({ timeout: 10_000 });
   await nav.getByRole("button", { name: "Mois suivant" }).click();
-  await expect(title).not.toHaveText(sameAs(start));
-  await expect(title).toHaveText(sameAs(await shownPeriod()));
+  await expect(title).toHaveText(/^avril 2026$/i);
   await nav.getByRole("button", { name: "Mois précédent" }).click();
-  await expect(title).toHaveText(sameAs(start));
+  await expect(title).toHaveText(/^mars 2026$/i);
   // La demande annulée, la barre du mois reste en tête du calendrier.
   await page.locator("#request-panel").getByRole("button", { name: "Annuler la demande" }).first().click();
   await expect(nav).toBeVisible();
-  await expect(title).toHaveText(sameAs(start));
+  await expect(title).toHaveText(/^mars 2026$/i);
 });
 
 test("un congé de l’année suivante se pose à l’avance sur le solde de cette année-là", async ({ page }) => {
@@ -3196,8 +3227,7 @@ test("un congé de l’année suivante se pose à l’avance sur le solde de cet
 test("depuis une case du planning, les souhaits se posent et se transforment par le même parcours", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
   await prepareDemo(page);
-  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
-  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  await pickCalendarMonth(page, "octobre");
   const workDays = page.locator(".calendar-grid .day.work");
   const openDay = async (index: number) => {
     const day = workDays.nth(index);
@@ -3248,8 +3278,7 @@ test("depuis une case du planning, les souhaits se posent et se transforment par
 test("un congé souhaité se pose aussi le matin ou l’après-midi et se transforme en demi-journée", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
   await prepareDemo(page);
-  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
-  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  await pickCalendarMonth(page, "octobre");
   const workDays = page.locator(".calendar-grid .day.work");
   const pick = async (index: number) => {
     const day = workDays.nth(index);
@@ -3306,8 +3335,7 @@ test("un congé souhaité se pose aussi le matin ou l’après-midi et se transf
 test("un jour exceptionnel se pose en journée entière, un Divers aussi en demi-journée", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
   await prepareDemo(page);
-  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
-  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  await pickCalendarMonth(page, "octobre");
   const day = (label: RegExp) => page.getByRole("button", { name: label }).first();
 
   // ASA : toujours en journée entière, la date se choisit sans demander de durée.
@@ -3361,10 +3389,7 @@ test("le poste du jour se choisit dans la fiche et se lit dans la semaine des co
   let day = localDate(2026, 8, 29);
   while (getDayInfo(day, 2).kind !== "work" || getDayInfo(day, 2).holiday || closures.has(dateKey(day))) day = addDays(day, 1);
   const cell = () => page.locator(".month-card .day").filter({ has: page.locator(".date-number", { hasText: new RegExp(`^${day.getDate()}$`) }) }).first();
-  if (day.getMonth() !== 8) {
-    await page.getByRole("button", { name: "Sélectionner le mois" }).click();
-    await page.getByRole("option", { name: "octobre", exact: true }).click();
-  }
+  if (day.getMonth() !== 8) await pickCalendarMonth(page, "octobre");
   await page.getByRole("button", { name: new RegExp(`^${longDate(day)}`, "i") }).first().click();
   const dialog = page.getByRole("dialog");
   const posts = dialog.locator(".day-work-post");
@@ -3407,8 +3432,7 @@ test("l’accueil affiche le poste choisi aujourd’hui et au prochain jour trav
 
 test("le tampon de fermeture conserve la date lisible sur ordinateur et téléphone", async ({ page }) => {
   await prepareDemo(page);
-  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
-  await page.getByRole("option", { name: "septembre", exact: true }).click();
+  await pickCalendarMonth(page, "septembre");
 
   const markers = page.locator(".month-card .exceptional-closure-marker");
   await expect(markers).toHaveCount(3);
@@ -3536,15 +3560,15 @@ test("les vacances scolaires restent facultatives et respectent la zone choisie"
   await expect(page.getByRole("button", { name: "Zone C", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Zone C", exact: true }).click();
   await expect(page.getByRole("button", { name: "Zone A", exact: true })).toHaveCount(0);
-  const [toolbarBox, settingsBox] = await Promise.all([
-    page.locator(".calendar-toolbar.month-toolbar").boundingBox(),
+  // Le réglage suit le compteur des jours travaillés dans la carte.
+  const [counterBox, settingsBox] = await Promise.all([
+    page.locator(".planning-command-section .worked-days").boundingBox(),
     page.locator(".school-vacation-settings").boundingBox(),
   ]);
-  expect(toolbarBox).not.toBeNull();
+  expect(counterBox).not.toBeNull();
   expect(settingsBox).not.toBeNull();
-  expect(settingsBox!.y).toBeGreaterThanOrEqual(toolbarBox!.y + toolbarBox!.height);
-  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
-  await page.getByRole("option", { name: "octobre", exact: true }).click();
+  expect(settingsBox!.y).toBeGreaterThanOrEqual(counterBox!.y + counterBox!.height);
+  await pickCalendarMonth(page, "octobre");
   await expect(page.locator(".school-vacation-month-summary")).toContainText("Vacances de la Toussaint");
   await expect(page.locator(".month-card .school-vacation-day")).toHaveCount(15);
   // Une barre violette à gauche de la case, de la couleur de l’interrupteur.
@@ -3615,8 +3639,7 @@ test("les sigles de congé restent lisibles à côté de l’encadré d’Agnès
 
 test("une fermeture exceptionnelle peut être ajoutée puis retirée manuellement", async ({ page }) => {
   await prepareDemo(page);
-  await page.getByRole("button", { name: "Sélectionner le mois" }).click();
-  await page.getByRole("option", { name: "septembre", exact: true }).click();
+  await pickCalendarMonth(page, "septembre");
 
   const day = page.getByRole("button", { name: /vendredi 11 septembre 2026/i });
   await day.click();
@@ -4438,8 +4461,9 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
       return button && grid ? button.y >= grid.y + grid.height : false;
     }).toBe(true);
   }
-  const planningTodayBox = await page.locator(".planning-today-button").boundingBox();
-  expect(planningTodayBox).not.toBeNull();
+  // Ni barre de période ni « Aujourd'hui » dans la carte : le mois se change
+  // en tête du calendrier.
+  await expect(page.locator(".calendar-toolbar")).toHaveCount(0);
   await expect(page.locator(".planning-group-choice")).toHaveCount(0);
   expect(headerBox!.width).toBeLessThanOrEqual(viewportWidth - 12);
   expect(headerBox!.width / viewportWidth).toBeGreaterThan(
@@ -4530,46 +4554,42 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   expect(planningBox).not.toBeNull();
   expect(planningBox!.y).toBeGreaterThan(todayOverviewBox!.y);
 
-  await page.locator('.calendar-toolbar button[aria-label="Sélectionner l’année"]').click();
-  const years = page.getByRole("listbox", { name: "Sélectionner l’année" }).getByRole("option");
-  await expect(years).toHaveCount(25);
-  await expect(years.first()).toHaveText("2026");
-  await expect(years.last()).toHaveText("2050");
-  await expect(page.getByRole("button", { name: "2024", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "2025", exact: true })).toHaveCount(0);
+  // Les années se parcourent dans le panneau du mois, en tête du calendrier :
+  // une flèche de chaque côté de l'année, qui agit tout de suite.
+  const nav = page.locator(".month-card-nav");
+  const title = nav.locator(".month-card-title");
+  const shownYear = Number((await title.textContent())!.trim().slice(-4));
+  const monthPanel = await openMonthPanel(page);
+  await expect(monthPanel.locator(".month-period-year strong")).toHaveText(String(shownYear));
+  await monthPanel.getByRole("button", { name: "Année suivante" }).click();
+  await expect(title).toHaveText(new RegExp(`${shownYear + 1}$`));
+  await expect(monthPanel).toBeVisible();
+  await monthPanel.getByRole("button", { name: "Année précédente" }).click();
+  await expect(title).toHaveText(new RegExp(`${shownYear}$`));
+  await page.keyboard.press("Escape");
+  await expect(monthPanel).toHaveCount(0);
   const leaveActionBox = await page.locator(".planning-leave-panel .planning-leave-action").boundingBox();
   const exchangeActionBox = await page.locator(".planning-leave-panel .planning-exchange-action").boundingBox();
   const leavePanelBox = await page.locator(".planning-leave-panel").boundingBox();
-  const periodNavigationBox = await page.locator(".calendar-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox();
+  const monthNavBox = await nav.boundingBox();
   const monthCardBox = await page.locator(".month-card").boundingBox();
   expect(leaveActionBox).not.toBeNull();
   expect(exchangeActionBox).not.toBeNull();
   expect(leavePanelBox).not.toBeNull();
-  expect(periodNavigationBox).not.toBeNull();
+  expect(monthNavBox).not.toBeNull();
   expect(monthCardBox).not.toBeNull();
-  if ((page.viewportSize()?.width || 0) >= 1101) {
-    const [toolbarBox, monthPickerBox, yearPickerBox] = await Promise.all([
-      page.locator(".calendar-toolbar.month-toolbar").boundingBox(),
-      page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
-      page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").boundingBox(),
-    ]);
-    expect(toolbarBox).not.toBeNull();
-    expect(monthPickerBox).not.toBeNull();
-    expect(yearPickerBox).not.toBeNull();
-    // Le texte du mois et de l’année est centré entre les deux flèches.
-    expect(Math.abs(await periodTextOffset(page))).toBeLessThanOrEqual(2);
-    // Les deux flèches encadrent les menus, et le retour au mois courant
-    // tient dans la même barre : tout le geste de navigation au même endroit.
-    const arrows = page.locator(".period-navigation .period-step");
-    const previousArrowBox = await arrows.first().boundingBox();
-    const nextArrowBox = await arrows.last().boundingBox();
-    expect(previousArrowBox!.x).toBeLessThan(monthPickerBox!.x);
-    expect(nextArrowBox!.x).toBeGreaterThan(yearPickerBox!.x + yearPickerBox!.width - 1);
-    // Deux pastilles distinctes, chacune avec son chevron.
-    await expect(page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger svg")).toBeVisible();
-    await expect(page.locator(".month-toolbar .today-button")).toHaveCount(1);
-  }
-  expect(leaveActionBox!.y).toBeGreaterThan(periodNavigationBox!.y);
+  // Le titre du mois est centré entre ses deux flèches, qui l'encadrent, et
+  // son chevron dit qu'il s'ouvre.
+  expect(Math.abs(await periodTextOffset(page))).toBeLessThanOrEqual(2);
+  const arrows = nav.locator(".period-step");
+  const titleBox = await nav.locator(".choice-picker-trigger").boundingBox();
+  const previousArrowBox = await arrows.first().boundingBox();
+  const nextArrowBox = await arrows.last().boundingBox();
+  expect(previousArrowBox!.x + previousArrowBox!.width).toBeLessThanOrEqual(titleBox!.x);
+  expect(nextArrowBox!.x).toBeGreaterThanOrEqual(titleBox!.x + titleBox!.width - 1);
+  await expect(nav.locator(".choice-picker-trigger svg")).toBeVisible();
+  // Les deux actions précèdent la barre du mois, qui ouvre le calendrier.
+  expect(monthNavBox!.y).toBeGreaterThanOrEqual(leaveActionBox!.y + leaveActionBox!.height - 1);
   expect(leavePanelBox!.y + leavePanelBox!.height).toBeLessThan(monthCardBox!.y);
   expect(Math.abs(leaveActionBox!.width - exchangeActionBox!.width)).toBeLessThanOrEqual(2);
   expect(exchangeActionBox!.x + exchangeActionBox!.width).toBeLessThanOrEqual(
@@ -4734,7 +4754,7 @@ test("le balayage du calendrier mobile change seulement de mois", async ({ page 
   test.skip(testInfo.project.name !== "mobile", "Le geste tactile est réservé au téléphone");
   await prepareDemo(page);
 
-  const monthPicker = page.getByRole("button", { name: "Sélectionner le mois" });
+  const monthPicker = page.locator(".month-card-title");
   const initialMonth = (await monthPicker.textContent())?.trim() || "";
   expect(initialMonth).not.toBe("");
   const calendar = page.locator(".month-card");
@@ -4781,19 +4801,17 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
     const [
       foldMonthBox,
       foldYearBox,
-      foldTodayBox,
       foldStatusBox,
       foldNextWorkBox,
       foldLeaveBox,
     ] = await Promise.all([
-        page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").boundingBox(),
-        page.locator(".month-toolbar .toolbar-year-picker .choice-picker-trigger").boundingBox(),
-        page.locator(".planning-today-button").boundingBox(),
+        page.locator(".month-card-nav .choice-picker-trigger > span").first().boundingBox(),
+        page.locator(".month-card-nav .month-card-year").boundingBox(),
         page.locator(".today-status").boundingBox(),
         page.locator(".today-next-work").boundingBox(),
         page.locator(".today-leave-balance").boundingBox(),
   ]);
-    // Le mois et l’année forment un couple centré, le mois juste avant l’année.
+    // Le mois et l’année forment un seul titre, le mois juste avant l’année.
     expect(foldMonthBox!.x + foldMonthBox!.width).toBeLessThanOrEqual(foldYearBox!.x + 1);
     // Déplié, le Fold garde les quatre lignes empilées du téléphone, de
     // même largeur, la journée en premier.
@@ -5600,7 +5618,7 @@ test("un congé souhaité s’ajoute et se retire sans enregistrer", async ({ pa
   await expect(panel.getByRole("heading")).toHaveText("2 souhaits sélectionnés");
   await panel.getByRole("button", { name: "Enregistrer les souhaits" }).click();
   await expect(nextMonthDay).toHaveClass(/wish-day/);
-  await page.locator(".calendar-toolbar").getByRole("button", { name: "Mois précédent" }).click();
+  await page.locator(".month-card-nav").getByRole("button", { name: "Mois précédent" }).click();
   await expect(workDay).toHaveClass(/wish-day/);
 
   await workDay.click();
@@ -6291,7 +6309,7 @@ test("le mois de paie reste indépendant du planning", async ({ page }) => {
   // Date fixe : le 1er du mois tombait sur un cas limite des données de test.
   await page.clock.setFixedTime(new Date("2026-09-28T12:00:00"));
   await prepareCompletePayDemo(page);
-  const planningMonth = page.getByRole("button", { name: "Sélectionner le mois" });
+  const planningMonth = page.locator(".month-card-title");
   const initialPlanningMonth = (await planningMonth.textContent())?.trim();
   // Un dimanche reporté se règle seul : plus d'alerte datée pour y mener. On
   // choisit donc le mois à la main, et c'est son indépendance qui est en jeu.

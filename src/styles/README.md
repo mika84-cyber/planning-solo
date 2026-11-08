@@ -98,11 +98,11 @@ feuilles chargées ensuite. Restent ailleurs, volontairement :
 
 - les listes communes à plusieurs rubriques : `.app-shell > .planning-workspace-shell`
   (largeur et marges, feuille 14), la bordure des boutons terracotta
-  (`:root :is(… .today-button …)`, feuille 14) et le fond blanc des rubriques
+  (`:root :is(… .save-button …)`, feuille 14) et le fond blanc des rubriques
   (feuille 17) ;
 - les finitions de `productRefinements.css` (bordure, marges intérieures et
-  en-tête des rubriques, fond `#fbf6ef` d'Aujourd'hui, des jours travaillés et
-  de l'effacement), plus spécifiques ou chargées après ;
+  en-tête des rubriques, fond `#fbf6ef` des jours travaillés et de
+  l'effacement), plus spécifiques ou chargées après ;
 - le bandeau « Poser un congé » (`.planning-leave-panel`, feuille 14 et
   `planningCalendarRefinement.css`).
 

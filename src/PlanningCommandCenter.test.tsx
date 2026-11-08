@@ -4,8 +4,6 @@ import { PlanningCommandCenter } from "./PlanningCommandCenter";
 
 const baseProps = {
   isHome: true,
-  view: new Date(2026, 8, 1),
-  setView: vi.fn(),
   workedDays: {
     month: {
       worked: 16, scheduled: 18, onLeave: 1, exceptionallyClosed: 1,
@@ -44,7 +42,6 @@ const baseProps = {
   onCancelCleanup: vi.fn(),
   onDeleteAbsences: vi.fn(),
   onDeleteNotes: vi.fn(),
-  onToday: vi.fn(),
   showSchoolVacations: true,
   schoolZone: "C" as const,
   onShowSchoolVacationsChange: vi.fn(),
@@ -52,16 +49,18 @@ const baseProps = {
 };
 
 describe("PlanningCommandCenter", () => {
-  it("regroupe les commandes mensuelles du planning", () => {
+  it("garde le compte des jours travaillés, sans la période ni Aujourd’hui", () => {
     const html = renderToStaticMarkup(<PlanningCommandCenter {...baseProps} />);
     expect(html).toContain("Mon planning");
-    // Tout est posé à même la page : le mois, les deux flèches, le retour au
-    // mois courant et le compte réel des jours travaillés.
-    expect(html).toContain('aria-label="Mois précédent"');
-    expect(html).toContain('aria-label="Mois suivant"');
-    expect(html).toContain("Sélectionner le mois");
-    expect(html).toContain("Sélectionner l’année");
-    expect(html).toContain("Aujourd’hui");
+    // Depuis le 9 novembre 2026, le mois, l'année et le retour à aujourd'hui
+    // se changent en tête du calendrier (MonthNavigation) : la carte ne les
+    // double plus, elle garde le compte réel des jours travaillés.
+    expect(html).not.toContain("Mois précédent");
+    expect(html).not.toContain("Mois suivant");
+    expect(html).not.toContain("Sélectionner le mois");
+    expect(html).not.toContain("Sélectionner l’année");
+    expect(html).not.toContain("Aujourd’hui");
+    expect(html).not.toContain("calendar-toolbar");
     expect(html).toContain("16 jours travaillés ce mois-ci");
     expect(html).toContain("Jours restant à travailler d’ici au 31 décembre");
     // Plus de volet à déplier, ni de bascule vers une vue annuelle retirée.
@@ -72,14 +71,9 @@ describe("PlanningCommandCenter", () => {
     expect(html).not.toContain("Effacer plusieurs dates ou notes");
   });
 
-  it("pose les commandes du mois sans volet à déplier", () => {
-    // Changer de mois est le geste le plus courant de cette rubrique : il ne
-    // doit pas demander d'ouvrir quoi que ce soit d'abord.
+  it("pose le compteur à même la page, en premier, sans volet à déplier", () => {
     const html = renderToStaticMarkup(<PlanningCommandCenter {...baseProps} />);
-    expect(html).toContain("Mois précédent");
-    expect(html).toContain("Mois suivant");
-    expect(html).toContain("Sélectionner le mois");
-    expect(html).toContain("Aujourd’hui");
+    expect(html).toContain('<div class="planning-settings-body"><section class="controls" aria-label="Choix du planning">');
     expect(html).toContain("jours travaillés ce mois-ci");
     expect(html).not.toContain("planning-settings-disclosure");
     expect(html).not.toContain("Mode d’affichage");

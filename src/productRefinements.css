@@ -294,7 +294,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 /* Accueil : dans « Mon planning », « Aujourd’hui », les
    jours travaillés et le nettoyage prennent le blanc cassé des cases « En un
    coup d’œil ». Les notes gardent leur jaune léger, quadrillé comme un bloc-notes. */
-.app-shell .planning-workspace-shell.framed :is(.calendar-toolbar .planning-today-button, .controls .worked-days-trigger) { background: #fbf6ef; }
+.app-shell .planning-workspace-shell.framed .controls .worked-days-trigger { background: #fbf6ef; }
 .app-shell .planning-calendar-section .calendar-bulk-delete-below { background: #fbf6ef; }
 .app-shell .home-notes-section { background-color: #fdfaea; background-image: linear-gradient(rgba(96, 132, 176, 0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(96, 132, 176, 0.16) 1px, transparent 1px); background-size: 18px 18px; background-position: -1px -1px; }
 /* Fiche du jour : un seul bouton pour écrire une note, sur toute la largeur. */

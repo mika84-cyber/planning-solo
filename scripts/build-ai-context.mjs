@@ -17,6 +17,7 @@ const features = {
       "src/CalendarCleanup.tsx",
       "src/HomeDashboard.tsx",
       "src/PlanningCommandCenter.tsx",
+      "src/MonthNavigation.tsx",
       "src/PlanningDayCell.tsx",
       "src/PlanningView.tsx",
       "src/useCalendarDataState.ts",
@@ -34,7 +35,7 @@ const features = {
       "calendarDeleteMode",
       'homeSection === "home"',
     ],
-    styleTerms: [".calendar-toolbar", ".calendar-grid", ".day {", ".calendar-delete"],
+    styleTerms: [".month-card-nav", ".calendar-grid", ".day {", ".calendar-delete"],
   },
   leave: {
     description: "congés, soldes, récupérations et demandes",

@@ -21,12 +21,17 @@ export function ChoicePicker<T extends ChoiceValue>({
   className = "",
   placeholder,
   suffix,
+  header,
+  footer,
+  panelLabel,
   portal = false,
 }: {
   /** La chaîne vide vaut « rien de choisi » : le libellé d'attente prend
    *  alors la place, plutôt qu'une option que personne n'a retenue. */
   value: T | "";
-  options: Array<{ value: T; label: string }>;
+  /** `className` habille une option non retenue (le mois d'aujourd'hui,
+   *  cerclé) ; `current` la marque `aria-current="date"`. */
+  options: Array<{ value: T; label: string; className?: string; current?: boolean }>;
   onChange: (value: T) => void;
   ariaLabel: string;
   layout?: "grid" | "list";
@@ -37,6 +42,13 @@ export function ChoicePicker<T extends ChoiceValue>({
   /** Affiché dans le bouton après le libellé retenu, jamais dans la liste :
    *  l'année à côté du mois en tête du calendrier, par exemple. */
   suffix?: ReactNode;
+  /** Un en-tête au-dessus des options ou un pied en dessous font de la liste
+   *  un panneau (rôle dialog, nommé par `panelLabel`) ; les options y restent
+   *  la liste nommée par `ariaLabel`. Le pied reçoit de quoi fermer le
+   *  panneau ; l'en-tête, lui, le laisse ouvert. */
+  header?: ReactNode;
+  footer?: (close: () => void) => ReactNode;
+  panelLabel?: string;
   /** Rend toujours la liste au niveau de la fenêtre, même à la souris : à
    *  poser quand le sélecteur vit dans une carte qui défile, sinon la liste
    *  y serait coupée. */
@@ -122,13 +134,36 @@ export function ChoicePicker<T extends ChoiceValue>({
     };
   }, [open, portalActive, updatePlacement]);
 
+  /* En panneau, les options gardent leur liste (et sa grille) dans un
+     conteneur, entre l'en-tête et le pied. */
+  const panel = header !== undefined || footer !== undefined;
+  /* Le rôle du menu et son nom vont de pair : le panneau est un dialogue
+     nommé par `panelLabel`, la liste nue garde le nom des options. */
+  const menuRole = panel
+    ? { role: "dialog" as const, "aria-label": panelLabel }
+    : { role: "listbox" as const, "aria-label": ariaLabel };
+  const optionButtons = options.map((option) => (
+    <button
+      type="button"
+      role="option"
+      aria-selected={option.value === value}
+      className={option.value === value ? "active" : option.className ?? ""}
+      aria-current={option.current ? "date" : undefined}
+      key={String(option.value)}
+      onClick={() => {
+        onChange(option.value);
+        setOpen(false);
+      }}
+    >
+      {option.label}
+    </button>
+  ));
   const menu = open ? (
     <div
       id={menuId}
       ref={menuRef}
-      className={`choice-picker-menu ${layout}${portalActive ? ` choice-picker-menu-portal ${className}` : ""}`.trim()}
-      role="listbox"
-      aria-label={ariaLabel}
+      className={`choice-picker-menu${panel ? "" : ` ${layout}`}${portalActive ? ` choice-picker-menu-portal ${className}` : ""}`.trim()}
+      {...menuRole}
       style={
         portalActive
           ? {
@@ -148,21 +183,13 @@ export function ChoicePicker<T extends ChoiceValue>({
           : undefined
       }
     >
-      {options.map((option) => (
-        <button
-          type="button"
-          role="option"
-          aria-selected={option.value === value}
-          className={option.value === value ? "active" : ""}
-          key={String(option.value)}
-          onClick={() => {
-            onChange(option.value);
-            setOpen(false);
-          }}
-        >
-          {option.label}
-        </button>
-      ))}
+      {panel ? (
+        <>
+          {header}
+          <div className={`choice-picker-options ${layout}`} role="listbox" aria-label={ariaLabel}>{optionButtons}</div>
+          {footer?.(() => setOpen(false))}
+        </>
+      ) : optionButtons}
     </div>
   ) : null;
 
@@ -174,7 +201,7 @@ export function ChoicePicker<T extends ChoiceValue>({
         className={`choice-picker-trigger${selected ? "" : " empty"}`}
         aria-label={ariaLabel}
         aria-expanded={open}
-        aria-haspopup="listbox"
+        aria-haspopup={panel ? "dialog" : "listbox"}
         aria-controls={open ? menuId : undefined}
         onClick={() => {
           if (!open) {

@@ -224,6 +224,16 @@ h1 {
   grid-template-columns: 1fr;
   width: 100%;
 }
+/* En panneau (un en-tête ou un pied autour des options : header et footer
+   de ChoicePicker), le menu empile en-tête, options et pied ; les options
+   gardent leur grille dans leur conteneur. */
+.choice-picker-options {
+  display: grid;
+  gap: 6px;
+}
+.choice-picker-options.grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .choice-picker-menu button {
   min-width: 94px;
   min-height: 40px;

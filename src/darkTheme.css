@@ -20,6 +20,9 @@ html[data-theme="dark"] .calendar-grid .day.training :is(.date-number, span, b) 
    s'éclaircit et le texte garde sa teinte une fois la liste ouverte. */
 html[data-theme="dark"] .month-card-picker .choice-picker-trigger svg { stroke: color-mix(in srgb, var(--accent) 55%, #fff); }
 html[data-theme="dark"] .month-card-picker .choice-picker-trigger:is(:hover, [aria-expanded="true"]) { color: inherit; }
+/* Dans le panneau du mois, les flèches de l'année et « Aujourd'hui » sont en
+   terracotta clair : --accent et --accent-strong ne sont pas convertis. */
+html[data-theme="dark"] .choice-picker-menu.month-card-picker :is(.month-period-year button, .month-period-today) { color: color-mix(in srgb, var(--accent) 55%, #fff); }
 
 /* Calendrier d'un échange : les couleurs du planning. Jour possible en beige
    coquille d'œuf, jour travaillé impossible en beige éteint sous sa croix,

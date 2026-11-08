@@ -36,8 +36,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   Vérifier en sombre (mesurer les couleurs calculées) après toute retouche ;
   un scénario e2e mesure frise, dimanches et mois du fractionnement.
 - `src/styles/14-planning-commands.css` : commandes du planning (cadre de la
-  rubrique, barre du mois, Aujourd’hui, jours travaillés, effacement, choix
-  d’un planning PDF), un bloc par composant, importé après la feuille 14.
+  rubrique, flèches `.period-step` du mois, jours travaillés, effacement,
+  choix d’un planning PDF), un bloc par composant, importé après la feuille 14.
+  Le panneau du mois (`.choice-picker-menu.month-card-picker`) est dans
+  `06-planning-calendar.css`.
 - `src/styles/19-leave-page.css` : page Congés (soldes, règles des congés,
   absence longue, volets heures, mécénats et CET), importée par `main.tsx`
   après `dataManagement.css`. Les dix tuiles des soldes sont blanches depuis
@@ -176,18 +178,31 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   plannings PDF, panneaux d’une demande ou d’une sélection, calendrier du
   mois, échanges, effacement groupé ; `renderDay` reste dans `App.tsx`).
   Depuis le 9 novembre 2026, `MonthNavigation` (`src/MonthNavigation.tsx`,
-  `month-card-nav`) est toujours en tête du calendrier : « Novembre 2026 » y
-  est un seul bouton, le sélecteur du mois (`ChoicePicker` « Mois du
-  calendrier », liste au niveau de la fenêtre, l'année en complément par la
-  propriété `suffix`), ses flèches l'encadrent ; auparavant la barre ne s'y
-  répétait que pendant une demande, un souhait ou une récupération, quand le
-  panneau séparait la barre du haut de la grille. Le composant a son propre
-  fichier à dessein : `PlanningView.tsx` est aussi chargé par des modules
-  différés (`HomeDashboard`, `WorkExchangeDatePicker`) et y importer le
-  sélecteur sortait react-dom et jsx-runtime dans des morceaux à part (1,6 Kio
-  de JavaScript de plus). Un scénario e2e cible donc `.month-card-nav` ou
-  `.calendar-toolbar` plutôt que « Mois suivant » seul, et « Mois du
-  calendrier » plutôt que « Sélectionner le mois ».
+  `month-card-nav`) est toujours en tête du calendrier et c'est le seul
+  endroit où l'on change de période : « Novembre 2026 » y est un seul bouton
+  (« Mois du calendrier », `aria-haspopup="dialog"`) : un `ChoicePicker` en
+  mode panneau (`header`, `footer`, `panelLabel` ; le menu, au niveau de la
+  fenêtre, prend le rôle `dialog` « Mois et année du calendrier » et la classe
+  `month-card-picker`) : l'année et ses flèches « Année précédente / suivante »
+  (`MonthPanelYear` ; elles changent la vue tout de suite, le panneau reste
+  ouvert), les douze mois (`monthOptions`, `listbox` « Mois du calendrier »
+  dans `.choice-picker-options`, le mois affiché `.active`, celui d'aujourd'hui
+  `.today-month` et `aria-current="date"`), puis « Aujourd'hui » (`goToday`).
+  Ses flèches « Mois précédent / suivant » l'encadrent. Garder ce sélecteur au
+  chargement initial compte : sans lui, Rolldown sortirait `ChoicePicker` dans
+  un morceau à part (2,7 Kio de plus). Le même jour, la barre de période
+  de `PlanningCommandCenter` (mois, année, Aujourd'hui, `calendar-toolbar`) a
+  disparu : elle doublait cette barre ; la carte Mon planning garde le
+  compteur des jours travaillés et les vacances scolaires. Auparavant la barre
+  du mois ne se répétait que pendant une demande, un souhait ou une
+  récupération, quand le panneau séparait la barre du haut de la grille. Le
+  composant a son propre fichier à dessein : `PlanningView.tsx` est aussi
+  chargé par des modules différés (`HomeDashboard`, `WorkExchangeDatePicker`)
+  et y importer un sélecteur sortait react-dom et jsx-runtime dans des
+  morceaux à part (1,6 Kio de JavaScript de plus). Un scénario e2e passe par
+  `openMonthPanel`, `pickCalendarMonth` ou `goToCurrentMonth`
+  (`e2e/app.spec.ts`) et cible `.month-card-nav` plutôt que « Mois suivant »
+  seul.
   `src/PlanningDialogLayer.tsx` : les fenêtres du planning (échange, choix
   d’une demande, souhaits, groupe, fiche du jour, détail d’un solde), rendues
   avant `AppDialogLayer`. `src/scrollWhenReady.ts` amène à une ancre d’un

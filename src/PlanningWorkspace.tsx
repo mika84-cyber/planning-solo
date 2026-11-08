@@ -155,8 +155,6 @@ export function PlanningWorkspace({
         <>
       <PlanningCommandCenter
         isHome={homeSection === "home"}
-        view={view}
-        setView={setView}
         workQuota={workQuota}
         workedDays={{ month: monthWorkedDays, remaining: remainingWorkedDays }}
         recoveryRangeSelecting={recoveryRangeSelecting}
@@ -185,7 +183,6 @@ export function PlanningWorkspace({
         onDeleteNotes={() =>
           void deleteMultiplePlanningDates(calendarDeleteDates, "notes")
         }
-        onToday={goToday}
         onExportPdf={homeSection === "home" ? () => setPdfDialogOpen(true) : undefined}
         exportingPdf={false}
         showSchoolVacations={showSchoolVacations}
@@ -355,15 +352,17 @@ export function PlanningWorkspace({
         onTouchEnd={endMonthSwipe}
       >
         {/* Le mois en tête du calendrier, toujours (depuis le 9 novembre
-            2026) : son nom est un sélecteur, ses flèches l'encadrent. Pendant
-            une demande, un souhait ou une récupération, le panneau sépare la
-            barre du haut de la grille : c'est ici qu'on lit et change le mois
-            qu'on touche. */}
+            2026), et seul endroit où l'on change de période : son titre ouvre
+            le panneau du mois (année, douze mois, Aujourd'hui), ses flèches
+            l'encadrent. Pendant une demande, un souhait ou une récupération,
+            le panneau de la demande sépare le haut de la carte de la grille :
+            c'est ici qu'on lit et change le mois qu'on touche. */}
         <MonthNavigation
           year={view.getFullYear()}
           month={view.getMonth()}
           onStep={(direction) => setView(localDate(view.getFullYear(), view.getMonth() + direction, 1))}
-          onSelectMonth={(month) => setView(localDate(view.getFullYear(), month, 1))}
+          onSelect={(year, month) => setView(localDate(year, month, 1))}
+          onToday={goToday}
         />
         <MonthCalendar
           year={view.getFullYear()}

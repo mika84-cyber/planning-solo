@@ -178,7 +178,9 @@ describe("finitions d’interface", () => {
     expect(css.anyRuleDeclares(".controls .worked-days", { "grid-column": "1", "grid-row": "1" })).toBe(true);
     // Le choix du groupe a quitté les commandes du planning.
     expect(css.anywhere("planning-group-choice")).toBe(false);
-    expect(css.mentions(".calendar-toolbar.month-toolbar .today-button")).toBe(true);
+    // La barre de période a quitté la carte le 9 novembre 2026 : le mois se
+    // change dans le panneau en tête du calendrier (MonthNavigation.test.tsx).
+    expect(css.anywhere("month-toolbar")).toBe(false);
     expect(app).toContain("planning-workspace-shell");
   });
 
@@ -469,10 +471,6 @@ describe("finitions d’interface", () => {
     expect(css.declares("min-height", "46px")).toBe(true);
   });
 
-  it("place Aujourd’hui sous la période sur téléphone", () => {
-    expect(css.anyRuleDeclares(".calendar-toolbar.month-toolbar .today-button", { "grid-column": "1", "grid-row": "2" })).toBe(true);
-  });
-
   it("garde les détails des jours travaillés dans l’écran", () => {
     expect(css.anyRuleDeclares(".app-shell .controls .worked-days .worked-days-panel", { top: "calc(100% + 8px)", right: "0", bottom: "auto", left: "0" })).toBe(true);
     expect(css.declares("max-height", "min(58dvh, 420px)")).toBe(true);
@@ -560,7 +558,7 @@ describe("finitions d’interface", () => {
     // La vue annuelle a été retirée : c'est la barre du mois qui se répartit
     // désormais, et plus la barre de l'année.
     expect(css.anywhere("annual-toolbar")).toBe(false);
-    expect(css.mentions(".calendar-toolbar.month-toolbar .period-navigation")).toBe(true);
+    expect(css.anywhere("period-navigation")).toBe(false);
     expect(css.declares("grid-column", "1 / -1")).toBe(true);
   });
 

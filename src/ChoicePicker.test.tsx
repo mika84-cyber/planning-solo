@@ -51,5 +51,22 @@ describe("sélecteur de choix", () => {
       />,
     );
     expect(html).toContain("<span>Mi-temps</span> <em>2026</em><svg");
+    expect(html).toContain('aria-haspopup="listbox"');
+  });
+
+  it("annonce un panneau dès qu’un en-tête ou un pied entoure les options", () => {
+    const html = renderToStaticMarkup(
+      <ChoicePicker
+        value="half"
+        options={options}
+        onChange={vi.fn()}
+        ariaLabel="Mois du calendrier"
+        panelLabel="Mois et année du calendrier"
+        header={<em>2026</em>}
+      />,
+    );
+    expect(html).toContain('aria-haspopup="dialog"');
+    // Fermé, rien du panneau n'est rendu.
+    expect(html).not.toContain("<em>2026</em>");
   });
 });

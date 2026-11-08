@@ -1,18 +1,14 @@
 import type { WishMoment } from "./appModel";
 import { lazy, Suspense, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { CalendarCleanupPanel } from "./CalendarCleanup";
-import { ChoicePicker } from "./ChoicePicker";
 
 const SchoolVacationSettings = lazy(() =>
   import("./SchoolVacationUi").then(({ SchoolVacationSettings: Component }) => ({ default: Component })),
 );
 import { dayCountLabel } from "./appModel";
 import {
-  MONTH_OPTIONS,
   type SchoolZone,
-  YEAR_OPTIONS,
   leaveTypeLabel,
-  localDate,
   multiDatePersonLabel,
   s,
   type LeaveType,
@@ -40,8 +36,6 @@ type WorkedDaysData = {
 
 type PlanningCommandCenterProps = {
   isHome: boolean;
-  view: Date;
-  setView: (view: Date) => void;
   workQuota?: WorkQuota;
   workedDays: WorkedDaysData;
   showSchoolVacations: boolean;
@@ -71,15 +65,12 @@ type PlanningCommandCenterProps = {
   onCancelCleanup: () => void;
   onDeleteAbsences: () => void;
   onDeleteNotes: () => void;
-  onToday: () => void;
   onExportPdf?: () => void;
   exportingPdf?: boolean;
 };
 
 export function PlanningCommandCenter({
   isHome,
-  view,
-  setView,
   workQuota = "full",
   workedDays,
   showSchoolVacations,
@@ -108,7 +99,6 @@ export function PlanningCommandCenter({
   onCancelCleanup,
   onDeleteAbsences,
   onDeleteNotes,
-  onToday,
   onExportPdf,
   exportingPdf = false,
 }: PlanningCommandCenterProps) {
@@ -134,60 +124,11 @@ export function PlanningCommandCenter({
     };
   }, [workedDaysOpen]);
 
-  /* Un pas de mois. Les mois débordants sont gérés par le constructeur de
-     date : décembre + 1 donne janvier suivant. */
-  const stepPeriod = (direction: number) =>
-    setView(localDate(view.getFullYear(), view.getMonth() + direction, 1));
-
   const reglagesDuPlanning = (
     <>
-        <section className="calendar-toolbar month-toolbar">
-          {/* Le geste le plus courant est d'avancer d'un mois : deux flèches
-              l'offrent directement, et les menus restent là pour les sauts
-              plus lointains. Mois et année sont réunis dans un seul cadre —
-              c'est une seule période, pas deux réglages. */}
-          <div className="period-navigation">
-            <button
-              type="button"
-              className="period-step"
-              aria-label="Mois précédent"
-              onClick={() => stepPeriod(-1)}
-            >
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="m12.5 5-5 5 5 5" />
-              </svg>
-            </button>
-            <div className="period-pickers">
-              <ChoicePicker
-                value={view.getMonth()}
-                options={MONTH_OPTIONS}
-                onChange={(month) => setView(localDate(view.getFullYear(), month, 1))}
-                ariaLabel="Sélectionner le mois"
-                className="toolbar-month-picker"
-              />
-              <ChoicePicker
-                value={view.getFullYear()}
-                options={YEAR_OPTIONS}
-                onChange={(year) => setView(localDate(year, view.getMonth(), 1))}
-                ariaLabel="Sélectionner l’année"
-                className="toolbar-year-picker"
-              />
-            </div>
-            <button
-              type="button"
-              className="period-step"
-              aria-label="Mois suivant"
-              onClick={() => stepPeriod(1)}
-            >
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="m7.5 5 5 5-5 5" />
-              </svg>
-            </button>
-          </div>
-          {/* Revenir au mois courant est le second geste le plus fréquent :
-              il tient dans la même barre que les flèches. */}
-          <button className="today-button planning-today-button" type="button" onClick={onToday}>Aujourd’hui</button>
-        </section>
+          {/* Le mois, l'année et le retour à aujourd'hui se changent en tête
+              du calendrier (MonthNavigation) : la barre de période qui les
+              doublait ici a disparu le 9 novembre 2026. */}
           <section className="controls" aria-label="Choix du planning">
               <>
               <div className="worked-days" ref={workedDaysRef}>
@@ -258,9 +199,8 @@ export function PlanningCommandCenter({
         </section>
       ) : null}
 
-      {/* Les commandes du mois sont posées à même la page : les replier
-          derrière « Modifier » obligeait à deux gestes pour changer de mois,
-          qui est le geste le plus courant de cette rubrique. */}
+      {/* Le compteur des jours travaillés et les vacances scolaires sont posés
+          à même la page, sans volet à déplier. */}
       <div className="planning-settings-body">{reglagesDuPlanning}</div>
 
       {recoveryRangeSelecting ? (
