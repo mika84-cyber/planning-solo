@@ -175,11 +175,19 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/PlanningWorkspace.tsx` : l’espace du planning (barre de commandes,
   plannings PDF, panneaux d’une demande ou d’une sélection, calendrier du
   mois, échanges, effacement groupé ; `renderDay` reste dans `App.tsx`).
-  Pendant une demande, un souhait ou une récupération (`datePicking`), le
-  panneau sépare la barre du mois de la grille : `MonthNavigation`
-  (`PlanningView.tsx`, `month-card-nav`) répète le mois et ses flèches juste
-  au-dessus des jours ; un scénario e2e cible donc `.month-card-nav` ou
-  `.calendar-toolbar` plutôt que « Mois suivant » seul.
+  Depuis le 9 novembre 2026, `MonthNavigation` (`src/MonthNavigation.tsx`,
+  `month-card-nav`) est toujours en tête du calendrier : « Novembre 2026 » y
+  est un seul bouton, le sélecteur du mois (`ChoicePicker` « Mois du
+  calendrier », liste au niveau de la fenêtre, l'année en complément par la
+  propriété `suffix`), ses flèches l'encadrent ; auparavant la barre ne s'y
+  répétait que pendant une demande, un souhait ou une récupération, quand le
+  panneau séparait la barre du haut de la grille. Le composant a son propre
+  fichier à dessein : `PlanningView.tsx` est aussi chargé par des modules
+  différés (`HomeDashboard`, `WorkExchangeDatePicker`) et y importer le
+  sélecteur sortait react-dom et jsx-runtime dans des morceaux à part (1,6 Kio
+  de JavaScript de plus). Un scénario e2e cible donc `.month-card-nav` ou
+  `.calendar-toolbar` plutôt que « Mois suivant » seul, et « Mois du
+  calendrier » plutôt que « Sélectionner le mois ».
   `src/PlanningDialogLayer.tsx` : les fenêtres du planning (échange, choix
   d’une demande, souhaits, groupe, fiche du jour, détail d’un solde), rendues
   avant `AppDialogLayer`. `src/scrollWhenReady.ts` amène à une ancre d’un
@@ -291,7 +299,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   (`holidayExchangeChoices`) ; un férié s’échange contre un férié de n’importe
   quelle année. Changer de groupe garde les dates qui
   conviennent encore. En mode sombre, le calendrier reprend les couleurs du
-  planning (`darkTheme.css`).
+  planning (`darkTheme.css`) ; la formation y est, comme dans le planning,
+  d'un gris plus prononcé (#9e9e9e) que le gris clair du mode jour depuis le
+  9 novembre 2026, pour se détacher du beige des jours travaillés.
   Un échange proposé par un collègue (`netlify/functions/colleagues.mts`,
   `src/ColleagueRequestNotice.tsx`) est contrôlé à l’acceptation avec les mêmes
   règles (`validateWorkExchange`, groupe du profil du destinataire).

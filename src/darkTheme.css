@@ -9,9 +9,17 @@ html[data-theme="dark"] :is(.step-label, .eyebrow) { color: #e2a383; }
    garde son noir, cerné d'un filet clair pour se détacher du fond. */
 html[data-theme="dark"] .calendar-grid .day.work:not(.leave-day):not(.recovery-day):not(.wish-day):not(.training) { border-color: #c9bda6; background: #ece2cd; color: #2c2621; }
 html[data-theme="dark"] .calendar-grid .day.off { border: 2px solid #9d8b7b !important; background: #0a0807; color: #c6b8ab; }
-/* Formation : case grise, chiffre sombre pour rester lisible. */
+/* Formation : case d'un gris plus prononcé que le --training clair (#b4b4b4),
+   pour se détacher du beige des jours travaillés (depuis le 9 novembre 2026),
+   chiffre sombre pour rester lisible. */
+html[data-theme="dark"] .calendar-grid .day.training { border-color: #8d8d8d; background: #9e9e9e; }
 html[data-theme="dark"] .calendar-grid .day.training,
 html[data-theme="dark"] .calendar-grid .day.training :is(.date-number, span, b) { color: #211c18; }
+/* Titre du calendrier : --accent et --accent-strong ne sont pas convertis en
+   sombre (darkStyles.ts ne reconnaît pas ces noms) ; le chevron du sélecteur
+   s'éclaircit et le texte garde sa teinte une fois la liste ouverte. */
+html[data-theme="dark"] .month-card-picker .choice-picker-trigger svg { stroke: color-mix(in srgb, var(--accent) 55%, #fff); }
+html[data-theme="dark"] .month-card-picker .choice-picker-trigger:is(:hover, [aria-expanded="true"]) { color: inherit; }
 
 /* Calendrier d'un échange : les couleurs du planning. Jour possible en beige
    coquille d'œuf, jour travaillé impossible en beige éteint sous sa croix,
@@ -19,7 +27,7 @@ html[data-theme="dark"] .calendar-grid .day.training :is(.date-number, span, b) 
 html[data-theme="dark"] .work-exchange-cycle-calendar :is(.exchange-cycle-day, .work-exchange-cycle-legend span) { border: 1px solid #9d8b7b; background: #0a0807; color: #c6b8ab; box-shadow: none; }
 html[data-theme="dark"] .work-exchange-cycle-calendar :is(.exchange-cycle-day.selectable, .work-exchange-cycle-legend .work) { border-color: #c9bda6; background: #ece2cd; color: #2c2621; }
 html[data-theme="dark"] .work-exchange-cycle-calendar .exchange-cycle-day.incompatible { border-color: #4a423b; background: #6d655b; color: #2c2621; }
-html[data-theme="dark"] .work-exchange-cycle-calendar :is(.exchange-cycle-day.training:not(.selectable), .work-exchange-cycle-legend .training) { border-color: #b4b4b4; background: #b4b4b4; color: #211c18; }
+html[data-theme="dark"] .work-exchange-cycle-calendar :is(.exchange-cycle-day.training:not(.selectable), .work-exchange-cycle-legend .training) { border-color: #8d8d8d; background: #9e9e9e; color: #211c18; }
 html[data-theme="dark"] .work-exchange-cycle-calendar .exchange-cycle-day.selectable:hover { border-color: var(--accent); }
 html[data-theme="dark"] .work-exchange-cycle-calendar .exchange-cycle-day.selected { border-color: var(--accent); background: var(--accent); color: #fff; }
 

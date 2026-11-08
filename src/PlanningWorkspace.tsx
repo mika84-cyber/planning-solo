@@ -2,7 +2,8 @@ import { type ComponentProps, type Dispatch, lazy, type SetStateAction, Suspense
 import { PdfDownloadPage } from "./appSections";
 import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup";
 import { PlanningCommandCenter } from "./PlanningCommandCenter";
-import { MonthCalendar, MonthNavigation } from "./PlanningView";
+import { MonthCalendar } from "./PlanningView";
+import { MonthNavigation } from "./MonthNavigation";
 import { LeaveDurationControl } from "./LeaveDurationControl";
 import { LeaveTypeTabs } from "./LeaveTypeTabs";
 import { DURATION_LEAVE_TYPES, TYPE_COLORS, dateKey, localDate, type SchoolVacation, type SelectionType } from "./planningLogic";
@@ -148,10 +149,6 @@ export function PlanningWorkspace({
     openRequestChooser, chooseWishMoment, cancelRangeSelection, cancelNoteSelection, goToday, startMonthSwipe, endMonthSwipe,
     cancelRecoveryRangeSelection, saveRecoveryRangeDates, saveNoteAcrossDates, saveSeparateLeaveDates,
   } = actions;
-  // Pendant une demande, un souhait ou une récupération, un panneau sépare la
-  // barre du mois de la grille : le mois et ses flèches se répètent au-dessus
-  // des jours, là où l'on touche les dates.
-  const datePicking = Boolean(requestKind) || rangeSelecting || recoveryRangeSelecting;
   return (
       <div className={`planning-workspace-shell${homeSection === "home" ? " framed" : ""}`}>
       {showCalendarWorkspace ? (
@@ -357,13 +354,17 @@ export function PlanningWorkspace({
         onTouchStart={startMonthSwipe}
         onTouchEnd={endMonthSwipe}
       >
-        {datePicking ? (
-          <MonthNavigation
-            year={view.getFullYear()}
-            month={view.getMonth()}
-            onStep={(direction) => setView(localDate(view.getFullYear(), view.getMonth() + direction, 1))}
-          />
-        ) : null}
+        {/* Le mois en tête du calendrier, toujours (depuis le 9 novembre
+            2026) : son nom est un sélecteur, ses flèches l'encadrent. Pendant
+            une demande, un souhait ou une récupération, le panneau sépare la
+            barre du haut de la grille : c'est ici qu'on lit et change le mois
+            qu'on touche. */}
+        <MonthNavigation
+          year={view.getFullYear()}
+          month={view.getMonth()}
+          onStep={(direction) => setView(localDate(view.getFullYear(), view.getMonth() + direction, 1))}
+          onSelectMonth={(month) => setView(localDate(view.getFullYear(), month, 1))}
+        />
         <MonthCalendar
           year={view.getFullYear()}
           month={view.getMonth()}

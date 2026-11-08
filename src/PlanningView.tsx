@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { NoteListItem } from "./appModel";
-import { MONTH_OPTIONS, localDate, monthDays } from "./planningLogic";
+import { localDate, monthDays } from "./planningLogic";
 
 const WEEKDAYS = [
   { key: "monday", compact: "L", full: "Lun" },
@@ -59,24 +59,8 @@ export function NotesPanelContent({
   );
 }
 
-/** Le mois affiché et ses deux flèches, posés juste au-dessus des jours
- *  pendant une demande : le panneau de la demande sépare alors la barre du
- *  mois de la grille, et l'on ne sait plus quel mois on touche ni comment en
- *  changer. `onStep` : −1 ou +1 mois. */
-export function MonthNavigation({ year, month, onStep }: { year: number; month: number; onStep: (direction: -1 | 1) => void }) {
-  const name = MONTH_OPTIONS[month].label;
-  return (
-    <div className="month-card-nav">
-      <button type="button" className="period-step" aria-label="Mois précédent" onClick={() => onStep(-1)}>
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
-      </button>
-      <p className="month-card-title" aria-live="polite"><strong>{name.charAt(0).toLocaleUpperCase("fr") + name.slice(1)}</strong> {year}</p>
-      <button type="button" className="period-step" aria-label="Mois suivant" onClick={() => onStep(1)}>
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 5 5 5-5 5" /></svg>
-      </button>
-    </div>
-  );
-}
+/* La barre du mois (MonthNavigation) vit dans MonthNavigation.tsx : ce fichier
+   est aussi chargé par des modules différés et doit rester sans sélecteur. */
 
 export function MonthCalendar({
   year,

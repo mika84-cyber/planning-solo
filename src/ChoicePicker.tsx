@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -19,6 +20,7 @@ export function ChoicePicker<T extends ChoiceValue>({
   layout = "grid",
   className = "",
   placeholder,
+  suffix,
   portal = false,
 }: {
   /** La chaîne vide vaut « rien de choisi » : le libellé d'attente prend
@@ -32,6 +34,9 @@ export function ChoicePicker<T extends ChoiceValue>({
   /** Affiché quand la valeur courante ne correspond à aucune option : elle
    *  reste alors à choisir, sans figurer parmi les propositions. */
   placeholder?: string;
+  /** Affiché dans le bouton après le libellé retenu, jamais dans la liste :
+   *  l'année à côté du mois en tête du calendrier, par exemple. */
+  suffix?: ReactNode;
   /** Rend toujours la liste au niveau de la fenêtre, même à la souris : à
    *  poser quand le sélecteur vit dans une carte qui défile, sinon la liste
    *  y serait coupée. */
@@ -181,6 +186,7 @@ export function ChoicePicker<T extends ChoiceValue>({
         }}
       >
         <span>{selected?.label ?? placeholder ?? String(value)}</span>
+        {suffix ? <>{" "}{suffix}</> : null}
         <svg viewBox="0 0 20 20" aria-hidden="true">
           <path d="m5 7.5 5 5 5-5" />
         </svg>

@@ -39,4 +39,17 @@ describe("sélecteur de choix", () => {
     expect(html).not.toContain("empty");
     expect(html).not.toContain("À renseigner");
   });
+
+  it("place le complément après le choix, dans le bouton, avant le chevron", () => {
+    const html = renderToStaticMarkup(
+      <ChoicePicker
+        value="half"
+        options={options}
+        onChange={vi.fn()}
+        ariaLabel="Mois du calendrier"
+        suffix={<em>2026</em>}
+      />,
+    );
+    expect(html).toContain("<span>Mi-temps</span> <em>2026</em><svg");
+  });
 });

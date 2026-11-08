@@ -89,8 +89,10 @@
 .weekdays {
   margin-bottom: 7px;
 }
-/* Pendant une demande, le panneau sépare la barre du mois de la grille : le
-   mois et ses flèches se répètent juste au-dessus des jours (MonthNavigation). */
+/* Le mois en tête du calendrier (MonthNavigation) : depuis le 9 novembre
+   2026, toujours, le nom du mois en sélecteur entre ses deux flèches ; avant,
+   seulement pendant une demande, quand le panneau séparait la barre du mois
+   de la grille. */
 .month-card-nav {
   display: flex;
   align-items: center;
@@ -99,6 +101,10 @@
   margin-bottom: 10px;
 }
 .month-card-title {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
   min-width: 0;
   margin: 0;
   color: var(--text);
@@ -108,6 +114,41 @@
   letter-spacing: -.01em;
   text-align: center;
 }
+/* Le sélecteur se lit comme le titre : « Novembre 2026 » d'un seul tenant,
+   l'année un peu plus légère, le chevron à la couleur du planning au bout pour
+   dire qu'il s'ouvre ; ni cadre ni fond tant qu'on ne le touche pas, une
+   pastille douce une fois ouvert. */
+.month-card-picker { min-width: 0; }
+.month-card-picker .choice-picker-trigger {
+  gap: 6px;
+  min-height: 38px;
+  border-color: transparent;
+  border-radius: 999px;
+  padding: 0 10px 0 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  text-transform: capitalize;
+  box-shadow: none;
+  transition: background-color 140ms ease;
+}
+.month-card-year { font-weight: 500; }
+.month-card-picker .choice-picker-trigger svg {
+  width: 16px;
+  margin-left: -1px;
+  stroke: var(--accent);
+  stroke-width: 2.2;
+  transition: transform 160ms ease;
+}
+.month-card-picker .choice-picker-trigger:is(:hover, [aria-expanded="true"]) {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  box-shadow: none;
+}
+.month-card-picker .choice-picker-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
+.choice-picker-menu.choice-picker-menu-portal.month-card-picker { width: min(320px, calc(100vw - 40px)); }
 .weekdays span {
   padding: 8px 2px;
   border-radius: 8px;
@@ -718,8 +759,10 @@
   .month-card {
     padding: 7px;
   }
+  /* Le titre tient sur sa ligne entre les deux flèches, même « Septembre
+     2026 » à 344 px en police agrandie : il suit la largeur de l'écran. */
   .month-card-title {
-    font-size: 1.1rem;
+    font-size: min(1.2rem, 5.6vw);
   }
   .weekdays,
   .calendar-grid {

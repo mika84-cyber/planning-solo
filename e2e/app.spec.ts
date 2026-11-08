@@ -3129,16 +3129,14 @@ test("aucun écran ne déborde à droite sur un petit téléphone, même avec la
   })).toBe(0);
 });
 
-test("pendant une demande, le mois et ses flèches se lisent au-dessus des jours", async ({ page }) => {
+test("le mois, son sélecteur et ses flèches se lisent en tête du calendrier, pendant une demande aussi", async ({ page }) => {
   await prepareDemo(page);
-  // Hors demande, la barre du mois suffit : rien ne se répète.
-  await expect(page.locator(".month-card-nav")).toHaveCount(0);
-  await page.getByRole("button", { name: "Poser un congé" }).first().click();
-  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
-  // Le panneau de la demande sépare la barre du mois de la grille : le mois
-  // et ses flèches se répètent juste au-dessus des jours, et suivent la barre.
+  // Depuis le 9 novembre 2026, la barre du mois est toujours en tête du
+  // calendrier (avant, seulement pendant une demande) : le nom du mois y est
+  // un sélecteur, ses flèches l'encadrent, et elle suit la barre du haut.
   const nav = page.locator(".month-card-nav");
   const title = nav.locator(".month-card-title");
+  await expect(nav).toBeVisible();
   const shownPeriod = async () => {
     const [month, year] = await Promise.all([
       page.locator(".month-toolbar .toolbar-month-picker .choice-picker-trigger").textContent(),
@@ -3146,12 +3144,20 @@ test("pendant une demande, le mois et ses flèches se lisent au-dessus des jours
     ]);
     return `${month!.trim()} ${year!.trim()}`;
   };
-  const start = await shownPeriod();
   const sameAs = (period: string) => new RegExp(`^${period}$`, "i");
-  await expect(title).toHaveText(sameAs(start));
-  // L'application défile d'abord, en douceur, jusqu'au panneau de la demande ;
-  // on descend ensuite aux jours, et l'on recommence si ce défilement nous
-  // rattrape (WebKit sous charge).
+  await expect(title).toHaveText(sameAs(await shownPeriod()));
+  // Le sélecteur change le mois affiché, barre du haut comprise.
+  await nav.getByRole("button", { name: "Mois du calendrier" }).click();
+  await page.getByRole("listbox", { name: "Mois du calendrier" }).getByRole("option", { name: /^mars$/i }).click();
+  await expect(title).toHaveText(/^mars \d{4}$/i);
+  const start = await shownPeriod();
+  expect(start).toMatch(/^mars /i);
+  await page.getByRole("button", { name: "Poser un congé" }).first().click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
+  // Le panneau de la demande sépare la barre du haut de la grille : la barre
+  // du mois reste juste au-dessus des jours. L'application défile d'abord, en
+  // douceur, jusqu'au panneau de la demande ; on descend ensuite aux jours, et
+  // l'on recommence si ce défilement nous rattrape (WebKit sous charge).
   await expect(page.locator("#request-panel")).toBeInViewport();
   await expect(async () => {
     await page.locator(".month-card").evaluate((card) => card.scrollIntoView({ block: "start" }));
@@ -3163,9 +3169,10 @@ test("pendant une demande, le mois et ses flèches se lisent au-dessus des jours
   await expect(title).toHaveText(sameAs(await shownPeriod()));
   await nav.getByRole("button", { name: "Mois précédent" }).click();
   await expect(title).toHaveText(sameAs(start));
-  // La demande annulée, la barre du mois reprend seule la main.
+  // La demande annulée, la barre du mois reste en tête du calendrier.
   await page.locator("#request-panel").getByRole("button", { name: "Annuler la demande" }).first().click();
-  await expect(nav).toHaveCount(0);
+  await expect(nav).toBeVisible();
+  await expect(title).toHaveText(sameAs(start));
 });
 
 test("un congé de l’année suivante se pose à l’avance sur le solde de cette année-là", async ({ page }) => {
@@ -3173,9 +3180,9 @@ test("un congé de l’année suivante se pose à l’avance sur le solde de cet
   await prepareDemo(page);
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
-  // Les flèches posées au-dessus des jours pendant la demande.
+  // Les flèches posées au-dessus des jours.
   for (let step = 0; step < 3; step += 1) await page.locator(".month-card-nav").getByRole("button", { name: "Mois suivant" }).click();
-  await expect(page.locator(".month-card-title")).toHaveText("Janvier 2027");
+  await expect(page.locator(".month-card-title")).toHaveText(/^janvier 2027$/i);
   const day = page.locator(".calendar-grid .day.work").first();
   await expect(day).toHaveAttribute("aria-label", /janvier 2027/);
   await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
