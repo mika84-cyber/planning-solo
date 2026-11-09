@@ -42,6 +42,8 @@
   background: none;
 }
 .school-vacation-row { display: flex; flex: 1 1 100%; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
+/* Sous la ligne, la période en cours ou la prochaine de la zone. */
+.school-vacation-next { flex: 1 1 100%; margin: -8px 0 0; padding: 0 2px; color: var(--muted); font-size: .76rem; font-weight: 650; line-height: 1.3; }
 .school-vacation-zone { display: inline-flex; align-items: baseline; gap: 5px; min-height: 0; margin: 0; border: 0; padding: 4px 2px; background: transparent; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .school-vacation-zone strong { font-size: .92rem; font-weight: 800; }
 .school-vacation-zone small { color: var(--muted); font-size: .8rem; font-weight: 700; text-decoration: underline; text-decoration-color: rgba(44, 38, 33, .35); text-underline-offset: 3px; }

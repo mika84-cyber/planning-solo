@@ -175,7 +175,12 @@ describe("finitions d’interface", () => {
 
   it("organise les cartes et commandes du planning pour le téléphone", () => {
     expect(css.anywhere("today-group-card")).toBe(false);
-    expect(css.anyRuleDeclares(".controls .worked-days", { "grid-column": "1", "grid-row": "1" })).toBe(true);
+    // Les trois chiffres du mois prennent toute la carte hors accueil ; la
+    // pilule et son volet ont disparu le 9 novembre 2026
+    // (PlanningCommandCenter.test.tsx).
+    expect(css.anyRuleDeclares(".controls .worked-days", { "grid-column": "1 / -1", "grid-row": "1" })).toBe(true);
+    expect(css.anywhere("worked-days-trigger")).toBe(false);
+    expect(css.anywhere("worked-days-panel")).toBe(false);
     // Le choix du groupe a quitté les commandes du planning.
     expect(css.anywhere("planning-group-choice")).toBe(false);
     // La barre de période a quitté la carte le 9 novembre 2026 : le mois se
@@ -469,11 +474,6 @@ describe("finitions d’interface", () => {
     expect(calendarCleanup.indexOf("Effacer les absences")).toBeLessThan(calendarCleanup.indexOf("Effacer les notes"));
     expect(css.hasRuleWithSelectors([".calendar-delete-actions .delete-absences-button", ".calendar-delete-actions .delete-notes-button"])).toBe(true);
     expect(css.declares("min-height", "46px")).toBe(true);
-  });
-
-  it("garde les détails des jours travaillés dans l’écran", () => {
-    expect(css.anyRuleDeclares(".app-shell .controls .worked-days .worked-days-panel", { top: "calc(100% + 8px)", right: "0", bottom: "auto", left: "0" })).toBe(true);
-    expect(css.declares("max-height", "min(58dvh, 420px)")).toBe(true);
   });
 
   it("affiche Divers en doré avec une punaise rouge", () => {
@@ -770,11 +770,13 @@ describe("finitions d’interface", () => {
     );
   });
 
-  it("compte les jours travaillés jusqu’au 31 décembre dans le calendrier et annonce le prochain mécénat ou heures sup", () => {
+  it("compte les jours travaillés du mois et le reste de l’année dans le calendrier et annonce le prochain mécénat ou heures sup", () => {
     const home = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
-    // La case garde le mois affiché ; son volet donne le reste de l'année.
+    // La carte donne le mois affiché (travaillés, absences de toute nature) et
+    // le reste de l'année en trois chiffres (PlanningCommandCenter.test.tsx).
     expect(planningCommandCenter).toContain("travaillé{s(workedDays.month.worked)} ce mois-ci");
-    expect(planningCommandCenter).toContain("D’ici au 31 décembre");
+    expect(planningCommandCenter).toContain("d’absence ce mois-ci");
+    expect(planningCommandCenter).toContain("de travail restant{s(workedDays.remaining.worked)} en {workedDays.year}");
     expect(planningCommandCenter).not.toContain("workedDays.thirds");
     // L'accueil remplace « Travail restant » par le prochain mécénat ou heures sup.
     expect(home).not.toContain("today-remaining-work");

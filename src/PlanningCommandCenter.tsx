@@ -1,5 +1,5 @@
 import type { WishMoment } from "./appModel";
-import { lazy, Suspense, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { lazy, Suspense, type Dispatch, type SetStateAction } from "react";
 import { CalendarCleanupPanel } from "./CalendarCleanup";
 
 const SchoolVacationSettings = lazy(() =>
@@ -27,11 +27,12 @@ type WorkedDaySummary = {
   exchangedReturned: number;
 };
 
-/** Le mois affiché sur la case, et ce qu'il reste d'ici au 31 décembre dans
- *  son volet. */
+/** Le mois affiché, ce qu'il reste d'ici au 31 décembre, et l'année de ce
+ *  reste (celle d'aujourd'hui, quel que soit le mois affiché). */
 type WorkedDaysData = {
   month: WorkedDaySummary;
   remaining: WorkedDaySummary;
+  year: number;
 };
 
 type PlanningCommandCenterProps = {
@@ -104,73 +105,34 @@ export function PlanningCommandCenter({
 }: PlanningCommandCenterProps) {
   // Sélection de plusieurs congés souhaités, lancée depuis « Poser un congé ».
   const wishOnly = separatePeople.length === 1 && separatePeople[0] === "wish";
-  const [workedDaysOpen, setWorkedDaysOpen] = useState(false);
-  const workedDaysRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!workedDaysOpen) return;
-    const close = (event: MouseEvent) => {
-      if (!workedDaysRef.current?.contains(event.target as Node))
-        setWorkedDaysOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setWorkedDaysOpen(false);
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [workedDaysOpen]);
 
   const reglagesDuPlanning = (
     <>
           {/* Le mois, l'année et le retour à aujourd'hui se changent en tête
               du calendrier (MonthNavigation) : la barre de période qui les
               doublait ici a disparu le 9 novembre 2026. */}
-          <section className="controls" aria-label="Choix du planning">
-              <>
-              <div className="worked-days" ref={workedDaysRef}>
-                <div className="worked-days-stepper">
-                  <button
-                    type="button"
-                    className="worked-days-trigger"
-                    onClick={() => setWorkedDaysOpen((current) => !current)}
-                    aria-expanded={workedDaysOpen}
-                    aria-label="Jours restant à travailler d’ici au 31 décembre"
-                  >
-                    <span>{dayCountLabel(workedDays.month.worked)} jour{s(workedDays.month.worked)} travaillé{s(workedDays.month.worked)} ce mois-ci</span>
-                    <svg viewBox="0 0 20 20" aria-hidden="true">
-                      <path d="m5 7.5 5 5 5-5" />
-                    </svg>
-                  </button>
-                  {workedDaysOpen ? (
-                    <div className="worked-days-panel">
-                      {/* Le volet : ce qu'il reste d'ici à la fin de l'année, en
-                          trois chiffres — jours à travailler, congés, fermetures. */}
-                      <section className="worked-days-remaining" aria-label="D’ici au 31 décembre">
-                        <h5>D’ici au 31 décembre</h5>
-                        <ul>
-                          <li className="worked-days-remaining-main">
-                            <b>{dayCountLabel(workedDays.remaining.worked)}</b>
-                            <small>jour{s(workedDays.remaining.worked)} à travailler</small>
-                          </li>
-                          <li>
-                            <b>{dayCountLabel(workedDays.remaining.onLeave)}</b>
-                            <small>jour{s(workedDays.remaining.onLeave)} de congé</small>
-                          </li>
-                          <li>
-                            <b>{dayCountLabel(workedDays.remaining.exceptionallyClosed)}</b>
-                            <small>fermeture{s(workedDays.remaining.exceptionallyClosed)}</small>
-                          </li>
-                        </ul>
-                      </section>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              </>
+          <section className="controls" aria-label="Repères du mois">
+            {/* Trois chiffres à même la carte : les jours travaillés du mois
+                affiché, ses jours d'absence (toutes les absences posées :
+                congés de tous types, Divers, grève, maladie, récupérations,
+                demi-journées comprises ; c'est `onLeave`, tiré de
+                personalPresenceForDate), puis les jours de travail restants
+                dans l'année d'aujourd'hui. Jusqu'au 9 novembre 2026, ce
+                dernier compte vivait dans un volet déplié sous une pilule. */}
+            <ul className="worked-days">
+              <li className="worked-days-month">
+                <b>{dayCountLabel(workedDays.month.worked)}</b>
+                <small>jour{s(workedDays.month.worked)} travaillé{s(workedDays.month.worked)} ce mois-ci</small>
+              </li>
+              <li className="worked-days-leave">
+                <b>{dayCountLabel(workedDays.month.onLeave)}</b>
+                <small>jour{s(workedDays.month.onLeave)} d’absence ce mois-ci</small>
+              </li>
+              <li className="worked-days-year">
+                <b>{dayCountLabel(workedDays.remaining.worked)}</b>
+                <small>jour{s(workedDays.remaining.worked)} de travail restant{s(workedDays.remaining.worked)} en {workedDays.year}</small>
+              </li>
+            </ul>
           </section>
         {/* Réglage d'affichage du planning : il vit ici faute d'une rubrique
             de réglages où le loger. */}
@@ -199,8 +161,8 @@ export function PlanningCommandCenter({
         </section>
       ) : null}
 
-      {/* Le compteur des jours travaillés et les vacances scolaires sont posés
-          à même la page, sans volet à déplier. */}
+      {/* Les trois chiffres du mois et les vacances scolaires sont posés à
+          même la page, sans volet à déplier. */}
       <div className="planning-settings-body">{reglagesDuPlanning}</div>
 
       {recoveryRangeSelecting ? (

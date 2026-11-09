@@ -192,8 +192,17 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   chargement initial compte : sans lui, Rolldown sortirait `ChoicePicker` dans
   un morceau à part (2,7 Kio de plus). Le même jour, la barre de période
   de `PlanningCommandCenter` (mois, année, Aujourd'hui, `calendar-toolbar`) a
-  disparu : elle doublait cette barre ; la carte Mon planning garde le
-  compteur des jours travaillés et les vacances scolaires. Auparavant la barre
+  disparu : elle doublait cette barre ; la carte Mon planning pose trois
+  chiffres à même la page (`ul.worked-days` : `.worked-days-month` jours
+  travaillés du mois, `.worked-days-leave` jours d'absence du mois, toutes
+  absences posées confondues, congés de tous types, Divers, grève, maladie,
+  récupérations et demi-journées, soit `onLeave` tiré de
+  `personalPresenceForDate` ; `.worked-days-year` jours de travail restants
+  dans l'année d'aujourd'hui, `workedDays.year` venant de `now` ; la pilule et
+  son volet ont disparu le même jour) puis les vacances scolaires, avec sous
+  l'interrupteur la période en cours ou la prochaine de la zone
+  (`.school-vacation-next`, `nextSchoolVacation` et `vacationShortName` dans
+  `SchoolVacationUi.tsx`). Auparavant la barre
   du mois ne se répétait que pendant une demande, un souhait ou une
   récupération, quand le panneau séparait la barre du haut de la grille. Le
   composant a son propre fichier à dessein : `PlanningView.tsx` est aussi

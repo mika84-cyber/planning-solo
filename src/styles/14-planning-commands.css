@@ -168,160 +168,56 @@
   margin-top: 0;
   padding: 0;
 }
-.planning-workspace-shell.framed .planning-settings-body .controls > * {
-  grid-template-rows: auto;
-}
 
-/* Le compteur ouvre un volet par-dessus le calendrier plutôt que de pousser
-   la rangée. */
+/* Trois chiffres à même la carte : les jours travaillés et les jours d'absence
+   du mois affiché, puis les jours de travail restants dans l'année. Le
+   premier est en terracotta ; un filet sépare les colonnes. Jusqu'au
+   9 novembre 2026, une pilule ouvrait un volet par-dessus le calendrier pour
+   donner le reste de l'année. */
 .worked-days {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   flex: 1 1 190px;
-  gap: 6px;
   min-width: 190px;
+  margin: 0;
+  padding: 4px 0 2px;
+  list-style: none;
 }
 .planning-workspace-shell.framed .controls .worked-days {
   grid-column: 1;
   grid-row: 1;
   order: 1;
-  align-items: stretch;
   width: 100%;
   min-width: 0;
 }
-.worked-days-stepper {
-  position: relative;
-  height: 46px;
-  border: 1px solid var(--section-outline);
-  border-radius: 12px;
-  padding: 4px;
-  background: linear-gradient(135deg, var(--surface-high) 0%, #fff 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-.planning-workspace-shell.framed .controls .worked-days-stepper {
-  min-width: 0;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
-}
-/* Le libellé reste réellement centré, indépendamment de la flèche placée à
-   droite. */
-.worked-days-trigger {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 38px;
-  border: 0;
-  border-radius: 8px;
-  padding: 0 10px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: 0;
-  text-align: center;
-  cursor: pointer;
-}
-.planning-workspace-shell.framed .controls .worked-days-trigger {
-  border: 1px solid var(--border-control);
-  border-radius: 12px;
-  box-shadow: 0 3px 10px rgba(87, 78, 66, 0.055);
-}
-.planning-workspace-shell.framed .controls .worked-days-stepper,
-.planning-workspace-shell.framed .controls .worked-days-trigger {
-  width: 100%;
-  height: 46px;
-  min-height: 46px;
-}
-.worked-days-trigger > span {
-  white-space: nowrap;
-}
-.worked-days-trigger svg {
-  position: absolute;
-  right: 8px;
-  flex: none;
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform 0.16s ease;
-}
-.worked-days-trigger[aria-expanded="true"] svg {
-  transform: rotate(180deg);
-}
-
-/* Le volet s'ouvre sous la case, sur toute sa largeur, et donne en trois
-   chiffres ce qu'il reste d'ici au 31 décembre. */
-.worked-days-panel {
-  position: absolute;
-  z-index: 120;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
-}
-.app-shell .controls .worked-days .worked-days-panel {
-  top: calc(100% + 8px);
-  right: 0;
-  bottom: auto;
-  left: 0;
-  display: block;
-  width: auto;
-  border: 1px solid #e3d6c8;
-  border-radius: 18px;
-  padding: 12px 14px 14px;
-  background: #fff;
-  box-shadow: 0 12px 28px rgba(58, 51, 44, 0.16);
-}
-.worked-days-panel small {
-  line-height: 1.2;
-}
-.worked-days-remaining h5 {
-  margin: 0 0 10px;
-  color: #9a4a2e;
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.worked-days-remaining ul {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.worked-days-remaining li {
+.worked-days li {
   display: grid;
   justify-items: center;
-  gap: 2px;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
   padding: 0 4px;
 }
-.worked-days-remaining li + li {
-  border-left: 1px solid #efe6db;
+.worked-days li + li {
+  border-left: 1px solid var(--line);
 }
-.worked-days-remaining li b {
+.worked-days li b {
   color: var(--text);
   font-family: var(--font-display);
-  font-size: 1.7rem;
+  font-size: 1.9rem;
   font-weight: 600;
   line-height: 1;
 }
-.worked-days-remaining li.worked-days-remaining-main b {
+.worked-days li.worked-days-month b {
   color: #9a4a2e;
 }
-.worked-days-remaining li small {
+.worked-days li small {
   color: #6b5d50;
   font-size: 0.7rem;
   font-weight: 700;
+  line-height: 1.2;
   text-align: center;
+  text-wrap: balance;
 }
 
 @media (max-width: 720px) {
@@ -337,54 +233,13 @@
     gap: 10px;
     border-radius: 17px;
   }
+  /* Hors accueil, les trois chiffres prennent toute la carte. */
   .controls .worked-days {
-    grid-column: 1;
+    grid-column: 1 / -1;
     grid-row: 1;
     order: initial;
     width: 100%;
     min-width: 0;
-  }
-  .controls .worked-days-stepper {
-    min-width: 0;
-  }
-  .worked-days-trigger {
-    gap: 5px;
-  }
-  .controls .worked-days-trigger {
-    padding: 0 7px;
-  }
-  .worked-days-panel {
-    box-sizing: border-box;
-    max-height: min(58dvh, 420px);
-    overflow-y: auto;
-  }
-}
-
-@media (max-width: 360px) {
-  .worked-days-panel {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/* Sur grand écran, aucune carte parente ne rogne le volet. */
-@media (min-width: 721px) {
-  .planning-workspace-shell.framed .planning-command-section,
-  .planning-workspace-shell.framed .controls,
-  .planning-workspace-shell.framed .controls .worked-days,
-  .planning-workspace-shell.framed .controls .worked-days-stepper {
-    overflow: visible;
-  }
-  .planning-workspace-shell.framed .worked-days-panel {
-    gap: 9px;
-  }
-  .planning-workspace-shell.framed .worked-days-panel small {
-    line-height: 1.35;
-  }
-}
-
-@media (min-width: 1101px) {
-  .planning-workspace-shell.framed .worked-days-panel {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

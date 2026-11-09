@@ -291,10 +291,10 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .app-shell.app-shell .colleague-more-list > .colleague-share-disclosure > .colleague-share-content { margin-top: 0; border-top: 0; padding: 14px var(--chapter-pad) var(--chapter-pad); }
 .app-shell.app-shell .colleague-more-list > .colleague-groups-directory > .colleague-groups-panel { background: #fff; }
 
-/* Accueil : dans « Mon planning », « Aujourd’hui », les
-   jours travaillés et le nettoyage prennent le blanc cassé des cases « En un
-   coup d’œil ». Les notes gardent leur jaune léger, quadrillé comme un bloc-notes. */
-.app-shell .planning-workspace-shell.framed .controls .worked-days-trigger { background: #fbf6ef; }
+/* Accueil : dans « Mon planning », le nettoyage prend le blanc cassé des cases
+   « En un coup d’œil » ; les trois chiffres du mois se posent à même la carte
+   (la pilule crème des jours travaillés a disparu le 9 novembre 2026). Les
+   notes gardent leur jaune léger, quadrillé comme un bloc-notes. */
 .app-shell .planning-calendar-section .calendar-bulk-delete-below { background: #fbf6ef; }
 .app-shell .home-notes-section { background-color: #fdfaea; background-image: linear-gradient(rgba(96, 132, 176, 0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(96, 132, 176, 0.16) 1px, transparent 1px); background-size: 18px 18px; background-position: -1px -1px; }
 /* Fiche du jour : un seul bouton pour écrire une note, sur toute la largeur. */

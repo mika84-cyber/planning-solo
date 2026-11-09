@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { SchoolVacation, SchoolZone } from "./planningLogic";
-import { SCHOOL_ZONE_OPTIONS, fromKey } from "./planningLogic";
+import { SCHOOL_ZONE_OPTIONS, dateKey, fromKey, schoolVacationsForZone } from "./planningLogic";
 import schoolVacationStyles from "./schoolVacations.css?inline";
 
 if (typeof document !== "undefined" && !document.getElementById("school-vacation-styles")) {
@@ -15,16 +15,21 @@ export function SchoolVacationSettings({
   zone,
   onVisibleChange,
   onZoneChange,
+  today = new Date(),
 }: {
   visible: boolean;
   zone: SchoolZone;
   onVisibleChange: (visible: boolean) => void;
   onZoneChange: (zone: SchoolZone) => void;
+  /** Le jour de référence de la prochaine période ; les tests le fixent. */
+  today?: Date;
 }) {
   /* Un réglage rare, sur une seule ligne : le nom et la zone à gauche (un
-     appui déroule les zones), l'interrupteur à droite. */
+     appui déroule les zones), l'interrupteur à droite ; dessous, la période
+     en cours ou la prochaine de la zone (depuis le 9 novembre 2026). */
   const [zonesOpen, setZonesOpen] = useState(false);
   const zoneLabel = SCHOOL_ZONE_OPTIONS.find((option) => option.value === zone)?.label ?? "";
+  const next = nextSchoolVacation(zone, today);
   return (
     <section className="school-vacation-settings" aria-label="Vacances scolaires">
       <div className="school-vacation-row">
@@ -49,6 +54,11 @@ export function SchoolVacationSettings({
           <span aria-hidden="true"><i /></span>
         </button>
       </div>
+      {next ? (
+        <small className="school-vacation-next">
+          {next.ongoing ? "En cours" : "Prochaines"} : {vacationShortName(next.name)} · {shortDate(next.from)} – {shortDate(next.to)}
+        </small>
+      ) : null}
       {zonesOpen ? (
         <div className="school-zone-picker" role="group" aria-label="Zone scolaire affichée">
           {SCHOOL_ZONE_OPTIONS.map((option) => (
@@ -70,6 +80,21 @@ export function SchoolVacationSettings({
 
 const shortDate = (key: string) =>
   fromKey(key).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
+/** La période de la zone en cours ce jour-là, sinon la prochaine ; rien
+ *  passé la dernière période connue. */
+export function nextSchoolVacation(zone: SchoolZone, today: Date) {
+  const key = dateKey(today);
+  const vacation = schoolVacationsForZone(zone).find(({ to }) => to >= key);
+  return vacation ? { ...vacation, ongoing: vacation.from <= key } : null;
+}
+
+/** « Vacances de Noël » → « Noël », « Vacances d’été » → « été », « Vacances
+ *  de la Toussaint » → « la Toussaint » : le mot « vacances » est déjà sur la
+ *  ligne. */
+export function vacationShortName(name: string) {
+  return name.replace(/^Vacances (de |d’)/, "");
+}
 
 export function SchoolVacationMonthSummary({
   zone,

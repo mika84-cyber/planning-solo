@@ -90,8 +90,9 @@ variantes de case). Elle a notamment :
 
 `14-planning-commands.css` réunit les commandes du planning
 (`PlanningCommandCenter`, le bouton d'effacement de `CalendarCleanup`) : cadre
-de la rubrique, choix d'un planning PDF, barre du mois (flèches, mois, année,
-Aujourd'hui), jours travaillés et effacement multiple, un bloc par composant.
+de la rubrique, choix d'un planning PDF, flèches du mois, les trois chiffres
+du mois (jours travaillés, absences, reste de l'année) et effacement multiple,
+un bloc par composant.
 Il est importé juste après `14-planning-final.css` : à spécificité égale, ses
 règles l'emportent donc sur celles des feuilles 02 à 14, et cèdent aux
 feuilles chargées ensuite. Restent ailleurs, volontairement :
@@ -101,8 +102,8 @@ feuilles chargées ensuite. Restent ailleurs, volontairement :
   (`:root :is(… .save-button …)`, feuille 14) et le fond blanc des rubriques
   (feuille 17) ;
 - les finitions de `productRefinements.css` (bordure, marges intérieures et
-  en-tête des rubriques, fond `#fbf6ef` des jours travaillés et de
-  l'effacement), plus spécifiques ou chargées après ;
+  en-tête des rubriques, fond `#fbf6ef` de l'effacement), plus spécifiques ou
+  chargées après ;
 - le bandeau « Poser un congé » (`.planning-leave-panel`, feuille 14 et
   `planningCalendarRefinement.css`).
 

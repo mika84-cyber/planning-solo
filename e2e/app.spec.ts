@@ -113,7 +113,7 @@ async function analyseAnyway(page: Page, next: Locator) {
 }
 
 async function workedDaysOnHome(page: Page) {
-  const resume = await page.locator(".worked-days-trigger span").first().innerText();
+  const resume = await page.locator(".worked-days-month b").first().innerText();
   return Number(resume.match(/[\d,.]+/)![0].replace(",", "."));
 }
 
@@ -600,16 +600,24 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   const planning = page.locator(".planning-workspace-shell.framed .planning-command-section");
   await expect(planning).toBeVisible();
   await expect(planning.getByRole("heading", { name: "Mon planning" })).toBeVisible();
-  // Le compteur des jours travaillés est posé à même la page, juste sous
-  // l'en-tête : depuis le 9 novembre 2026, la période et « Aujourd'hui » ont
-  // quitté cette carte (ils doublaient la barre du mois en tête du
-  // calendrier, qui porte désormais le panneau du mois).
+  // Trois chiffres à même la page, juste sous l'en-tête : les jours
+  // travaillés et d'absence du mois, puis les jours de travail restants dans
+  // l'année (le volet a disparu le 9 novembre 2026). Le même jour, la
+  // période et « Aujourd'hui » ont quitté cette carte (ils doublaient la
+  // barre du mois en tête du calendrier, qui porte désormais le panneau du
+  // mois).
   await expect(page.locator("details.planning-settings-disclosure")).toHaveCount(0);
   await expect(planning.locator(".controls")).toBeVisible();
   await expect(planning.locator(".planning-settings-body > :first-child")).toHaveClass(/controls/);
   await expect(planning.getByRole("button", { name: "Mois précédent" })).toHaveCount(0);
   await expect(planning.getByRole("button", { name: "Aujourd’hui" })).toHaveCount(0);
-  await expect(planning.locator(".worked-days-trigger")).toContainText("travaillé");
+  await expect(planning.locator(".worked-days li")).toHaveCount(3);
+  await expect(planning.locator(".worked-days-month")).toContainText("travaillé");
+  await expect(planning.locator(".worked-days-leave")).toContainText("d’absence ce mois-ci");
+  await expect(planning.locator(".worked-days-year")).toContainText(/de travail restants? en \d{4}$/);
+  await expect(planning.locator(".worked-days-trigger")).toHaveCount(0);
+  // Sous l'interrupteur des vacances, la période en cours ou la prochaine.
+  await expect(planning.locator(".school-vacation-next")).toContainText(/^(Prochaines|En cours) : /);
   await expect(planning).toHaveCSS("border-left-width", accentSpine(page));
   await expect(planning).toHaveCSS("border-left-color", await cssTokenRgb(page, "--border-card"));
   await expect(planning.locator("> .home-planning-heading")).toHaveCSS("background-color", CHAPTER_TINT);
@@ -619,9 +627,16 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
     "background-color",
     "rgb(152, 84, 56)",
   );
-  // Le compteur garde son encadré crème ; « Aujourd'hui » vit dans le panneau
-  // du mois, avec l'année et les douze mois.
-  await expect(planning.locator(".worked-days-trigger")).toHaveCSS("background-color", "rgb(251, 246, 239)");
+  // Le premier chiffre est en terracotta, les trois colonnes côte à côte ;
+  // « Aujourd'hui » vit dans le panneau du mois, avec l'année et les douze
+  // mois.
+  await expect(planning.locator(".worked-days-month b")).toHaveCSS("color", "rgb(154, 74, 46)");
+  const [monthBox, yearBox] = await Promise.all([
+    planning.locator(".worked-days-month").boundingBox(),
+    planning.locator(".worked-days-year").boundingBox(),
+  ]);
+  expect(yearBox!.x).toBeGreaterThan(monthBox!.x + monthBox!.width);
+  expect(Math.abs(yearBox!.y - monthBox!.y)).toBeLessThan(2);
   const monthPanel = await openMonthPanel(page);
   await expect(monthPanel.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
   await expect(monthPanel.getByRole("button", { name: "Année suivante" })).toBeVisible();
