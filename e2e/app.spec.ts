@@ -294,6 +294,21 @@ async function goToCurrentMonth(page: Page) {
   await panel.getByRole("button", { name: "Aujourd’hui" }).click();
 }
 
+/** Touche la première journée travaillée du mois pour une demande en cours.
+ *  Le panneau de la demande se charge à la demande, puis la page défile en
+ *  douceur jusqu’au calendrier : on attend qu’il soit là et que le défilement
+ *  soit terminé, sans quoi le toucher peut tomber à côté de la case (vu sur
+ *  iPhone dans la suite complète). */
+async function pickFirstWorkDay(page: Page) {
+  await expect(page.locator("#request-panel")).toBeVisible();
+  await expect.poll(async () => {
+    const before = await page.evaluate(() => window.scrollY);
+    await page.waitForTimeout(200);
+    return (await page.evaluate(() => window.scrollY)) === before;
+  }, { message: "le défilement vers le calendrier doit être terminé" }).toBe(true);
+  await page.locator(".month-card .day.work").first().click();
+}
+
 /** Ouvre une rubrique par le dock, seul chemin vers les pages. */
 async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
   const tabs = await sectionDock(page);
@@ -1526,7 +1541,7 @@ test("sans horaires enregistrés, les heures d’une récupération restent à s
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ }).click();
   await page.locator("#request-panel").getByRole("button", { name: /Récupération en heures/ }).click();
-  await page.locator(".month-card .day.work").first().click();
+  await pickFirstWorkDay(page);
 
   // Mieux vaut une saisie à faire qu'une heure inventée qu'on oublierait de
   // corriger : les champs restent vides tant que le profil n'en donne pas.
@@ -4685,7 +4700,9 @@ test("les menus déroulants restent entièrement visibles sur téléphone", asyn
       const trigger = triggers.nth(index);
       await trigger.scrollIntoViewIfNeeded();
       await trigger.click();
-      const menu = page.getByRole("listbox").last();
+      // Le menu lui-même, liste nue ou panneau du mois (un dialogue qui
+      // contient sa liste) : c'est lui qui est fixé dans la fenêtre.
+      const menu = page.locator(".choice-picker-menu").last();
       await expect(menu).toBeVisible();
       await expect(menu).toHaveCSS("position", "fixed");
       const box = await menu.boundingBox();
@@ -5258,7 +5275,7 @@ test("les horaires du profil préremplissent une récupération", async ({ page 
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ }).click();
   await page.locator("#request-panel").getByRole("button", { name: /Récupération en heures/ }).click();
-  await page.locator(".month-card .day.work").first().click();
+  await pickFirstWorkDay(page);
 
   const hours = page.getByRole("dialog", { name: "Choisissez les horaires" });
   await expect(hours.getByLabel("Heure de début — heures")).toHaveValue("10");
@@ -6107,7 +6124,7 @@ test("les dates choisies sont préremplies dans le formulaire de congé", async 
     .getByRole("button", { name: /^CA / })
     .click();
 
-  await page.locator(".month-card .day.work").first().click();
+  await pickFirstWorkDay(page);
   await expect(page.getByLabel("Résumé avant validation")).toBeVisible();
   await Promise.all([
     page.waitForURL(/\/formulaire\/index\.html\?planning=1/),
