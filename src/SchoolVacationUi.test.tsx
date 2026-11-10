@@ -1,8 +1,16 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { SchoolVacationMonthSummary, SchoolVacationSettings, nextSchoolVacation, vacationShortName } from "./SchoolVacationUi";
+import { SchoolVacationMonthSummary, SchoolVacationSettings, SchoolZonePicker, nextSchoolVacation, vacationShortName } from "./SchoolVacationUi";
 
 describe("vacances scolaires dans le planning mensuel", () => {
+  it("déroule les trois zones, la zone affichée enfoncée", () => {
+    const html = renderToStaticMarkup(<SchoolZonePicker zone="B" onPick={vi.fn()} />);
+    expect(html).toContain('<div class="school-zone-picker" role="group" aria-label="Zone scolaire affichée">');
+    expect(html).toContain('<button type="button" class="" aria-pressed="false">Zone A</button>');
+    expect(html).toContain('<button type="button" class="active" aria-pressed="true">Zone B</button>');
+    expect(html).toContain('<button type="button" class="" aria-pressed="false">Zone C</button>');
+  });
+
   it("propose une activation facultative et le choix de la zone", () => {
     const html = renderToStaticMarkup(
       <SchoolVacationSettings

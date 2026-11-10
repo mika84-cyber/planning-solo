@@ -60,21 +60,28 @@ export function SchoolVacationSettings({
         </small>
       ) : null}
       {zonesOpen ? (
-        <div className="school-zone-picker" role="group" aria-label="Zone scolaire affichée">
-          {SCHOOL_ZONE_OPTIONS.map((option) => (
-            <button
-              type="button"
-              key={option.value}
-              className={zone === option.value ? "active" : ""}
-              aria-pressed={zone === option.value}
-              onClick={() => { onZoneChange(option.value); setZonesOpen(false); }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <SchoolZonePicker zone={zone} onPick={(chosen) => { onZoneChange(chosen); setZonesOpen(false); }} />
       ) : null}
     </section>
+  );
+}
+
+/** Les zones déroulées sous la ligne, la zone affichée enfoncée. */
+export function SchoolZonePicker({ zone, onPick }: { zone: SchoolZone; onPick: (zone: SchoolZone) => void }) {
+  return (
+    <div className="school-zone-picker" role="group" aria-label="Zone scolaire affichée">
+      {SCHOOL_ZONE_OPTIONS.map((option) => (
+        <button
+          type="button"
+          key={option.value}
+          className={zone === option.value ? "active" : ""}
+          aria-pressed={zone === option.value}
+          onClick={() => onPick(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
