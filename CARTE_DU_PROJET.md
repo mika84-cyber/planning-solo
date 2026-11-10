@@ -155,7 +155,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   (`feedback/broadcasts/`, repères `feedback/broadcast-seen/`) : qui les a vus
   et quand, anciens envois reconstitués (seuls les destinataires connus) ;
   texte relu en entier et corrigé (`edit-broadcast`, réaffichage possible) ;
-  invités nommés, jamais par adresse.
+  invités nommés, jamais par adresse. Les alertes centrées
+  (`.feedback-resolution-alert`, aussi pour les documents partagés) ne
+  dépassent jamais l'écran : un long texte défile dans sa colonne, le bouton
+  reste visible. Avant le 10 novembre 2026, un long message collectif avec
+  une grande police poussait « D’accord » hors de l'écran et bloquait
+  l'application ; scénario e2e « un long message de Mika… ».
 - `src/AppDialogLayer.tsx` : assemblage des dialogues, messages, confirmations
   et panneaux de gestion qui restent pilotés par l’orchestrateur.
 - Composants de rubrique sortis du JSX d’`App.tsx` en octobre 2026, même

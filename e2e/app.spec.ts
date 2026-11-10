@@ -2619,6 +2619,33 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
   await expect(popup).toHaveCount(0);
 });
 
+test("un long message de Mika se lit en entier et se ferme sur un petit écran", async ({ page }) => {
+  // Le 10 novembre 2026, une collègue ne pouvait plus ouvrir l'application :
+  // avec un long message et une grande police, « D’accord » sortait de
+  // l'écran et la fenêtre ne défilait pas.
+  await prepareDemo(page);
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.goto("/?local-test=1&preview-feedback-role=user&demo-feedback-broadcast=1");
+  const popup = page.getByRole("alertdialog", { name: "Message de Mika" });
+  await expect(popup).toBeVisible();
+  await page.addStyleTag({ content: "html { font-size: 125% !important; }" });
+  await popup.locator("small").evaluate((node) => {
+    node.textContent = Array.from({ length: 12 }, (_, index) =>
+      `Paragraphe ${index + 1} : une nouveauté de l’application, expliquée en quelques lignes.`).join("\n\n");
+  });
+
+  const box = await popup.boundingBox();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(640);
+  // Le texte défile dans sa colonne ; le bouton reste entièrement visible.
+  const text = popup.locator("div").first();
+  expect(await text.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
+  const ok = popup.getByRole("button", { name: "D’accord" });
+  await expect(ok).toBeInViewport({ ratio: 1 });
+  await ok.click();
+  await expect(popup).toHaveCount(0);
+});
+
 test("la déclaration d’accident réunit les démarches et marque le planning sans carence", async ({ page }, testInfo) => {
   const now = new Date();
   // Le RTT doit tomber un jour travaillé après les CA (J à J+2). Le cycle peut
