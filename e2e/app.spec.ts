@@ -294,19 +294,20 @@ async function goToCurrentMonth(page: Page) {
   await panel.getByRole("button", { name: "Aujourd’hui" }).click();
 }
 
-/** Touche la première journée travaillée du mois pour une demande en cours.
- *  Le panneau de la demande se charge à la demande, puis la page défile en
- *  douceur jusqu’au calendrier : on attend qu’il soit là et que le défilement
- *  soit terminé, sans quoi le toucher peut tomber à côté de la case (vu sur
- *  iPhone dans la suite complète). */
-async function pickFirstWorkDay(page: Page) {
+/** Touche une journée travaillée du mois (la première par défaut) pour une
+ *  demande en cours. Le panneau de la demande se charge à la demande, puis
+ *  la page défile en douceur jusqu’au calendrier, et un réglage au-dessus du
+ *  planning peut encore le décaler : on attend le panneau et la fin du
+ *  défilement, sans quoi le toucher peut tomber à côté de la case (vu sur
+ *  iPhone dans la suite complète, les 9 et 10 novembre 2026). */
+async function pickWorkDay(page: Page, index = 0) {
   await expect(page.locator("#request-panel")).toBeVisible();
   await expect.poll(async () => {
     const before = await page.evaluate(() => window.scrollY);
     await page.waitForTimeout(200);
     return (await page.evaluate(() => window.scrollY)) === before;
   }, { message: "le défilement vers le calendrier doit être terminé" }).toBe(true);
-  await page.locator(".month-card .day.work").first().click();
+  await page.locator(".month-card .day.work").nth(index).click();
 }
 
 /** Ouvre une rubrique par le dock, seul chemin vers les pages. */
@@ -1541,7 +1542,7 @@ test("sans horaires enregistrés, les heures d’une récupération restent à s
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ }).click();
   await page.locator("#request-panel").getByRole("button", { name: /Récupération en heures/ }).click();
-  await pickFirstWorkDay(page);
+  await pickWorkDay(page);
 
   // Mieux vaut une saisie à faire qu'une heure inventée qu'on oublierait de
   // corriger : les champs restent vides tant que le profil n'en donne pas.
@@ -5302,7 +5303,7 @@ test("les horaires du profil préremplissent une récupération", async ({ page 
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ }).click();
   await page.locator("#request-panel").getByRole("button", { name: /Récupération en heures/ }).click();
-  await pickFirstWorkDay(page);
+  await pickWorkDay(page);
 
   const hours = page.getByRole("dialog", { name: "Choisissez les horaires" });
   await expect(hours.getByLabel("Heure de début — heures")).toHaveValue("10");
@@ -5868,10 +5869,10 @@ test("les RTT et le fractionnement se posent en journée entière", async ({ pag
   await nearCalendar.getByRole("button", { name: /^RTT/ }).click();
   await expect(nearCalendar.getByRole("button", { name: /^RTT/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("group", { name: "Durée des dates touchées" })).toHaveCount(0);
-  await page.locator(".month-card .day.work").nth(1).click();
+  await pickWorkDay(page, 1);
   await nearCalendar.getByRole("button", { name: /^CA/ }).click();
   await expect(page.getByRole("group", { name: "Durée des dates touchées" })).toBeVisible();
-  await page.locator(".month-card .day.work").nth(2).click();
+  await pickWorkDay(page, 2);
   await expect(nearCalendar.getByRole("button", { name: /^RTT/ })).toContainText("2");
   await expect(nearCalendar.getByRole("button", { name: /^CA/ })).toContainText("1");
   await expect(summary).toContainText("RTT");
@@ -6151,7 +6152,7 @@ test("les dates choisies sont préremplies dans le formulaire de congé", async 
     .getByRole("button", { name: /^CA / })
     .click();
 
-  await pickFirstWorkDay(page);
+  await pickWorkDay(page);
   await expect(page.getByLabel("Résumé avant validation")).toBeVisible();
   await Promise.all([
     page.waitForURL(/\/formulaire\/index\.html\?planning=1/),

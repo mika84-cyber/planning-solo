@@ -750,10 +750,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `e2e/app.spec.ts` : `isPlainWorkDay(date, group)` choisit un jour travaillé
   ordinaire (ni férié, ni fermeture) pour les scénarios qui partent
   d'aujourd'hui, afin qu'ils ne dépendent pas de la date où ils tournent.
-  `pickFirstWorkDay(page)` touche la première case travaillée pour une demande
+  `pickWorkDay(page, index = 0)` touche une case travaillée pour une demande
   en cours : il attend le panneau de la demande, chargé à la demande, puis la
   fin du défilement en douceur vers le calendrier, sans quoi le toucher
-  pouvait tomber à côté de la case (échec iPhone du 9 novembre 2026).
+  pouvait tomber à côté de la case (échecs iPhone des 9 et 10 novembre 2026).
 - `netlify/tests/calendar.function.test.ts` : tests directs d’authentification,
   d’isolation et d’écriture de l’API calendrier.
 - `netlify/functions/feedback.mts` : stockage privé des retours, photos,
