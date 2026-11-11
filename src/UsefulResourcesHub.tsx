@@ -20,7 +20,8 @@ export function UsefulResourcesHub({ forms, contacts, initialTab = "forms" }: Us
   const [activeTab, setActiveTab] = useState<ResourceTab>(initialTab);
   const selectTab = (tab: ResourceTab) => {
     setActiveTab(tab);
-    window.history.pushState({ ...window.history.state, resourceTab: tab }, "");
+    // Un onglet choisi à la main n'est plus « ouvert depuis Titres repas ».
+    window.history.pushState({ ...window.history.state, resourceTab: tab, returnTo: undefined }, "");
     window.scrollTo({ top: 0, behavior: "auto" });
   };
   // Le bouton Retour du téléphone revient à l'onglet précédent.

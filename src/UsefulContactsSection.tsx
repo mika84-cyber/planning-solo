@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { useHelpTarget } from "./helpTargets";
+import { returnsToMeal, useHelpTarget } from "./helpTargets";
 import "./resourceFolderList.css";
 import { changeUsefulContact, getUsefulContacts } from "./contactsApi";
 import { ContactEditDialog } from "./ContactEditDialog";
@@ -252,11 +252,14 @@ type UsefulContactsSectionProps = {
 export function UsefulContactsSection({ initialData, isAdmin = false, demoMode = false }: UsefulContactsSectionProps) {
   const [directory, setDirectory] = useState<"pompidou" | "gprmn" | "visitors" | "radio" | null>(null);
   const [pompidouSection, setPompidouSection] = useState<PompidouContactSectionKey | null>(null);
+  // Arrivé depuis Ma paie › Titres repas : la flèche ← y ramène.
+  const [fromMeal, setFromMeal] = useState(false);
   // « Un code radio d'urgence » ouvre la sous-page ; « Un numéro » revient à
   // la liste des annuaires.
   useHelpTarget((target) => {
     if (target === "radio-codes") { setDirectory("radio"); setPompidouSection(null); return true; }
     // Depuis Ma paie › Titres repas : la rubrique Tickets restaurants.
+    setFromMeal(target === "meal-contact");
     if (target === "meal-contact") { setDirectory("pompidou"); setPompidouSection("tickets"); return true; }
     if (target === "contacts") { setDirectory(null); setPompidouSection(null); }
     return false;
@@ -349,7 +352,17 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
     return (
       <section className="useful-contacts-screen" aria-labelledby="contact-section-title">
         <header className="useful-contacts-subheader">
-          <button className="section-back-hit-area" type="button" onClick={() => setPompidouSection(null)} aria-label="Revenir aux contacts Pompidou"><span className="section-back-arrow" aria-hidden="true">←</span></button>
+          <button
+            className="section-back-hit-area"
+            type="button"
+            onClick={() => {
+              // Comme le bouton Retour du téléphone : on revient d'où l'on vient.
+              if (fromMeal && returnsToMeal()) { history.back(); return; }
+              setFromMeal(false);
+              setPompidouSection(null);
+            }}
+            aria-label={fromMeal ? "Revenir aux titres repas" : "Revenir aux contacts Pompidou"}
+          ><span className="section-back-arrow" aria-hidden="true">←</span></button>
           <div><span className="step-label">Contacts Pompidou</span><h2 id="contact-section-title">{activePompidouSection.title}</h2></div>
         </header>
         {activePompidouSection.key === "ras" ? (

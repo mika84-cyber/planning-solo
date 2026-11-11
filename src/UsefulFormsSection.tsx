@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
-import { requestSection, useHelpTarget } from "./helpTargets";
+import { requestSection, returnsToMeal, useHelpTarget } from "./helpTargets";
 import "./resourceFolderList.css";
 import type { LeavePeriod } from "./appModel";
 import {
@@ -201,9 +201,12 @@ export function UsefulFormsSection({
   demoMode = false,
 }: UsefulFormsSectionProps = {}) {
   const [activeFolder, setActiveFolder] = useState<UsefulFormsFolderKey | null>(null);
+  // Arrivé depuis Ma paie › Titres repas : la flèche ← y ramène.
+  const [fromMeal, setFromMeal] = useState(false);
   // « Un accident de travail » ouvre la déclaration, une fiche d'expo le
   // dossier Expo ; « Un formulaire administratif » revient à la liste des dossiers.
   useHelpTarget((target) => {
+    setFromMeal(target === "meal-folder" || target === "meal-forms");
     if (target === "work-accident") { setActiveFolder("work-accident"); return true; }
     if (target === "expo-folder") { setActiveFolder("expo"); return true; }
     // Depuis Ma paie › Titres repas : les horaires de retrait.
@@ -302,8 +305,13 @@ export function UsefulFormsSection({
           <button
             className="native-back-button section-back-hit-area"
             type="button"
-            onClick={() => setActiveFolder(null)}
-            aria-label="Revenir aux dossiers de formulaires"
+            onClick={() => {
+              // Comme le bouton Retour du téléphone : on revient d'où l'on vient.
+              if (fromMeal && returnsToMeal()) { history.back(); return; }
+              setFromMeal(false);
+              setActiveFolder(null);
+            }}
+            aria-label={fromMeal ? "Revenir aux titres repas" : "Revenir aux dossiers de formulaires"}
           >
             <span className="section-back-arrow" aria-hidden="true">←</span>
           </button>
@@ -319,7 +327,7 @@ export function UsefulFormsSection({
             dans le dossier Brantôme : deux liens y mènent. */}
         {folder.key === "tickets" ? (
           <p className="useful-form-links">
-            Valeur du titre et nombre par mois : <button type="button" className="text-button" onClick={() => requestSection("meal")}>régler dans Ma paie ›</button>
+            Valeur du titre et nombre par mois : <button type="button" className="text-button" onClick={() => (fromMeal && returnsToMeal() ? history.back() : requestSection("meal"))}>régler dans Ma paie ›</button>
             <br />
             Carte BIMPLI et procuration de retrait : <button type="button" className="text-button" onClick={() => setActiveFolder("brantome")}>dossier Formulaire Brantôme ›</button>
           </p>

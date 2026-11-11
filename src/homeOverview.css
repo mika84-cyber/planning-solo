@@ -20,7 +20,7 @@
 .today-next-note .today-note-text { display: flex; gap: 5px; min-width: 0; white-space: nowrap; }
 .today-note-first { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .today-note-more { flex: none; color: var(--block-ink); font-weight: 800; }
-.today-note-more span { color: var(--muted); font-weight: 600; }
+.today-note-more span { margin-left: 3px; color: var(--muted); font-weight: 600; }
 button.today-block { cursor: pointer; transition: background-color .15s ease; }
 button.today-block:hover { background: color-mix(in srgb, var(--block-soft) 40%, #fff); }
 button.today-block:hover .today-block-go { color: var(--block-ink); }

@@ -81,7 +81,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   par an). Sous l'année, trois lignes mènent à Docs (`MEAL_VOUCHER_LINKS`) :
   les horaires de retrait (dossier « Titres repas : retrait », cible
   `meal-folder`), les formulaires (dossier Brantôme, `meal-forms`) et le
-  contact (Contacts Pompidou › Tickets restaurants, `meal-contact`). L’écran dit à qui écrire pour changer son nombre de titres
+  contact (Contacts Pompidou › Tickets restaurants, `meal-contact`). L'entrée
+  d'historique ouverte ainsi porte `returnTo: "meal"` (`requestSection`) : la
+  flèche ← du dossier ou de la rubrique de contacts fait alors `history.back()`
+  et ramène à Titres repas, comme le bouton Retour du téléphone
+  (`returnsToMeal`) ; un onglet de Docs choisi à la main efface la marque. L’écran dit à qui écrire pour changer son nombre de titres
   (bimpli@centrepompidou.fr). Les règles sont dans `src/mealVouchers.ts` : `mealVoucherRetention`
   donne la retenue du mois, à la paie du mois (`useMonthPayEstimate`) comme à
   l'année (`useYearPayOverview`). Gardé dans le profil sous l'année

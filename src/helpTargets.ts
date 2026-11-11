@@ -75,7 +75,16 @@ const SECTION_REQUEST_EVENT = "planning:open-section";
 
 export function requestSection(section: SectionRequest, target?: HelpTarget) {
   window.dispatchEvent(new CustomEvent(SECTION_REQUEST_EVENT, { detail: section }));
+  // Docs ouvert depuis Titres repas : l'entrée d'historique que la coque vient
+  // d'ajouter le dit, pour que la flèche ← y ramène (`returnsToMeal`).
+  if (section === "pdf") history.replaceState({ ...(history.state || {}), returnTo: "meal" }, "", location.href);
   if (target) requestHelpTarget(target);
+}
+
+/** L'écran de Docs affiché a été ouvert depuis Titres repas : la flèche ←
+ *  y revient, comme le bouton Retour du téléphone. */
+export function returnsToMeal() {
+  return typeof history !== "undefined" && history.state?.returnTo === "meal";
 }
 
 export function useSectionRequest(open: (section: SectionRequest) => void) {

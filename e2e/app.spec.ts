@@ -2692,35 +2692,37 @@ test("« Mon profil » réunit les réglages dans le menu du compte et ouvre cha
 test("les titres repas de Ma paie et ceux de Docs renvoient l’un à l’autre", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "pay");
-  const openMealVouchers = async () => {
-    await goToSection(page, "pay");
-    await page.locator(".pay-bulletin-shortcut", { hasText: "Titres repas" }).click();
-    return page.locator(".meal-vouchers-links");
-  };
-  // Les trois renvois de l'écran : le contact, les formulaires, les horaires.
-  let links = await openMealVouchers();
+  await page.locator(".pay-bulletin-shortcut", { hasText: "Titres repas" }).click();
+  const mealTitle = page.locator(".pay-detail-sticky-header h2");
+  await expect(mealTitle).toHaveText("Titres repas");
+  const links = page.locator(".meal-vouchers-links");
   await expect(links.getByRole("button")).toHaveText([/^Horaires de retrait/, /^Formulaires/, /^Contact titres repas.*01 44 78 41 48/]);
+  // Chaque ligne mène à Docs ; la flèche ← ramène à Titres repas, comme le
+  // bouton Retour du téléphone.
   await links.getByRole("button", { name: /^Contact titres repas/ }).click();
   await expect(page.locator(".top-header h1")).toHaveText("Documents et contacts");
   await expect(page.getByRole("link", { name: /^Appeler Tickets restaurants au 01 44 78 41 48/ })).toBeVisible();
-  links = await openMealVouchers();
+  await page.getByRole("button", { name: "Revenir aux titres repas" }).click();
+  await expect(mealTitle).toHaveText("Titres repas");
   await links.getByRole("button", { name: /^Formulaires/ }).click();
   await expect(page.getByRole("heading", { name: "Formulaire Brantôme" })).toBeVisible();
-  links = await openMealVouchers();
-  // De Ma paie vers Docs : les horaires de retrait.
+  await expect(page.getByText("Procuration pour le retrait des titres repas")).toBeVisible();
+  await page.getByRole("button", { name: "Revenir aux titres repas" }).click();
+  await expect(mealTitle).toHaveText("Titres repas");
   await links.getByRole("button", { name: /^Horaires de retrait/ }).click();
-  await expect(page.locator(".top-header h1")).toHaveText("Documents et contacts");
   await expect(page.getByRole("heading", { name: "Titres repas : retrait" })).toBeVisible();
-  // Le dossier mène aux formulaires du dossier Brantôme…
+  // Le dossier mène aussi aux formulaires, et sa flèche ramène toujours à Ma paie.
   await page.getByRole("button", { name: "dossier Formulaire Brantôme ›" }).click();
   await expect(page.getByRole("heading", { name: "Formulaire Brantôme" })).toBeVisible();
-  await expect(page.getByText("Procuration pour le retrait des titres repas")).toBeVisible();
-  // … et ramène à Ma paie pour régler ses titres.
-  await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+  await page.getByRole("button", { name: "Revenir aux titres repas" }).click();
+  await expect(mealTitle).toHaveText("Titres repas");
+  // Ouvert directement dans Docs, le dossier garde sa flèche vers la liste.
+  await goToSection(page, "documents");
   await page.getByRole("button", { name: /Titres repas : retrait/ }).click();
+  await expect(page.getByRole("button", { name: "Revenir aux dossiers de formulaires" })).toBeVisible();
   await page.getByRole("button", { name: "régler dans Ma paie ›" }).click();
   await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
-  await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Titres repas");
+  await expect(mealTitle).toHaveText("Titres repas");
 });
 
 test("les documents d’un dossier portent tous la couleur du dossier", async ({ page }) => {
