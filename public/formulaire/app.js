@@ -7,6 +7,9 @@ import {
   timePart as part,
   timeText,
   clampTimeMinutes as clampTimeToRange,
+  formSheetSummary,
+  mergeFormSheets,
+  normalizeFormSheet,
 } from './form-value-utils.js';
 import { countWorkedHolidays, cycleInfoFor } from './form-calendar.js';
 import {
@@ -15,7 +18,7 @@ import {
   readFileArrayBuffer as readArrayBuffer,
   readImageAttachment as readImage,
 } from './form-file-utils.js';
-import { createSignatureController, drawSignature } from './form-signature-controller.js';
+import { createSignatureController, drawSignature, planningApiAvailable } from './form-signature-controller.js';
 
 (function(){
 "use strict";
@@ -1516,6 +1519,7 @@ document.getElementById('btnReset').addEventListener('click', function(){
   clearSig(); clearSig2(); closeEditor(); applyProfile(); prefill(true); recalcAll(); refreshAtt(); layout();
   restoreSavedSignature();
   if(pageCount>1) pageSnapshots[pageIndex]=capturePage(); scheduleSave();
+  endTake();
   say('Formulaire vidé.'); showToast('Formulaire vidé');
 });
 
@@ -1828,6 +1832,10 @@ function confirmerAvantPdf(){
 async function buildPdfBytes(){
   var doc = await PDFLib.PDFDocument.create();
   var ctx = await pdfContext(doc);
+  pdfEntry = currentSheetEntry();
+  /* Le contenu des cases voyage dans le PDF, invisible : « Ouvrir un PDF du
+     formulaire » le relit, même sur un autre appareil. */
+  try{ doc.getInfoDict().set(PDFLib.PDFName.of(SHEET_INFO_KEY), PDFLib.PDFHexString.fromText(JSON.stringify(pdfEntry))); }catch(e){}
   if(pageCount>1){
     pageSnapshots[pageIndex]=capturePage();
     syncFerieSignatures();
@@ -1975,7 +1983,7 @@ document.getElementById('btnPdf').addEventListener('click', async function(){
     var pdf = await preparePdf(nomChoisi);
     await completePlanningRequest(pdf);
     downloadBlob(pdf.blob, pdf.name);
-    pdfDone = true; updateClr();
+    pdfDone = true; updateClr(); rememberSheet();
     say(planningImport ? 'Demande enregistrée. Retour au planning…' : 'PDF enregistré : ' + pdf.name);
     if(planningImport) returnToPlanningAfterSuccess(); else showToast('PDF créé');
   }catch(e){
@@ -2058,7 +2066,7 @@ document.getElementById('btnPrint').addEventListener('click', async function(){
     var pdf=await preparePdf(fileName());
     await completePlanningRequest(pdf);
     await imprimerBlobPdf(pdf.blob, printWindow);
-    pdfDone=true; updateClr();
+    pdfDone=true; updateClr(); rememberSheet();
     say(planningImport ? 'Demande enregistrée. Retour au planning…' : 'Document prêt à imprimer.');
     if(planningImport) returnToPlanningAfterSuccess();
   }catch(e){
@@ -2094,7 +2102,7 @@ document.getElementById('btnOutlook').addEventListener('click', async function()
     var pdf=await preparePdf(nomChoisi);
     await completePlanningRequest(pdf);
     await partagerPdfMobile(pdf);
-    pdfDone=true; updateClr(); say(planningImport ? 'Demande enregistrée. Retour au planning…' : 'PDF transmis au menu de partage. Sélectionnez Outlook.');
+    pdfDone=true; updateClr(); rememberSheet(); say(planningImport ? 'Demande enregistrée. Retour au planning…' : 'PDF transmis au menu de partage. Sélectionnez Outlook.');
     if(planningImport) returnToPlanningAfterSuccess();
   }catch(e){
     if(finishSavedRequestAfterDeliveryIssue(e && e.name === 'AbortError' ? 'Le partage a été annulé.' : 'Le partage du PDF n’a pas pu être ouvert.')){}
@@ -2420,6 +2428,244 @@ function returnToPlanningAfterSuccess(){
   setTimeout(function(){ location.href='/?request=saved'; },900);
 }
 
+/* ================= feuilles déjà faites =================
+   Chaque PDF créé garde le contenu de ses feuilles, sans signature ni
+   justificatif : sur le compte, pour le téléphone comme pour l'ordinateur,
+   et sur l'appareil en attendant le réseau, ou sans compte (Congé CP). */
+var SHEET_IDS = SHEETS.map(function(s){ return s.id; });
+var SHEET_INFO_KEY = 'PlanningSoloFeuille', SHEETS_KEY = 'demandes:v1:feuilles';
+var takeId = null, takeUndo = null, pdfEntry = null;
+var takeModal = document.getElementById('takeModal'), takeList = document.getElementById('takeList');
+var takeBanner = document.getElementById('takeBanner'), takeFile = document.getElementById('takeFile');
+function currentSheetEntry(){
+  if(pageCount>1) pageSnapshots[pageIndex]=capturePage();
+  var now = new Date().toISOString();
+  return { id: takeId || Date.now().toString(36) + Math.random().toString(36).slice(2, 10), sheet: M.id,
+    pages: (pageCount>1 ? pageSnapshots : [capturePage()]).map(function(d){
+      var page = { f:{}, m:[], c:{} };
+      IF.forEach(function(field, i){
+        var v = String((d.v && d.v[i]) || '').slice(0, 200);
+        if(v){ page.f[field.n] = v; if(d.m && d.m[i]) page.m.push(field.n); }
+      });
+      (M.checks || []).forEach(function(c){ if(d.c && d.c[c.n]) page.c[c.n] = true; });
+      return page;
+    }),
+    o: observation ? observation.value.slice(0, 1000) : '', created_at: now, updated_at: now };
+}
+function readLocalSheets(){
+  return store.get(SHEETS_KEY).then(function(raw){
+    var list = JSON.parse(raw || '[]');
+    return (Array.isArray(list) ? list : []).map(function(item){
+      var s = normalizeFormSheet(item, SHEET_IDS);
+      if(s && item.p) s.p = 1;
+      return s;
+    }).filter(Boolean);
+  }).catch(function(){ return []; });
+}
+function writeLocalSheets(list){ try{ store.set(SHEETS_KEY, JSON.stringify(list)); }catch(e){} return list; }
+function sheetsApi(body){
+  if(!planningApiAvailable(window, document)) return Promise.resolve(null);
+  /* keepalive : la demande venue du planning quitte la page aussitôt après. */
+  return fetch('/api/calendar', { method:'POST', credentials:'same-origin', keepalive:!!planningImport,
+    headers:{ 'content-type':'application/json' }, body:JSON.stringify(body) })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      return d && Array.isArray(d.form_sheets)
+        ? d.form_sheets.map(function(s){ return normalizeFormSheet(s, SHEET_IDS); }).filter(Boolean) : null;
+    })
+    .catch(function(){ return null; });
+}
+function bareSheet(s){ var copy = Object.assign({}, s); delete copy.p; return copy; }
+/* La liste du compte, avec en tête les feuilles qui n'ont pas encore pu y
+   partir (marquées p), des plus anciennes aux plus récentes. */
+function withPending(remote, pending){
+  pending.slice().reverse().forEach(function(s){ remote = mergeFormSheets(remote, s); });
+  return writeLocalSheets(remote);
+}
+function rememberSheet(){
+  var entry = pdfEntry;
+  pdfEntry = null;
+  if(!entry) return;
+  endTake();
+  readLocalSheets().then(function(local){
+    writeLocalSheets(mergeFormSheets(local, Object.assign({ p:1 }, entry)));
+    return sheetsApi({ action:'save-form-sheet', sheet:entry }).then(function(remote){
+      if(remote) withPending(remote, local.filter(function(s){ return s.p && s.id !== entry.id; }));
+    });
+  });
+}
+/* À l'ouverture de la liste, les feuilles faites hors connexion partent
+   d'abord sur le compte, puis sa liste devient celle de l'appareil. */
+function syncSheets(local){
+  var failed = [], chain = Promise.resolve(true);
+  local.filter(function(s){ return s.p; }).reverse().forEach(function(s){
+    chain = chain.then(function(reachable){
+      if(!reachable){ failed.unshift(s); return false; }
+      return sheetsApi({ action:'save-form-sheet', sheet:bareSheet(s) }).then(function(list){
+        if(!list) failed.unshift(s);
+        return !!list;
+      });
+    });
+  });
+  return chain.then(function(){ return sheetsApi({ action:'list-form-sheets' }); })
+    .then(function(remote){ return remote ? withPending(remote, failed) : null; });
+}
+function sheetDay(iso, withTime){
+  var d = new Date(iso);
+  if(!isFinite(d)) return '';
+  var text = d.toLocaleDateString('fr-FR', d.getFullYear() === new Date().getFullYear()
+    ? { day:'numeric', month:'short' } : { day:'numeric', month:'short', year:'numeric' });
+  return withTime ? text + ' à ' + d.getHours() + ' h ' + ('0' + d.getMinutes()).slice(-2) : text;
+}
+function renderTake(list, where){
+  document.getElementById('takeWhere').textContent = where === 'account'
+    ? 'Sur votre compte : téléphone et ordinateur'
+    : where === 'loading' ? 'Lecture de votre compte…' : 'Sur cet appareil, les 20 dernières';
+  takeList.textContent = '';
+  if(!list.length){
+    var empty = document.createElement('p');
+    empty.className = 'take-empty';
+    empty.textContent = where === 'loading' ? '' : 'Aucune feuille pour l’instant : chaque PDF créé viendra s’ajouter ici.';
+    takeList.appendChild(empty);
+    return;
+  }
+  list.forEach(function(entry){
+    var model = SHEETS[SHEET_IDS.indexOf(entry.sheet)];
+    var row = document.createElement('div'), text = document.createElement('div');
+    var title = document.createElement('strong'), what = document.createElement('span');
+    var when = document.createElement('small'), pick = document.createElement('button');
+    row.className = 'take-item'; row.setAttribute('role', 'listitem'); row.dataset.sheet = entry.sheet;
+    title.textContent = model.name;
+    what.textContent = formSheetSummary(model.fields, entry.pages);
+    when.textContent = (entry.pages.length > 1 ? entry.pages.length + ' feuilles · ' : '') + 'PDF du ' + sheetDay(entry.updated_at, true);
+    pick.type = 'button'; pick.className = 'take-pick'; pick.textContent = 'Reprendre';
+    pick.setAttribute('aria-label', 'Reprendre ' + model.name + ', ' + what.textContent);
+    pick.addEventListener('click', function(){ takeSheet(entry, { date:entry.updated_at }); });
+    text.append(title, what, when);
+    row.append(document.createElement('i'), text, pick);
+    takeList.appendChild(row);
+  });
+}
+function placeTake(){
+  /* Sur ordinateur, la liste s'ouvre sous son bouton ; sur téléphone, elle
+     monte du bas de l'écran (form.css). */
+  var panel = takeModal.firstElementChild, button = document.getElementById('btnTake').getBoundingClientRect();
+  var wide = window.matchMedia('(min-width:761px)').matches;
+  panel.style.top = wide ? button.bottom + 8 + 'px' : '';
+  panel.style.left = wide ? Math.max(12, Math.min(button.left, window.innerWidth - panel.offsetWidth - 16)) + 'px' : '';
+}
+function openTake(){
+  takeModal.hidden = false;
+  placeTake();
+  document.getElementById('takeClose').focus();
+  readLocalSheets().then(function(local){
+    var account = planningApiAvailable(window, document);
+    renderTake(local, account ? 'loading' : 'device');
+    if(account) return syncSheets(local).then(function(list){
+      if(!takeModal.hidden) renderTake(list || local, list ? 'account' : 'device');
+    });
+  });
+}
+function closeTake(){
+  if(takeModal.hidden) return;
+  takeModal.hidden = true;
+  document.getElementById('btnTake').focus();
+}
+function endTake(){ takeId = null; takeUndo = null; takeBanner.hidden = true; }
+/* Reprendre : la feuille revient telle qu'elle a été envoyée, toutes ses
+   feuilles comprises, datée du jour. La signature est celle de l'appareil ou
+   du compte, à défaut celle déjà posée à l'écran. « Annuler » rend l'écran
+   d'avant, et le brouillon de la feuille reprise. */
+function takeSheet(entry, origin){
+  var idx = SHEET_IDS.indexOf(entry.sheet);
+  closeTake();
+  if(pageCount>1) pageSnapshots[pageIndex]=capturePage();
+  var undo = { idx:+sel.value, id:takeId, pages:(pageCount>1 ? pageSnapshots : [capturePage()]).slice(), pageIndex:pageIndex,
+    o:observation ? observation.value : '' };
+  var shown = hasInk ? { data:sig.toDataURL('image/png'), fromAccount:signatureController.inkFromAccount() } : null;
+  clearTimeout(tmr);
+  var ready = idx === undo.idx ? Promise.resolve() : store.get('demandes:v4:' + entry.sheet).then(function(raw){
+    undo.raw = raw || '';
+    sel.value = idx;
+    try{ store.set('demandes:v4:last', entry.sheet); }catch(e){}
+    return loadSheet(idx);
+  });
+  return ready.then(function(){
+    var stamp = today();
+    pageSnapshots = entry.pages.map(function(page){
+      return {
+        v: IF.map(function(f){ return f.n === 'date_sig' ? stamp : Object.prototype.hasOwnProperty.call(page.f, f.n) ? page.f[f.n] : ''; }),
+        m: IF.map(function(f){ return page.m.indexOf(f.n) >= 0 ? 1 : 0; }),
+        c: (M.checks || []).reduce(function(c, k){ c[k.n] = page.c[k.n] === true; return c; }, {}), s:'', s2:''
+      };
+    });
+    pageCount = pageSnapshots.length; pageIndex = 0; files = {};
+    if(observation) observation.value = entry.o;
+    applyPageState(pageSnapshots[0]); updatePageUI();
+    return restoreSavedSignature();
+  }).then(function(){
+    if(!hasInk && shown) return drawDraftSignature(shown.data, shown.fromAccount);
+  }).then(function(){
+    if(hasInk) pageSnapshots.forEach(function(d, i){
+      if(i){ d.s = sig.toDataURL('image/png'); d.sa = signatureController.inkFromAccount() ? 1 : 0; }
+    });
+    takeId = entry.id; takeUndo = undo;
+    document.getElementById('takeBannerTitle').textContent = origin.file ? 'Feuille reprise du PDF' : 'Reprise de la feuille du ' + sheetDay(origin.date);
+    document.getElementById('takeBannerText').textContent = (origin.file ? '« ' + origin.file + ' ». ' : '')
+      + 'Modifiez-la, puis créez le nouveau PDF. Date de signature : aujourd’hui.';
+    takeBanner.hidden = false;
+    scheduleSave(); layout(); say(''); showToast('Feuille reprise');
+  });
+}
+document.getElementById('takeUndo').addEventListener('click', function(){
+  var u = takeUndo;
+  if(!u) return;
+  endTake();
+  clearTimeout(tmr);
+  var ready = Promise.resolve();
+  if(u.idx !== +sel.value){
+    try{ store.set(key(), u.raw); }catch(e){}
+    sel.value = u.idx;
+    try{ store.set('demandes:v4:last', SHEETS[u.idx].id); }catch(e){}
+    ready = loadSheet(u.idx);
+  }
+  ready.then(function(){
+    pageSnapshots = u.pages; pageCount = u.pages.length; pageIndex = u.pageIndex;
+    if(observation) observation.value = u.o;
+    applyPageState(pageSnapshots[pageIndex]); updatePageUI();
+    takeId = u.id; scheduleSave();
+    say('Reprise annulée.'); showToast('Reprise annulée');
+  });
+});
+document.getElementById('btnTake').addEventListener('click', openTake);
+document.getElementById('takeClose').addEventListener('click', closeTake);
+takeModal.addEventListener('click', function(e){ if(e.target === takeModal) closeTake(); });
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeTake(); });
+window.addEventListener('resize', function(){ if(!takeModal.hidden) placeTake(); });
+document.getElementById('takeOpen').addEventListener('click', function(){ takeFile.value = ''; takeFile.click(); });
+/* Un PDF créé par ce formulaire depuis cette mise à jour : sa feuille revient. */
+takeFile.addEventListener('change', function(){
+  var file = takeFile.files && takeFile.files[0];
+  if(!file) return;
+  say('Lecture du PDF…');
+  readArrayBuffer(file).then(function(buffer){
+    var bytes = new Uint8Array(buffer);
+    if(file.size > 30 * 1048576 || findPdfHeader(bytes) < 0) throw new Error('pdf');
+    return loadPdfEngine().then(function(){ return PDFLib.PDFDocument.load(bytes, { ignoreEncryption:true, updateMetadata:false }); });
+  }).then(function(doc){
+    var raw = doc.getInfoDict().lookup(PDFLib.PDFName.of(SHEET_INFO_KEY));
+    var entry = null;
+    try{ entry = raw && raw.decodeText ? normalizeFormSheet(JSON.parse(raw.decodeText()), SHEET_IDS) : null; }catch(e){}
+    if(!entry) throw new Error('feuille');
+    return takeSheet(entry, { file:file.name });
+  }).catch(function(e){
+    var text = e && e.message === 'feuille'
+      ? 'Ce PDF ne contient pas de feuille à reprendre : il vient d’ailleurs, ou d’avant cette mise à jour.'
+      : 'Ce fichier n’a pas pu être lu comme un PDF.';
+    closeTake(); say(text); showToast(text);
+  });
+});
+
 /* ================= choix du feuillet ================= */
 var sel = document.getElementById('sheet');
 SHEETS.forEach(function(s, i){
@@ -2429,6 +2675,7 @@ SHEETS.forEach(function(s, i){
 });
 sel.addEventListener('change', function(){
   var i = +sel.value;
+  endTake();
   var paperEl = document.getElementById('paper');
   paperEl.classList.add('form-switching');
   say('Chargement…');
@@ -2456,6 +2703,8 @@ if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
 
 var planningImport=readPlanningImport();
 var planningImportActive=!!planningImport;
+/* Une demande ouverte depuis le planning s'y enregistre : pas de reprise. */
+document.getElementById('btnTake').hidden=planningImportActive;
 var lastSheetFast='0';
 try{ lastSheetFast=localStorage.getItem('demandes:v4:last') || '0'; }catch(e){}
 /* La dernière feuille est retenue par son identifiant. Un ancien numéro

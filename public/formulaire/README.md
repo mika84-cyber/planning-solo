@@ -6,7 +6,8 @@ la génération PDF et le retour vers Planning Solo.
 
 Les fonctions sans état sont isolées dans des modules ES testables :
 
-- `form-value-utils.js` : masques, dates et heures saisies ;
+- `form-value-utils.js` : masques, dates et heures saisies, et feuilles déjà
+  faites (vérification, fusion de la liste, résumé d'une ligne) ;
 - `form-calendar.js` : jours fériés et cycle de travail ;
 - `form-file-utils.js` : lecture et validation locale des pièces jointes.
 - `form-signature-controller.js` : persistance mobile, synchronisation du

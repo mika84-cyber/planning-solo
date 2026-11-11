@@ -38,6 +38,7 @@
       <div class="form-tools" role="group" aria-label="Outils du formulaire">
         <button class="btn neutral" id="btnReset"><svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 20h-10.5l-4.21-4.3a1 1 0 0 1 0-1.41l10-10a1 1 0 0 1 1.41 0l5 5a1 1 0 0 1 0 1.41l-9.2 9.3M18 13.3l-6.3-6.3"/></svg><span>Vider</span></button>
         <button class="btn secondary" id="btnSecond"><svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2zM12 11v6M9 14h6"/></svg><span class="tool-long">Ajouter une feuille</span><span class="tool-short">Feuille</span></button>
+        <button class="btn secondary" id="btnTake" aria-haspopup="dialog"><svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg><span>Reprendre</span></button>
         <button class="btn secondary" id="btnOutlook" title="Créer le PDF et l'envoyer par Outlook" aria-label="Créer le PDF et l'envoyer par Outlook"><svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2zM3 7l9 6 9-6"/></svg><span>Outlook</span></button>
         <button class="btn print btn-icon" id="btnPrint" title="Imprimer le PDF" aria-label="Imprimer le PDF"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 12h.01" stroke-width="3" stroke-linecap="round"/></svg><span class="btn-label">Imprimer</span></button>
       </div>
@@ -46,6 +47,10 @@
   </div>
 </div>
 
+<div id="takeBanner" role="status" hidden>
+  <div><b id="takeBannerTitle"></b><span id="takeBannerText"></span></div>
+  <button type="button" id="takeUndo">Annuler</button>
+</div>
 <select id="zoom" hidden aria-hidden="true"><option value="fit" selected>Ajusté</option></select>
 <div class="msg" id="msg"></div>
 <div id="actionToast" role="status" aria-live="polite"></div>
@@ -78,6 +83,18 @@
     <div id="sighint2" hidden>Signature du collègue</div>
     <canvas id="sig2" hidden aria-label="Signature du collègue"></canvas>
     <button type="button" id="sigclear2" hidden>Effacer sa signature</button>
+  </div>
+</div>
+
+<div id="takeModal" hidden>
+  <div class="take-panel" role="dialog" aria-modal="true" aria-labelledby="takeTitle">
+    <div class="take-head">
+      <div><h2 id="takeTitle">Feuilles déjà faites</h2><p id="takeWhere"></p></div>
+      <button type="button" id="takeClose" aria-label="Fermer la liste">×</button>
+    </div>
+    <div id="takeList" role="list"></div>
+    <button type="button" id="takeOpen"><svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19V6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/><path d="M3 19l2.6-7.2A2 2 0 0 1 7.5 10.5H21l-3 8.5H3z"/></svg><span><b>Ouvrir un PDF du formulaire</b><small>Un PDF déjà créé, téléchargé ou reçu par mail</small></span></button>
+    <input type="file" id="takeFile" accept="application/pdf,.pdf" hidden>
   </div>
 </div>
 

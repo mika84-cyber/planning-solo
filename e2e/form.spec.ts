@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { devices, expect, test, type Page, type Route } from "@playwright/test";
 import { adaptStandalonePage } from "../scripts/build-congecp.mjs";
 
 test("le formulaire modulaire charge ses données et ses commandes", async ({ page }) => {
@@ -429,4 +429,125 @@ test("sur le site autonome, le calendrier laisse choisir son groupe et applique 
     .toHaveValue(/^\d{2}\/\d{2}\/\d{4}$/);
   await page.locator("#sheet").selectOption({ label: "Demande de congés" });
   await expect(page.getByRole("combobox", { name: "Groupe", exact: true })).toHaveValue("2");
+});
+
+/** Remplit le nom et la première ligne de congés annuels, comme le ferait le
+ *  calendrier : les dates sont en lecture seule à l'écran. */
+async function fillLeaveSheet(page: Page, name: string, from: string, to: string) {
+  await page.evaluate(([name, from, to]) => {
+    for (const [label, value] of [["NOM - Prénom", name], ["Congés annuels — ligne 1 — du", from], ["Congés annuels — ligne 1 — au", to]]) {
+      const field = document.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
+      field.value = value;
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }, [name, from, to]);
+}
+const leaveField = (page: Page, name: string) => page.getByRole("textbox", { name, exact: true });
+
+/** Un compte simulé, partagé par le téléphone et l'ordinateur : la liste des
+ *  feuilles déjà faites et les écritures reçues. */
+function formSheetsAccount() {
+  const account = { sheets: [] as Array<Record<string, unknown>>, saved: [] as Array<Record<string, unknown>> };
+  const handler = async (route: Route) => {
+    if (route.request().method() !== "POST") return route.fulfill({ json: { form_profile: null } });
+    const body = route.request().postDataJSON();
+    if (body.action === "save-form-sheet") {
+      account.saved.push(body.sheet);
+      account.sheets = [{ ...body.sheet, updated_at: new Date().toISOString() }, ...account.sheets.filter((item) => item.id !== body.sheet.id)];
+    }
+    return route.fulfill({ json: { ok: true, form_sheets: account.sheets } });
+  };
+  return { account, handler };
+}
+
+test("une feuille déjà faite se reprend depuis « Reprendre », et « Annuler » rend l’écran d’avant", async ({ page }) => {
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.goto("/formulaire/index.html?feuille=conges");
+  await fillLeaveSheet(page, "DUPONT Camille", "21/12/2026", "02/01/2027");
+  await page.locator("#btnPdf").click();
+  await expect(page.locator("#actionToast")).toHaveText("PDF créé", { timeout: 60_000 });
+  const reset = page.locator("#btnReset");
+  await reset.click();
+  await reset.click();
+  await expect(leaveField(page, "Congés annuels — ligne 1 — du")).toHaveValue("");
+
+  await page.getByRole("button", { name: "Reprendre", exact: true }).click();
+  const list = page.getByRole("dialog", { name: "Feuilles déjà faites" });
+  await expect(list).toBeVisible();
+  await expect(list.getByRole("listitem")).toHaveCount(1);
+  await expect(list.getByRole("listitem")).toContainText("Congés annuels, du 21/12 au 02/01");
+  await list.getByRole("button", { name: /^Reprendre Demande de congés/ }).click();
+  await expect(list).toBeHidden();
+  await expect(leaveField(page, "Congés annuels — ligne 1 — du")).toHaveValue("21/12/2026");
+  await expect(leaveField(page, "Congés annuels — ligne 1 — au")).toHaveValue("02/01/2027");
+  await expect(page.locator("#takeBanner")).toContainText("Reprise de la feuille du");
+
+  await page.locator("#takeUndo").click();
+  await expect(page.locator("#takeBanner")).toBeHidden();
+  await expect(leaveField(page, "Congés annuels — ligne 1 — du")).toHaveValue("");
+});
+
+test("un PDF du formulaire rouvert rend sa feuille, un autre PDF est refusé", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Le téléchargement du PDF est vérifié sur l’ordinateur.");
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.goto("/formulaire/index.html?feuille=conges");
+  await fillLeaveSheet(page, "MARTIN Léa", "03/03/2027", "05/03/2027");
+  const download = page.waitForEvent("download");
+  await page.locator("#btnPdf").click();
+  const pdfPath = test.info().outputPath("demande.pdf");
+  await (await download).saveAs(pdfPath);
+  await page.locator("#sheet").selectOption({ label: "Demande de récupérations" });
+
+  // Reprise depuis une autre feuille : le formulaire repasse sur les congés.
+  await page.getByRole("button", { name: "Reprendre", exact: true }).click();
+  await page.locator("#takeFile").setInputFiles(pdfPath);
+  await expect(page.locator("#sheet")).toHaveValue("0");
+  await expect(leaveField(page, "Congés annuels — ligne 1 — du")).toHaveValue("03/03/2027");
+  await expect(page.locator("#takeBanner")).toContainText("Feuille reprise du PDF");
+  await expect(page.locator("#takeBanner")).toContainText("« demande.pdf »");
+
+  await page.getByRole("button", { name: "Reprendre", exact: true }).click();
+  await page.locator("#takeFile").setInputFiles("public/useful-forms/adhesion-carte-pop.pdf");
+  await expect(page.locator("#msg")).toHaveText(/ne contient pas de feuille à reprendre/);
+});
+
+test("une feuille faite sur l’ordinateur se retrouve sur le téléphone par le compte, et inversement", async ({ page, browser, isMobile }) => {
+  test.skip(isMobile, "Le scénario ouvre lui-même un téléphone à côté de l’ordinateur.");
+  const { account, handler } = formSheetsAccount();
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.route("**/api/calendar", handler);
+  await page.goto("/formulaire/index.html?feuille=conges");
+  await fillLeaveSheet(page, "DUPONT Camille", "21/12/2026", "02/01/2027");
+  await page.locator("#btnPdf").click();
+  // La fabrication du PDF prend une quinzaine de secondes sur le serveur de test.
+  await expect.poll(() => account.saved.length, { timeout: 60_000 }).toBe(1);
+  expect(account.saved[0]).toMatchObject({
+    sheet: "conges",
+    pages: [{ f: { nom: "DUPONT Camille", ca0_from: "21/12/2026", ca0_to: "02/01/2027" } }],
+  });
+  // Ni signature ni image dans ce qui part sur le compte.
+  expect(JSON.stringify(account.saved[0])).not.toContain("data:image");
+
+  // Le téléphone : une feuille faite hors connexion attend sur l'appareil.
+  const phone = await browser.newContext({ ...devices["Pixel 7"] });
+  const mobile = await phone.newPage();
+  await mobile.route("**/api/calendar", handler);
+  await mobile.addInitScript(() => localStorage.setItem("demandes:v1:feuilles", JSON.stringify([{
+    id: "horsligne01", sheet: "recup", p: 1, o: "",
+    pages: [{ f: { nom: "DUPONT Camille", rjour0_from: "28/11/2026" }, m: [], c: {} }],
+    created_at: "2026-11-10T08:00:00.000Z", updated_at: "2026-11-10T08:00:00.000Z",
+  }])));
+  await mobile.goto("/formulaire/index.html?feuille=conges");
+  await mobile.getByRole("button", { name: "Reprendre", exact: true }).click();
+  const list = mobile.getByRole("dialog", { name: "Feuilles déjà faites" });
+  await expect(list).toContainText("Sur votre compte : téléphone et ordinateur");
+  await expect(list.getByRole("listitem")).toHaveCount(2);
+  expect(account.saved.map((sheet) => sheet.id)).toContain("horsligne01");
+  await list.getByRole("button", { name: /^Reprendre Demande de congés/ }).click();
+  await expect(leaveField(mobile, "Congés annuels — ligne 1 — du")).toHaveValue("21/12/2026");
+  await phone.close();
+
+  // Et l'ordinateur retrouve la feuille partie du téléphone.
+  await page.getByRole("button", { name: "Reprendre", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Feuilles déjà faites" }).getByRole("listitem")).toHaveCount(2);
 });

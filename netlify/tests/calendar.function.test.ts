@@ -215,6 +215,8 @@ describe("API principale du calendrier", () => {
       "save-entry",
       "save-exchange",
       "delete-exchange",
+      "list-form-sheets",
+      "save-form-sheet",
     ]);
   });
 
@@ -1895,5 +1897,74 @@ describe("API principale du calendrier", () => {
     });
     expect(data.has("user/user-a/period/bulk-rollback-one-2026")).toBe(false);
     expect(data.has("user/user-a/period/bulk-rollback-two-2026")).toBe(false);
+  });
+
+  it("garde les feuilles déjà faites du formulaire sur le compte, pour tous ses appareils", async () => {
+    const post = async (body: Record<string, unknown>, id = "user-a") => {
+      mockedGetUser.mockResolvedValue({ id, email: `${id}@example.test` } as never);
+      const response = await calendarHandler(request(body));
+      return { status: response.status, body: await response.json() };
+    };
+    const sheet = (id: string, nom: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      sheet: "conges",
+      pages: [{ f: { nom, ca0_from: "21/12/2026", ca0_to: "", ca0_soit: "9" }, m: ["ca0_soit", "inconnu"], c: {} }],
+      o: "",
+      ...extra,
+    });
+
+    expect((await post({ action: "list-form-sheets" })).body).toEqual({ ok: true, form_sheets: [] });
+    // Enregistrée sur le téléphone…
+    const saved = await post({ action: "save-form-sheet", sheet: sheet("telephone01", "DUPONT Camille") });
+    expect(saved.status).toBe(200);
+    expect(saved.body.form_sheets).toHaveLength(1);
+    // …relue sur l'ordinateur, sans les cases vides ni les noms inconnus.
+    const listed = (await post({ action: "list-form-sheets" })).body.form_sheets;
+    expect(listed[0]).toMatchObject({
+      id: "telephone01",
+      sheet: "conges",
+      pages: [{ f: { nom: "DUPONT Camille", ca0_from: "21/12/2026", ca0_soit: "9" }, m: ["ca0_soit"], c: {} }],
+    });
+    // Le même contenu, imprimé puis téléchargé : une seule ligne.
+    await post({ action: "save-form-sheet", sheet: sheet("ordinateur1", "DUPONT Camille") });
+    const deduplicated = (await post({ action: "list-form-sheets" })).body.form_sheets;
+    expect(deduplicated.map((item: { id: string }) => item.id)).toEqual(["ordinateur1"]);
+    expect(deduplicated[0].created_at).toBe(listed[0].created_at);
+    // Une feuille reprise puis modifiée garde sa ligne, en tête.
+    await post({ action: "save-form-sheet", sheet: sheet("autrefeuil", "MARTIN Léa") });
+    await post({ action: "save-form-sheet", sheet: sheet("ordinateur1", "DUPONT Camille B.") });
+    const replaced = (await post({ action: "list-form-sheets" })).body.form_sheets;
+    expect(replaced.map((item: { id: string }) => item.id)).toEqual(["ordinateur1", "autrefeuil"]);
+    expect(replaced[0].pages[0].f.nom).toBe("DUPONT Camille B.");
+    // Les vingt plus récentes seulement.
+    for (let index = 0; index < 22; index += 1)
+      await post({ action: "save-form-sheet", sheet: sheet(`feuille${String(index).padStart(3, "0")}`, `Nom ${index}`) });
+    const limited = (await post({ action: "list-form-sheets" })).body.form_sheets;
+    expect(limited).toHaveLength(20);
+    expect(limited[0].id).toBe("feuille021");
+    // Un autre compte ne voit rien.
+    expect((await post({ action: "list-form-sheets" }, "user-b")).body.form_sheets).toEqual([]);
+  });
+
+  it("refuse une feuille du formulaire hors du cadre attendu", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    const base = { id: "feuille001", sheet: "conges", pages: [{ f: { nom: "A" }, m: [], c: {} }], o: "" };
+    for (const sheet of [
+      null,
+      { ...base, id: "court" },
+      { ...base, id: "../autre" },
+      { ...base, sheet: "inconnue" },
+      { ...base, pages: [] },
+      { ...base, pages: Array.from({ length: 6 }, () => base.pages[0]) },
+      { ...base, pages: [{ f: { "<b>": "A" }, m: [], c: {} }] },
+      { ...base, pages: [{ f: { nom: { texte: "A" } }, m: [], c: {} }] },
+      { ...base, pages: [{ f: { nom: "A".repeat(201) }, m: [], c: {} }] },
+      { ...base, o: "x".repeat(1001) },
+    ]) {
+      const response = await calendarHandler(request({ action: "save-form-sheet", sheet }));
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "Feuille invalide" });
+    }
+    expect(data.has("user/user-a/form-sheets")).toBe(false);
   });
 });

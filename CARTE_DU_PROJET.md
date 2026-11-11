@@ -809,6 +809,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   d’écriture du calendrier ; `index.mts` contient le dispatch explicite.
   `work-exchange.mts` enregistre ou supprime atomiquement les deux cases d’un
   échange et restaure leur état précédent en cas d’échec.
+  `form-sheets.mts` (`list-form-sheets`, `save-form-sheet`) garde les feuilles
+  déjà faites du formulaire sur le compte (clé `form-sheets`, vingt au plus,
+  contenu des cases seulement), vérifiées par `netlify/lib/formSheets.mts`.
 - `netlify/lib/sharedCalendarBridge.mts` et `netlify/lib/sharedBridgeQueue.mts` :
   copies des congés et notes de Mika vers le planning d’Agnès, une seule fois
   par écriture (un lot annulé n’envoie rien) ; une copie qui n’aboutit pas
@@ -868,6 +871,23 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   feuilles d'échange et de remplacement de jour férié qui n'ont pas cette case.
   Sous `/formulaire/` de Planning Solo, `app.js` retire ce choix d'après la
   balise `planning-api` et le bandeau renvoie à la case « Groupe ».
+  Feuilles déjà faites (« Reprendre », `#btnTake`, `#takeModal`) : chaque PDF
+  créé (télécharger, imprimer, Outlook) garde le contenu de ses feuilles, sans
+  signature ni justificatif (`currentSheetEntry`, `rememberSheet`), sur le
+  compte (`save-form-sheet`), donc pour le téléphone comme pour l'ordinateur,
+  et sur l'appareil (`demandes:v1:feuilles`) : une feuille faite hors
+  connexion y attend, marquée `p`, et part à la prochaine ouverture de la
+  liste (`syncSheets`). Sans compte (Congé CP, démo), la liste reste sur
+  l'appareil. Une même feuille imprimée puis téléchargée n'a qu'une ligne, une
+  feuille reprise puis envoyée remplace la sienne (`mergeFormSheets`, la même
+  règle sur le serveur). Reprendre rend toutes les feuilles du PDF, datées du
+  jour, sur leur formulaire, avec la signature de l'appareil ou du compte ; le
+  bandeau `#takeBanner` propose « Annuler », qui rend l'écran d'avant et le
+  brouillon de la feuille reprise. Le PDF emporte aussi ce contenu dans son
+  dictionnaire d'informations (`PlanningSoloFeuille`) : « Ouvrir un PDF du
+  formulaire » le relit (`normalizeFormSheet`), même sur un autre appareil ;
+  un PDF venu d'ailleurs ou d'avant est refusé avec un message. Masqué pour
+  une demande ouverte depuis le planning. Scénarios dans `e2e/form.spec.ts`.
   À l’ouverture, la feuille est celle d’un transfert (`?planning=1`,
   `?echange=1`), sinon celle que demande l’adresse (`?feuille=conges`, le
   formulaire vierge de l’application), sinon la dernière utilisée

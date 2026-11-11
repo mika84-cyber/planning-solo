@@ -134,7 +134,11 @@ const budgets = {
   // la fiche « Mon profil » du menu du compte, les renvois de l'écran Titres
   // repas et la demande de congé à un seul jeu de commandes (2 101,4 / 696,1
   // Kio mesurés).
-  totalJavaScript: { raw: 2_104 * KIB, gzip: 698 * KIB },
+  // Relevé le 11 novembre 2026 à 2 115 Kio bruts et 701 Kio compressés, avec
+  // l'accord de l'administrateur : « Reprendre » dans le formulaire autonome
+  // (feuilles déjà faites rangées sur le compte, reprise, PDF qui emporte sa
+  // feuille et se rouvre) (2 113,1 / 700,0 Kio mesurés).
+  totalJavaScript: { raw: 2_115 * KIB, gzip: 701 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -166,7 +170,10 @@ const budgets = {
   // Relevé le 1er novembre 2026 à 102 Kio gzip avec l'accord de
   // l'administrateur, pour les retouches du mode sombre (darkTheme.css) :
   // 102 399 octets mesurés, un seul de marge, après retrait des règles mortes.
-  totalCss: { raw: 537 * KIB, gzip: 102 * KIB },
+  // Relevé le 11 novembre 2026 à 103 Kio gzip avec l'accord de
+  // l'administrateur : la liste « Reprendre » et le bandeau de reprise du
+  // formulaire autonome (102,7 Kio mesurés).
+  totalCss: { raw: 537 * KIB, gzip: 103 * KIB },
 };
 
 async function filesUnder(directory) {

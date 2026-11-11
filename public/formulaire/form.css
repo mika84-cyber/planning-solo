@@ -522,9 +522,9 @@
   :is(html.device-desktop,html.device-touch) .bar-actions #btnBackApp:hover{color:var(--ui-strong);text-decoration:underline;text-underline-offset:3px}
   #btnBackApp .tool-icon{width:16px;height:16px}
   .form-tools{display:flex;align-items:center;padding:3px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
-  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint){position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;width:auto;min-width:0;height:36px;min-height:36px;margin:0;padding:0 12px;border:0;border-radius:9px;background:transparent;box-shadow:none;color:var(--text);font-size:13px;font-weight:600;white-space:nowrap;grid-column:auto;grid-row:auto}
-  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint):hover{background:#ece6df}
-  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint):disabled{background:transparent;opacity:.45}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint){position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;width:auto;min-width:0;height:36px;min-height:36px;margin:0;padding:0 12px;border:0;border-radius:9px;background:transparent;box-shadow:none;color:var(--text);font-size:13px;font-weight:600;white-space:nowrap;grid-column:auto;grid-row:auto}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint):hover{background:#ece6df}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint):disabled{background:transparent;opacity:.45}
   html.device-desktop .bar-actions .form-tools #btnOutlook{display:none}
   :is(html.device-desktop,html.device-touch) .bar-actions .form-tools #btnPrint{padding:0 10px}
   :is(html.device-desktop,html.device-touch) .bar-actions #btnPrint svg{width:18px;height:18px}
@@ -537,8 +537,8 @@
     :is(html.device-desktop,html.device-touch) .bar-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
     :is(html.device-desktop,html.device-touch) .bar-actions #btnBackApp{justify-self:start}
     .form-tools{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:13px}
-    :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint){flex-direction:column;gap:2px;width:100%;height:46px;min-height:46px;padding:0 2px;color:var(--muted);font-size:11px;white-space:normal}
-    :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint) svg{width:19px;height:19px;color:var(--text)}
+    :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint){flex-direction:column;gap:2px;width:100%;height:46px;min-height:46px;padding:0 2px;color:var(--muted);font-size:11px;white-space:normal}
+    :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint) svg{width:19px;height:19px;color:var(--text)}
     :is(html.device-desktop,html.device-touch) .bar-actions #btnPrint .btn-label{display:inline}
     .form-tools > .btn + .btn::before{top:12px;bottom:12px}
     .tool-long{display:none}
@@ -628,13 +628,14 @@
   #btnReset{--tool:#c0443a}
   #btnSecond{--tool:#2f8a5b}
   #btnOutlook{--tool:#0a64c8}
+  #btnTake{--tool:#6d4f9e}
   #btnPrint{--tool:#4a5a78}
   .form-tools{gap:6px;padding:0;border:0;background:transparent}
   .form-tools > .btn + .btn::before{display:none}
-  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint){border:1px solid color-mix(in srgb,var(--tool) 35%,#fff);border-radius:12px;background:color-mix(in srgb,var(--tool) 11%,#fff);color:var(--tool);font-weight:700}
-  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint):hover{border-color:color-mix(in srgb,var(--tool) 60%,#fff);background:color-mix(in srgb,var(--tool) 18%,#fff)}
-  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint):disabled{background:color-mix(in srgb,var(--tool) 6%,#fff);opacity:.5}
-  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnOutlook,#btnPrint) svg{color:var(--tool)}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint){border:1px solid color-mix(in srgb,var(--tool) 35%,#fff);border-radius:12px;background:color-mix(in srgb,var(--tool) 11%,#fff);color:var(--tool);font-weight:700}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint):hover{border-color:color-mix(in srgb,var(--tool) 60%,#fff);background:color-mix(in srgb,var(--tool) 18%,#fff)}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint):disabled{background:color-mix(in srgb,var(--tool) 6%,#fff);opacity:.5}
+  :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint) svg{color:var(--tool)}
 
   /* En-tête sur téléphone : fond crème, sans cadre. Un sur-titre « Choisir le
      formulaire » en petites capitales, le nom du formulaire en Fraunces dans
@@ -677,3 +678,54 @@
   .calgroup:hover{border-color:var(--ui);color:var(--ui)}
   .calgroup.on{border-color:var(--ui);background:var(--ui-soft);color:var(--ui-strong)}
   .calgroup:focus-visible{outline:2px solid var(--ui);outline-offset:2px}
+
+  /* Feuilles déjà faites : le bouton « Reprendre », la liste (montée du bas
+     sur téléphone, ouverte sous le bouton sur ordinateur) et le bandeau d'une
+     feuille reprise, avec « Annuler ». */
+  .bar-actions .form-tools > #btnTake[hidden]{display:none!important}
+  #takeModal{position:fixed;inset:0;z-index:70;background:rgba(36,28,22,.42)}
+  #takeModal[hidden],#takeBanner[hidden]{display:none}
+  .take-panel{position:fixed;left:0;right:0;bottom:0;display:grid;gap:8px;max-height:min(84vh,640px);overflow:auto;overscroll-behavior:contain;padding:16px 16px calc(18px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;background:#fffdfa;box-shadow:0 -12px 32px rgba(0,0,0,.22);color:#2c2621}
+  .take-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px}
+  .take-head h2{margin:0;font:700 21px/1.15 "Fraunces",Georgia,serif;letter-spacing:-.01em}
+  .take-head p{min-height:1.3em;margin:4px 0 0;color:#6f6455;font-size:13px}
+  #takeClose{flex:none;width:36px;height:36px;padding:0;border:1px solid #e3d6c8;border-radius:50%;background:#fff;color:#6f6455;font-size:20px;line-height:1;cursor:pointer}
+  #takeList{display:grid;gap:8px}
+  .take-item{--c:#985438;display:grid;grid-template-columns:5px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 10px 11px 11px;border:1px solid #e8dccf;border-radius:14px;background:#fff}
+  .take-item[data-sheet="recup"]{--c:#2f8a5b}
+  .take-item[data-sheet="echange"]{--c:#0a64c8}
+  .take-item[data-sheet="ferie"]{--c:#9a6a12}
+  .take-item[data-sheet="annul"]{--c:#c0443a}
+  .take-item > i{align-self:stretch;border-radius:3px;background:var(--c)}
+  .take-item > div{min-width:0}
+  .take-item strong{display:block;font-size:14.5px;line-height:1.2}
+  .take-item span{display:block;margin-top:2px;font-size:13px;line-height:1.3;overflow-wrap:anywhere}
+  .take-item small{display:block;margin-top:3px;color:#6f6455;font-size:11.5px}
+  .take-pick{min-height:36px;padding:0 11px;border:1px solid color-mix(in srgb,var(--c) 35%,#fff);border-radius:10px;background:color-mix(in srgb,var(--c) 9%,#fff);color:color-mix(in srgb,var(--c) 80%,#000);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .take-pick:hover{background:color-mix(in srgb,var(--c) 17%,#fff)}
+  .take-empty{margin:0;padding:14px;border-radius:12px;background:#f7f1ea;color:#6f6455;font-size:13.5px;line-height:1.4}
+  .take-empty:empty{display:none}
+  #takeOpen{display:flex;align-items:center;gap:10px;width:100%;margin-top:2px;padding:11px 12px;border:1px dashed #cdb9a4;border-radius:14px;background:transparent;color:#2c2621;font:inherit;text-align:left;cursor:pointer}
+  #takeOpen:hover{border-style:solid;background:#fbf5ee}
+  #takeOpen svg{flex:none;width:20px;height:20px;color:#9a5236}
+  #takeOpen span{min-width:0}
+  #takeOpen b{display:block;font-size:13.5px}
+  #takeOpen small{display:block;color:#6f6455;font-size:11.5px}
+  #takeOpen::after{content:"›";margin-left:auto;color:#9a5236;font-size:18px;font-weight:800}
+  #takeBanner{display:flex;align-items:center;gap:10px;margin:12px max(14px,calc(50% - 520px)) 0;padding:10px 12px;border:1px solid #d9cbec;border-radius:12px;background:#f4eefb;color:#3b2c58;font-size:13px;line-height:1.35}
+  #takeBanner > div{min-width:0}
+  #takeBanner b{display:block;font-size:13.5px}
+  #takeUndo{flex:none;margin-left:auto;min-height:34px;padding:0 10px;border:1px solid #cdb9e6;border-radius:9px;background:#fff;color:#5b3f8c;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+  @media(min-width:761px){
+    #takeModal{background:transparent}
+    .take-panel{right:auto;bottom:auto;width:440px;max-height:min(72vh,560px);padding:14px;border:1px solid #e3d6c8;border-radius:16px;box-shadow:0 18px 40px rgba(44,38,33,.22)}
+    .take-head h2{font-size:18px}
+  }
+  /* Cinq outils sur un petit téléphone (Outlook compris) : un peu moins
+     d'écart et de corps, pour que « Reprendre » et « Imprimer » respirent. */
+  @media(max-width:360px){
+    .form-tools{gap:4px}
+    :is(html.device-desktop,html.device-touch) .bar-actions .form-tools > :is(#btnReset,#btnSecond,#btnTake,#btnOutlook,#btnPrint){font-size:10.5px;letter-spacing:-.01em}
+  }
+  @media(max-width:400px){ .take-pick{padding:0 9px;font-size:12.5px} .take-item{gap:10px} }
+  @media print{ #takeBanner,#takeModal{display:none!important} }

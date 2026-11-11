@@ -5,6 +5,7 @@ import { handleRestoreBackup } from "./restore-backup.mts";
 import { handleDeleteUserData } from "./delete-user-data.mts";
 import { handleArchiveLegacyData } from "./archive-legacy-data.mts";
 import { handleSaveFormProfile } from "./save-form-profile.mts";
+import { handleListFormSheets, handleSaveFormSheet } from "./form-sheets.mts";
 import { handleSaveMecenat } from "./save-mecenat.mts";
 import { handleDeleteMecenat } from "./delete-mecenat.mts";
 import { handleSaveMecenatSignup } from "./save-mecenat-signup.mts";
@@ -53,6 +54,8 @@ const actionHandlers: Record<string, CalendarActionHandler> = {
   "save-entry": handleSaveEntry,
   "save-exchange": handleSaveExchange,
   "delete-exchange": handleDeleteExchange,
+  "list-form-sheets": handleListFormSheets,
+  "save-form-sheet": handleSaveFormSheet,
 };
 
 export const CALENDAR_ACTIONS = Object.freeze(Object.keys(actionHandlers));
