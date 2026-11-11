@@ -19,7 +19,7 @@ import "./mealVouchers.css";
 
 const SHORT_MONTHS = ["Janv.", "Févr.", "Mars", "Avril", "Mai", "Juin", "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc."];
 /** Ce qui distingue chaque modèle, en peu de mots pour sa carte. */
-const MODEL_NOTES: Record<string, string> = { spread: "20 en nov. et déc." };
+const MODEL_NOTES: Record<string, string> = { spread: "puis 20 en nov et déc" };
 const PEN = "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4";
 const sameCounts = (left: readonly number[], right: readonly number[]) => left.join() === right.join();
 

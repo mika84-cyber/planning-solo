@@ -69,7 +69,7 @@ describe("l'écran des titres repas", () => {
       .map((match) => match.slice(1));
     expect(cards).toEqual([
       ["true", "20 par mois, rien en décembre", "20", "Rien en décembre", "220"],
-      ["false", "18 par mois, 20 en novembre et décembre", "18", "20 en nov. et déc.", "220"],
+      ["false", "18 par mois, 20 en novembre et décembre", "18", "puis 20 en nov et déc", "220"],
     ]);
     expect(html).toMatch(/class="meal-vouchers-custom" aria-checked="false"><b aria-hidden="true"><svg[^]*?<\/svg><\/b><span><strong>Sur mesure<\/strong><small>Le nombre de votre choix, mois par mois<\/small><\/span>/);
     // Plus de carte « Sur l’année » à part : la part de l'année reste sous la répartition.
