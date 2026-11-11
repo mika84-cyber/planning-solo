@@ -796,8 +796,20 @@ function fillAccountName(){
   });
 }
 function restoreSavedSignature(){
-  /* D'abord la signature gardée sur cet appareil, sinon celle du compte. */
-  return signatureController.restoreSaved().then(function(){ return signatureController.restoreFromAccount(); });
+  /* D'abord la signature gardée sur cet appareil, sinon celle du compte,
+     sinon celle du brouillon. */
+  var draft = draftSignature; draftSignature = null;
+  return signatureController.restoreSaved()
+    .then(function(){ return signatureController.restoreFromAccount(); })
+    .then(function(drawn){
+      if(drawn || hasInk || !draft) return;
+      if(!draft.fromAccount) return drawDraftSignature(draft.data, false);
+      /* Copie du compte : reprise seulement s'il ne répond pas (hors
+         connexion) ; supprimée du compte, elle ne revient pas. */
+      return signatureController.accountPayload().then(function(payload){
+        if(!payload && !hasInk) return drawDraftSignature(draft.data, true);
+      });
+    });
 }
 function updateClr(){ signatureController.updateClearButton(); }
 function sizeSig(scale){ signatureController.size(scale); }
@@ -1329,6 +1341,7 @@ function capturePage(){
   return { v:inputs.map(function(el){return el.value;}),
            m:inputs.map(function(el){return el.dataset.manual==='1'?1:0;}),
            c:Object.assign({},checkState), s:hasInk?sig.toDataURL('image/png'):'',
+           sa:hasInk && signatureController.inkFromAccount() ? 1 : 0,
            s2:hasInk2?sig2.toDataURL('image/png'):'' };
 }
 function applyPageState(d){
@@ -1337,7 +1350,8 @@ function applyPageState(d){
     if(IF[i].k==='time') paintCells(IF[i].n,v); if(d.m&&d.m[i]) el.dataset.manual='1'; else delete el.dataset.manual; });
   (M.checks||[]).forEach(function(c){checkState[c.n]=!!(d.c&&d.c[c.n]);paintCheck(c);});
   sctx.clearRect(0,0,sig.width,sig.height); hasInk=false; sig.classList.remove('has'); hint.style.display='';
-  if(d.s){ var im=new Image(); im.onload=function(){sctx.drawImage(im,0,0,sig.width,sig.height);hasInk=true;sig.classList.add('has');hint.style.display='none';updateClr();}; im.src=d.s; }
+  signatureController.markInkFromAccount(false);
+  if(d.s){ var im=new Image(); im.onload=function(){sctx.drawImage(im,0,0,sig.width,sig.height);hasInk=true;sig.classList.add('has');hint.style.display='none';signatureController.markInkFromAccount(d.sa===1);updateClr();}; im.src=d.s; }
   clearSig2(); drawSig2(d.s2);
   recalcAll(); refreshAtt(); layout();
 }
@@ -1394,6 +1408,9 @@ function scheduleSave(){
       /* Sur mobile, la signature n'est conservée que dans l'emplacement dédié
          après un consentement explicite. Le formulaire courant ne la sauvegarde pas en parallèle. */
       base.s = withSig && hasInk && !mobileSignaturePersistence() ? sig.toDataURL('image/png') : '';
+      /* so : 1 = signée sur cet appareil, gardée telle quelle ; 0 = copie de
+         la signature du compte, qui la remplacera à la prochaine ouverture. */
+      base.so = base.s ? (signatureController.inkFromAccount() ? 0 : 1) : undefined;
       base.s2 = withSig && hasInk2 ? sig2.toDataURL('image/png') : '';
       return store.set(key(), JSON.stringify(base));
     }
@@ -1404,6 +1421,7 @@ function scheduleSave(){
   }, 700);
 }
 function restore(){
+  draftSignature = null;
   return store.get(key()).then(function(raw){
     if(!raw) return;
     var d = JSON.parse(raw);
@@ -1421,15 +1439,29 @@ function restore(){
     });
     drawSig2(d.s2);
     if(d.s && !mobileSignaturePersistence()){
-      var im = new Image();
-      im.onload = function(){
-        sctx.drawImage(im, 0, 0, sig.width, sig.height);
-        hasInk = true; sig.classList.add('has'); hint.style.display = 'none';
-        updateClr();
-      };
-      im.src = d.s;
+      /* Signée sur cet ordinateur : elle reste. Copie du compte, ou brouillon
+         d'avant cette distinction : la signature du compte, peut-être
+         enregistrée depuis sur le téléphone, passe d'abord
+         (restoreSavedSignature). */
+      if(d.so === 1) return drawDraftSignature(d.s, false);
+      draftSignature = { data: d.s, fromAccount: d.so === 0 };
     }
   }).catch(function(){});
+}
+var draftSignature = null;
+function drawDraftSignature(data, fromAccount){
+  return new Promise(function(resolve){
+    var im = new Image();
+    im.onload = function(){
+      sctx.clearRect(0, 0, sig.width, sig.height);
+      sctx.drawImage(im, 0, 0, sig.width, sig.height);
+      hasInk = true; sig.classList.add('has'); hint.style.display = 'none';
+      signatureController.markInkFromAccount(fromAccount);
+      updateClr(); resolve();
+    };
+    im.onerror = function(){ resolve(); };
+    im.src = data;
+  });
 }
 function today(){
   var n = new Date();
@@ -2115,6 +2147,7 @@ function drawPlanningSignature(data){
       sctx.clearRect(0,0,sig.width,sig.height);
       drawSignature(sctx,im,sig.width,sig.height,M.sigFit);
       hasInk=true; sig.classList.add('has'); hint.style.display='none'; pdfDone=false;
+      signatureController.markInkFromAccount(true);
       updateClr(); resolve();
     };
     im.onerror=function(){ resolve(); };

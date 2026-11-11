@@ -77,8 +77,16 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   et le geste d'un écart du bulletin, toujours en haut de page (`setPayScreen`,
   `usePayUiState.ts`). La valeur du titre (10,30 € ou 9,90 €, qui
   donnent la part de l'agent), puis le nombre de titres de chaque mois : deux
-  modèles et une saisie libre, avec de petites flèches (20 par mois au plus, 220
-  par an). Sous l'année, trois lignes mènent à Docs (`MEAL_VOUCHER_LINKS`) :
+  modèles en cartes demi-largeur (`.meal-vouchers-model` : le nombre par mois,
+  la courbe des douze mois et leurs initiales, réduites à J et D sur carte
+  étroite par une requête de conteneur, ce qui distingue le modèle
+  (`MODEL_TEXT`) et le total, une coche ronde pour le choix), puis « Sur
+  mesure » en ligne pointillée (`.meal-vouchers-custom`) : les douze cases à
+  petites flèches n'apparaissent qu'avec elle (20 par mois au plus, 220 par
+  an). Sous la répartition, d'un filet (`.meal-vouchers-sum`) : le compte de
+  l'année en sur mesure, la part de l'agent et l'alerte de dépassement ; il
+  n'y a plus de carte « Sur l'année » à part. En sombre, le choix garde sa
+  teinte et sa coche blanche (`darkTheme.css`). Sous l'année, trois lignes mènent à Docs (`MEAL_VOUCHER_LINKS`) :
   les horaires de retrait (dossier « Titres repas : retrait », cible
   `meal-folder`), les formulaires (dossier Brantôme, `meal-forms`) et le
   contact (Contacts Pompidou › Tickets restaurants, `meal-contact`). L'entrée
@@ -842,6 +850,18 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `public/formulaire/index.html`, `form.css`, `app.js`, `device.js` et
   `sheets.js` : structure, présentation, logique, adaptation mobile et modèles
   du formulaire autonome de demande.
+  Signature et compte (`form-signature-controller.js`) : sur téléphone, la
+  signature gardée (après « Oui » à la proposition) part sur le compte
+  (`save-form-profile` avec `signatureUpdate`) ; à chaque ouverture, une
+  signature gardée sur le téléphone mais absente du compte — enregistrée hors
+  connexion, avant la synchronisation, ou effacée par les réglages du planning
+  avant le 8 octobre 2026 — y est renvoyée seule (`pushSavedSignatureIfMissing`,
+  sans nom ni groupe ; une autre signature déjà sur le compte n'est pas
+  remplacée). Sur ordinateur, le brouillon note la provenance de la signature
+  (`so` : 1 signée sur place, gardée ; 0 copie du compte, `inkFromAccount`) :
+  la signature du compte passe avant une copie ou un brouillon d'avant cette
+  distinction, qui ne sert plus qu'à défaut (compte sans signature, ou hors
+  connexion pour une copie). Scénarios dans `e2e/form.spec.ts`.
   Sur le site autonome Congé CP seulement, le groupe de cycle se choisit dans
   le calendrier (`#calGroupChoice`, `chooseCycleGroup`) : il nourrit la case
   « Groupe » de la feuille quand elle en a une, sinon le profil, pour les

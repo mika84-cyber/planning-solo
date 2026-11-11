@@ -132,6 +132,10 @@ export function createSignatureController(options) {
   let target = null;
   let typedForOther = false;
   let stroke = win.localStorage.getItem('signatureStroke') || 'normal';
+  /* Le cadre montre la signature du compte (et non une signature faite sur
+     cet appareil) : le brouillon la note comme telle, pour qu'à la prochaine
+     ouverture la version du compte, peut-être plus récente, la remplace. */
+  let accountInk = false;
 
   function storageKey(prefix) {
     return prefix + getOwnerSuffix();
@@ -191,27 +195,29 @@ export function createSignatureController(options) {
     return planningApiAvailable(win, doc);
   }
 
+  /* Envoie la signature au compte : seule une signature annoncée
+     (`signatureUpdate`) y remplace celle qui s'y trouve. */
+  function postSignature(identity, data) {
+    return win
+      .fetch('/api/calendar', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'save-form-profile', ...identity, signature: data, signatureUpdate: true }),
+      })
+      .then((response) => {
+        if (!response.ok) throw new Error('Synchronisation refusée');
+      });
+  }
+
   function syncSavedSignatureToPlanning(data, showConfirmation) {
     if (!canSyncWithPlanning()) return Promise.resolve(false);
     const profile = getPlanningProfile() || {};
     const fullName = profile.fullName || getFieldValue('nom');
     const group = profile.group || getFieldValue('groupe');
     if (profile.signature === data) return Promise.resolve(true);
-    return win
-      .fetch('/api/calendar', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          action: 'save-form-profile',
-          ...(fullName ? { fullName } : {}),
-          ...(group ? { group } : {}),
-          signature: data,
-          signatureUpdate: true,
-        }),
-      })
-      .then((response) => {
-        if (!response.ok) throw new Error('Synchronisation refusée');
+    return postSignature({ ...(fullName ? { fullName } : {}), ...(group ? { group } : {}) }, data)
+      .then(() => {
         onPlanningProfileSynced({ ...profile, fullName, group, signature: data });
         if (showConfirmation) {
           say('Signature enregistrée et synchronisée avec votre compte.');
@@ -263,15 +269,43 @@ export function createSignatureController(options) {
         context.clearRect(0, 0, canvas.width, canvas.height);
         drawSignature(context, image, canvas.width, canvas.height, getModel().sigFit);
         setHasInk(true);
+        accountInk = false;
         canvas.classList.add('has');
         hint.style.display = 'none';
         setPdfDone(false);
         updateClearButton();
+        void pushSavedSignatureIfMissing(data);
         resolve(true);
       };
       image.onerror = () => resolve(false);
       image.src = data;
     });
+  }
+
+  /* Une signature gardée sur ce téléphone mais absente du compte y est
+     renvoyée à l'ouverture du formulaire, pour que l'ordinateur la retrouve :
+     enregistrée hors connexion, avant la synchronisation, ou effacée du
+     compte par les réglages du planning avant le 8 octobre 2026. Seule la
+     signature part ; le nom, le groupe et le reste du profil restent ceux du
+     compte. Une signature différente déjà sur le compte n'est pas remplacée. */
+  let pushedSignature = '';
+  function pushSavedSignatureIfMissing(data) {
+    if (!canSyncWithPlanning() || !data || pushedSignature === data) return Promise.resolve(false);
+    return accountPayload()
+      .then((payload) => {
+        // Compte injoignable : on réessaiera à la prochaine ouverture.
+        if (!payload) return false;
+        if (payload.form_profile && payload.form_profile.signature) return false;
+        pushedSignature = data;
+        return postSignature({}, data).then(() => {
+          onPlanningProfileSynced({ ...(getPlanningProfile() || {}), signature: data });
+          return true;
+        });
+      })
+      .catch(() => {
+        pushedSignature = '';
+        return false;
+      });
   }
 
   /* La signature enregistrée sur le compte (depuis le téléphone) : reprise
@@ -313,6 +347,7 @@ export function createSignatureController(options) {
             context.clearRect(0, 0, canvas.width, canvas.height);
             drawSignature(context, image, canvas.width, canvas.height, getModel().sigFit);
             setHasInk(true);
+            accountInk = true;
             canvas.classList.add('has');
             hint.style.display = 'none';
             setPdfDone(false);
@@ -412,6 +447,7 @@ export function createSignatureController(options) {
   function clear() {
     context.clearRect(0, 0, canvas.width, canvas.height);
     setHasInk(false);
+    accountInk = false;
     canvas.classList.remove('has');
     hint.style.display = '';
     updateClearButton();
@@ -652,6 +688,8 @@ export function createSignatureController(options) {
       return;
     }
     context.clearRect(0, 0, canvas.width, canvas.height);
+    // Signée ou effacée dans la fenêtre : c'est la signature de cet appareil.
+    accountInk = false;
     if (bigHasInk) {
       const scale = Math.min(canvas.width / bigCanvas.width, canvas.height / bigCanvas.height);
       const width = bigCanvas.width * scale;
@@ -706,6 +744,9 @@ export function createSignatureController(options) {
   return {
     accountPayload,
     clear,
+    /** Le cadre montre la signature du compte, pas une signature faite ici. */
+    inkFromAccount: () => accountInk,
+    markInkFromAccount: (value) => { accountInk = Boolean(value); },
     closeModal,
     closeSavePrompt,
     mobilePersistence,

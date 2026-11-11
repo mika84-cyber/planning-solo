@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { adaptStandalonePage } from "../scripts/build-congecp.mjs";
 
 test("le formulaire modulaire charge ses données et ses commandes", async ({ page }) => {
@@ -93,6 +93,91 @@ test("la signature enregistrée sur le téléphone revient d’elle-même sur le
     for (let index = 3; index < data.length; index += 4) if (data[index]) return true;
     return false;
   })).toBe(true);
+});
+
+/** Deux petits PNG, bleu et rouge, pour reconnaître d'où vient la signature. */
+function signaturePngs(page: Page) {
+  return page.evaluate(() => ["#0b3baf", "#c0262d"].map((color) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 40; canvas.height = 20;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = color; context.fillRect(5, 5, 30, 10);
+    return canvas.toDataURL("image/png");
+  }));
+}
+
+test("sur l’ordinateur, la signature du compte remplace la copie du brouillon, jamais une signature faite sur place", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Sur téléphone, la signature se garde dans son propre emplacement.");
+  const [blue, red] = await signaturePngs(page);
+  let accountSignature = blue;
+  await page.route("**/api/calendar", (route) =>
+    route.fulfill({ json: { form_profile: { full_name: "Mika", group: "2", signature: accountSignature } } }));
+  const ink = () => page.locator("#sig").evaluate((canvas: HTMLCanvasElement) => {
+    const { data } = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height);
+    let reds = 0, blues = 0;
+    for (let index = 0; index < data.length; index += 4) {
+      if (data[index + 3] < 200) continue;
+      if (data[index] > 150 && data[index + 2] < 100) reds++;
+      else if (data[index + 2] > 120 && data[index] < 60) blues++;
+    }
+    return reds > blues ? "rouge" : blues ? "bleu" : "vide";
+  });
+  /** Pose le brouillon de la feuille de congés, puis rouvre le formulaire. */
+  async function reopenWithDraft(draft: Record<string, unknown>) {
+    await page.waitForTimeout(1000); // laisse passer l'enregistrement différé du brouillon
+    await page.evaluate((value) => localStorage.setItem("demandes:v4:conges", JSON.stringify(value)),
+      { v: [], m: [], c: {}, o: "", ...draft });
+    await page.reload();
+    await expect(page.locator("#paper")).toBeVisible();
+  }
+  await page.goto("/formulaire/index.html?feuille=conges");
+  // Brouillon d'avant la distinction, ou copie du compte : la signature du
+  // compte, enregistrée depuis sur le téléphone, passe d'abord.
+  await reopenWithDraft({ s: red });
+  await expect.poll(ink).toBe("bleu");
+  await reopenWithDraft({ s: red, so: 0 });
+  await expect.poll(ink).toBe("bleu");
+  // Signée sur cet ordinateur : elle reste.
+  await reopenWithDraft({ s: red, so: 1 });
+  await expect.poll(ink).toBe("rouge");
+  // Sans signature sur le compte, celle d'un ancien brouillon n'est pas perdue,
+  // mais une copie du compte supprimée depuis ne revient pas.
+  accountSignature = "";
+  await reopenWithDraft({ s: red });
+  await expect.poll(ink).toBe("rouge");
+  await reopenWithDraft({ s: red, so: 0 });
+  await page.waitForTimeout(500);
+  expect(await ink()).toBe("vide");
+});
+
+test("une signature gardée sur le téléphone mais absente du compte y est renvoyée, pour que l’ordinateur la retrouve", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "La signature ne se garde à part que sur téléphone.");
+  const [blue] = await signaturePngs(page);
+  let accountSignature = "";
+  const sent: unknown[] = [];
+  await page.route("**/api/calendar", (route) => {
+    if (route.request().method() === "POST") {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill({ json: { ok: true } });
+    }
+    return route.fulfill({ json: { form_profile: { full_name: "Mika", group: "2", signature: accountSignature } } });
+  });
+  await page.goto("/formulaire/index.html?feuille=conges");
+  await page.evaluate((data) => {
+    localStorage.setItem("demandes:v70:signature-choice", "saved");
+    localStorage.setItem("demandes:v70:signature-data", data);
+  }, blue);
+  await page.reload();
+  await expect(page.locator("#sig")).toHaveClass(/has/);
+  // Seule la signature part : le nom, le groupe et le reste du profil restent ceux du compte.
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toEqual({ action: "save-form-profile", signature: blue, signatureUpdate: true });
+  // Le compte l'a déjà : rien n'est renvoyé.
+  accountSignature = blue;
+  await page.reload();
+  await expect(page.locator("#sig")).toHaveClass(/has/);
+  await page.waitForTimeout(800);
+  expect(sent).toHaveLength(1);
 });
 
 test("la demande d’échange se remplit, reporte les dates chez le collègue et se télécharge", async ({ page }, testInfo) => {

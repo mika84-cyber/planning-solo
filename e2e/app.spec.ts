@@ -6821,9 +6821,11 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   await expect(screen).toContainText("Par défaut : 20 par mois, rien en décembre");
   // Changer son nombre de titres passe par un mail : l'adresse s'ouvre d'un geste.
   await expect(screen.getByRole("link", { name: "bimpli@centrepompidou.fr" })).toHaveAttribute("href", "mailto:bimpli@centrepompidou.fr");
-  await expect(month("novembre")).toHaveValue("20");
-  await expect(month("décembre")).toHaveValue("0");
-  await expect(screen.getByRole("radio", { name: /^20 par mois/ })).toHaveAttribute("aria-checked", "true");
+  // Les deux modèles en cartes : un modèle choisi se lit sur sa carte, sans
+  // les douze cases, qui n'apparaissent qu'avec « Sur mesure ».
+  await expect(screen.getByRole("radio", { name: "20 par mois, rien en décembre" })).toHaveAttribute("aria-checked", "true");
+  await expect(screen.getByRole("radio", { name: "18 par mois, 20 en novembre et décembre" })).toHaveAttribute("aria-checked", "false");
+  await expect(screen.getByRole("textbox", { name: /^Titres repas en / })).toHaveCount(0);
   // La valeur du titre d'abord : sans elle, l'écran le dit au lieu de ne rien faire.
   const save = screen.getByRole("button", { name: "Enregistrer" });
   await save.click();
@@ -6834,12 +6836,15 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   await expect(screen).toContainText("Votre part sur l’année");
   // Un modèle tout prêt : 18 de janvier à octobre, 20 en novembre et décembre.
   await screen.getByRole("radio", { name: /^18 par mois/ }).click();
+  await expect(screen.getByRole("radio", { name: /^18 par mois/ })).toHaveAttribute("aria-checked", "true");
+  // Sur mesure : les douze cases s'ouvrent sur le modèle choisi.
+  await screen.getByRole("radio", { name: /^Sur mesure/ }).click();
+  await expect(screen.getByRole("radio", { name: /^Sur mesure/ })).toHaveAttribute("aria-checked", "true");
   await expect(month("janvier")).toHaveValue("18");
   await expect(month("décembre")).toHaveValue("20");
   await expect(screen).toContainText("220 titres sur 220");
-  // Sur mesure : un mois de plus dépasse les droits, et bloque l'enregistrement.
+  // Un mois de plus dépasse les droits, et bloque l'enregistrement.
   await month("janvier").fill("20");
-  await expect(screen.getByRole("radio", { name: /^Sur mesure/ })).toHaveAttribute("aria-checked", "true");
   await expect(screen.getByRole("alert")).toContainText("2 titres de trop");
   await expect(save).toBeDisabled();
   // Jamais plus de 20 titres un mois.
@@ -6866,7 +6871,8 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   await page.locator("header.top-header").getByRole("button", { name: "Liste des raccourcis" }).click();
   await page.getByRole("dialog", { name: "Liste des raccourcis" }).getByRole("button", { name: /Mes titres repas/ }).click();
   await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Titres repas");
-  await expect(month("décembre")).toHaveValue("20");
+  // Les mois revenus au modèle « 18 par mois » : c'est sa carte qui est cochée.
+  await expect(screen.getByRole("radio", { name: /^18 par mois/ })).toHaveAttribute("aria-checked", "true");
   await expect(screen.getByRole("radio", { name: /^9,90/ })).toHaveAttribute("aria-checked", "true");
 });
 
@@ -6997,7 +7003,6 @@ test("les titres repas s’enregistrent dans le compte, et la formule se change 
   // Une autre formule, une fois enregistré : un modèle, l'autre valeur du titre.
   await screen.getByRole("radio", { name: /^20 par mois/ }).click();
   await expect(screen.getByRole("radio", { name: /^20 par mois/ })).toHaveAttribute("aria-checked", "true");
-  await expect(month("décembre")).toHaveValue("0");
   await screen.getByRole("radio", { name: /^10,30/ }).click();
   await expect(screen).toContainText("Modifications à enregistrer");
   await screen.getByRole("button", { name: "Enregistrer" }).click();
@@ -7027,8 +7032,9 @@ test("les titres repas s’enregistrent dans le compte, et la formule se change 
   await expect(month("janvier")).toHaveValue("19");
   await expect(month("décembre")).toHaveValue("1");
   await expect(custom).toHaveAttribute("aria-checked", "true");
+  // Revenir à un modèle referme les douze cases.
   await screen.getByRole("radio", { name: /^18 par mois/ }).click();
-  await expect(month("janvier")).toHaveValue("18");
+  await expect(month("janvier")).toHaveCount(0);
   await expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
 });
 

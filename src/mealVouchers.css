@@ -1,5 +1,5 @@
-/* Titres repas : la même langue que l'année en un coup d'œil. Trois encadrés
-   légers : la valeur du titre, les mois, ce que cela fait sur l'année. */
+/* Titres repas : la même langue que l'année en un coup d'œil. Deux encadrés
+   légers : la valeur du titre, puis les titres de l'année et la part. */
 .meal-vouchers { display: grid; gap: 12px; min-width: 0; }
 .meal-vouchers-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
 .meal-vouchers-year { display: grid; gap: 3px; font-size: 12px; font-weight: 700; }
@@ -25,17 +25,50 @@
 .meal-vouchers-contact a { color: #8a3d22; font-weight: 700; overflow-wrap: anywhere; }
 
 .meal-vouchers-values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.meal-vouchers-presets { display: grid; gap: 8px; }
-.app-shell .meal-vouchers-values button,
-.app-shell .meal-vouchers-presets button { display: grid; justify-items: start; align-content: start; gap: 2px; min-width: 0; min-height: 0; margin: 0; border: 1px solid rgba(44, 38, 33, 0.28); border-radius: 12px; padding: 9px 11px; background: var(--surface); color: var(--text); box-shadow: none; text-align: left; transform: none; }
-.app-shell .meal-vouchers-values button:hover,
-.app-shell .meal-vouchers-presets button:hover { background: #fbf7f2; }
-.app-shell .meal-vouchers-values button[aria-checked="true"],
-.app-shell .meal-vouchers-presets button[aria-checked="true"] { border-color: #8a3d22; background: #fdf1ea; box-shadow: inset 0 0 0 1px #8a3d22; }
+.app-shell .meal-vouchers-values button { display: grid; justify-items: start; align-content: start; gap: 2px; min-width: 0; min-height: 0; margin: 0; border: 1px solid rgba(44, 38, 33, 0.28); border-radius: 12px; padding: 9px 11px; background: var(--surface); color: var(--text); box-shadow: none; text-align: left; transform: none; }
+.app-shell .meal-vouchers-values button:hover { background: #fbf7f2; }
+.app-shell .meal-vouchers-values button[aria-checked="true"] { border-color: #8a3d22; background: #fdf1ea; box-shadow: inset 0 0 0 1px #8a3d22; }
 .meal-vouchers-values strong { font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.meal-vouchers-presets strong { font-size: 0.94rem; font-weight: 750; }
-.meal-vouchers-values small,
-.meal-vouchers-presets small { color: var(--muted); font-size: 0.74rem; font-weight: 550; line-height: 1.3; }
+.meal-vouchers-values small { color: var(--muted); font-size: 0.74rem; font-weight: 550; line-height: 1.3; }
+
+/* Répartition : deux cartes pour les modèles — le nombre par mois en grand,
+   la courbe des douze mois, ce qui les distingue et le total —, une coche
+   ronde dans le coin pour le choix ; « Sur mesure » en ligne pointillée
+   dessous, qui ouvre les douze cases. */
+.meal-vouchers-presets { display: grid; gap: 10px; }
+.meal-vouchers-models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.app-shell .meal-vouchers-model { position: relative; display: grid; gap: 8px; align-content: start; min-width: 0; min-height: 0; margin: 0; border: 1px solid #e6d8c8; border-radius: 16px; padding: 12px 12px 11px; background: #fffdfa; box-shadow: none; color: var(--text); font: inherit; text-align: left; transform: none; cursor: pointer; }
+.app-shell .meal-vouchers-model:hover { background: #fbf7f2; }
+.app-shell .meal-vouchers-model[aria-checked="true"] { border-color: #8a3d22; background: #fbf4ea; box-shadow: inset 0 0 0 1px #8a3d22; }
+.meal-vouchers-check { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; box-sizing: border-box; width: 22px; height: 22px; border: 2px solid #e6d8c8; border-radius: 50%; }
+.meal-vouchers-model[aria-checked="true"] .meal-vouchers-check { border-color: #8a3d22; background: #8a3d22; }
+.meal-vouchers-model[aria-checked="true"] .meal-vouchers-check::after { width: 6px; height: 10px; margin-top: -2px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); content: ""; }
+.meal-vouchers-number { padding-right: 28px; font-family: var(--font-display); font-size: 2rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.meal-vouchers-number small { display: block; margin-top: 3px; font-family: var(--font-body, inherit); font-size: 0.72rem; font-weight: 750; letter-spacing: 0.02em; color: var(--muted); }
+.meal-vouchers-curve { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; gap: 2px; height: 30px; }
+.meal-vouchers-curve i { display: block; border-radius: 2px; background: #c08a2e; }
+.meal-vouchers-curve i.off { height: 3px !important; background: #e6d8c8; }
+.meal-vouchers-initials { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; margin-top: -4px; color: var(--muted); font-size: 0.56rem; font-weight: 700; text-align: center; }
+/* Carte étroite (petit téléphone, grande police) : les douze initiales se
+   toucheraient ; seules J et D restent, aux deux bouts de la courbe. */
+.meal-vouchers-model { container-type: inline-size; }
+@container (max-width: 7.2rem) {
+  .meal-vouchers-initials span:not(:first-child):not(:last-child) { visibility: hidden; }
+}
+.meal-vouchers-model-note { display: grid; gap: 1px; color: var(--muted); font-size: 0.76rem; font-weight: 650; line-height: 1.3; }
+.meal-vouchers-model-note b { color: var(--text); font-size: 0.82rem; }
+.app-shell .meal-vouchers-custom { display: grid; grid-template-columns: 36px minmax(0, 1fr) 16px; align-items: center; gap: 12px; width: 100%; min-height: 0; margin: 0; border: 1px dashed #d6c3ad; border-radius: 14px; padding: 10px 12px; background: transparent; box-shadow: none; color: var(--text); font: inherit; text-align: left; transform: none; cursor: pointer; }
+.app-shell .meal-vouchers-custom:hover { background: #fbf7f2; }
+.app-shell .meal-vouchers-custom[aria-checked="true"] { border-style: solid; border-color: #8a3d22; background: #fbf4ea; box-shadow: inset 0 0 0 1px #8a3d22; }
+.meal-vouchers-custom > b { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #f6ead9; color: #8a5a17; }
+.meal-vouchers-custom[aria-checked="true"] > b { background: #c08a2e; color: #fff; }
+.meal-vouchers-custom svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.meal-vouchers-custom > span { display: grid; gap: 1px; min-width: 0; }
+.meal-vouchers-custom strong { font-size: 0.92rem; }
+.meal-vouchers-custom small { color: var(--muted); font-size: 0.76rem; font-weight: 600; line-height: 1.3; }
+.meal-vouchers-custom > i { color: var(--muted); font-style: normal; text-align: center; transition: transform 0.15s ease; }
+/* Ouvert : la flèche tourne vers les cases, juste en dessous. */
+.meal-vouchers-custom[aria-checked="true"] > i { transform: rotate(90deg); }
 
 .meal-vouchers-months { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .meal-vouchers-months > div { display: grid; gap: 3px; min-width: 0; color: var(--muted); font-size: 0.74rem; font-weight: 650; text-align: center; }
@@ -52,10 +85,11 @@
 .meal-vouchers-months .off .meal-vouchers-field { border-style: dashed; }
 .app-shell .meal-vouchers-months .off input { color: var(--muted); font-weight: 550; }
 
-.meal-vouchers-total { gap: 8px; }
-.meal-vouchers-total p { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; font-size: 0.86rem; font-weight: 600; }
-.meal-vouchers-total b { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
-.meal-vouchers-total small { color: var(--muted); font-size: 0.74rem; font-weight: 550; line-height: 1.3; }
+/* Sous la répartition, d'un filet : le compte de l'année (sur mesure) et la part. */
+.meal-vouchers-sum { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.meal-vouchers-sum p { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; font-size: 0.86rem; font-weight: 600; }
+.meal-vouchers-sum b { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+.meal-vouchers-sum small { color: var(--muted); font-size: 0.74rem; font-weight: 550; line-height: 1.3; }
 .meal-vouchers-bar { display: block; height: 5px; border-radius: 999px; background: #efe8df; overflow: hidden; }
 .meal-vouchers-bar i { display: block; height: 100%; border-radius: 999px; background: #8a3d22; }
 .meal-vouchers-bar.over i { background: #a5283a; }
@@ -68,6 +102,5 @@
 .meal-vouchers-save { width: 100%; }
 
 @media (min-width: 720px) {
-  .meal-vouchers-presets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .meal-vouchers-months { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }

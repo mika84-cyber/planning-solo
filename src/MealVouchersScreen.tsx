@@ -1,5 +1,5 @@
 import { requestSection } from "./helpTargets";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { euros } from "./appModel";
 import {
@@ -18,6 +18,9 @@ import { MONTHS, s, YEAR_OPTIONS } from "./planningLogic";
 import "./mealVouchers.css";
 
 const SHORT_MONTHS = ["Janv.", "Févr.", "Mars", "Avril", "Mai", "Juin", "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc."];
+/** Ce qui distingue chaque modèle, en peu de mots pour sa carte. */
+const MODEL_NOTES: Record<string, string> = { spread: "20 en nov. et déc." };
+const PEN = "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4";
 const sameCounts = (left: readonly number[], right: readonly number[]) => left.join() === right.join();
 
 type Props = {
@@ -54,6 +57,8 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
   // Un essai d'enregistrement sans valeur du titre : la carte le signale.
   const [valueMissing, setValueMissing] = useState(false);
   const months = useRef<HTMLDivElement>(null);
+  // « Sur mesure » touché : les douze cases apparaissent, puis viennent à l'écran.
+  const revealMonths = useRef(false);
   const valueCard = useRef<HTMLDivElement>(null);
   const total = mealVoucherTotal(counts);
   const excess = total - MEAL_VOUCHERS_PER_YEAR;
@@ -67,6 +72,16 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
       : known
         ? "Repris de votre dernier choix"
         : "Par défaut : 20 par mois, rien en décembre";
+  useEffect(() => {
+    if (!revealMonths.current || !months.current) return;
+    revealMonths.current = false;
+    months.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  const chooseCustom = () => {
+    if (months.current) months.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    else revealMonths.current = true;
+    setCustom(true);
+  };
   const setMonth = (month: number, wanted: number) => {
     const count = Math.max(0, Math.min(MEAL_VOUCHERS_PER_MONTH, wanted));
     setCustom(true);
@@ -123,49 +138,82 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
         <p className="meal-vouchers-contact">
           Pour changer votre nombre de titres par mois, écrivez à <a href="mailto:bimpli@centrepompidou.fr">bimpli@centrepompidou.fr</a>.
         </p>
+        {/* Deux cartes pour les modèles, d'un regard : le nombre par mois, la
+            courbe des douze mois, le total. « Sur mesure » dessous ouvre les
+            douze cases. */}
         <div className="meal-vouchers-presets" role="radiogroup" aria-label="Répartition des titres sur l’année">
-          {MEAL_VOUCHER_PRESETS.map((item) => (
-            <button key={item.key} type="button" role="radio" aria-checked={preset?.key === item.key} onClick={() => { setCustom(false); setCounts(item.counts); }}>
-              <strong>{item.label}</strong>
-              <small>{item.detail}</small>
-            </button>
-          ))}
-          <button type="button" role="radio" aria-checked={!preset} onClick={() => { setCustom(true); months.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }}>
-            <strong>Sur mesure</strong>
-            <small>Le nombre de votre choix, chaque mois</small>
+          <div className="meal-vouchers-models">
+            {MEAL_VOUCHER_PRESETS.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                role="radio"
+                className="meal-vouchers-model"
+                aria-checked={preset?.key === item.key}
+                aria-label={`${item.label}, ${item.detail.replace("+ ", "").toLowerCase()}`}
+                onClick={() => { setCustom(false); setCounts(item.counts); }}
+              >
+                <span className="meal-vouchers-check" aria-hidden="true" />
+                <span className="meal-vouchers-number">{item.counts[0]}<small>par mois</small></span>
+                <span className="meal-vouchers-curve" aria-hidden="true">
+                  {item.counts.map((count, month) => (
+                    <i key={SHORT_MONTHS[month]} className={count ? undefined : "off"} style={{ height: `${(count / MEAL_VOUCHERS_PER_MONTH) * 100}%` }} />
+                  ))}
+                </span>
+                <span className="meal-vouchers-initials" aria-hidden="true">
+                  {SHORT_MONTHS.map((name) => <span key={name}>{name[0]}</span>)}
+                </span>
+                <span className="meal-vouchers-model-note">
+                  <b>{MODEL_NOTES[item.key] ?? item.detail}</b>
+                  {mealVoucherTotal(item.counts)} titres sur l’année
+                </span>
+              </button>
+            ))}
+          </div>
+          <button type="button" role="radio" className="meal-vouchers-custom" aria-checked={!preset} onClick={chooseCustom}>
+            <b aria-hidden="true"><svg viewBox="0 0 24 24"><path d={PEN} /></svg></b>
+            <span><strong>Sur mesure</strong><small>Le nombre de votre choix, mois par mois</small></span>
+            <i aria-hidden="true">›</i>
           </button>
         </div>
-        <div className="meal-vouchers-months" ref={months} role="group" aria-labelledby="meal-vouchers-months">
-          {counts.map((count, month) => (
-            <div key={SHORT_MONTHS[month]} className={count ? undefined : "off"}>
-              <span>{SHORT_MONTHS[month]}</span>
-              <div className="meal-vouchers-field">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  aria-label={`Titres repas en ${MONTHS[month]}`}
-                  value={count}
-                  onFocus={(event) => event.target.select()}
-                  onChange={(event) => setMonth(month, Number(event.target.value.replace(/\D/g, "")))}
-                />
-                <button type="button" aria-label={`Un titre de plus en ${MONTHS[month]}`} disabled={count >= MEAL_VOUCHERS_PER_MONTH} onClick={() => setMonth(month, count + 1)}>
-                  <svg viewBox="0 0 12 8" aria-hidden="true"><path d="m2 6 4-4 4 4" /></svg>
-                </button>
-                <button type="button" aria-label={`Un titre de moins en ${MONTHS[month]}`} disabled={count <= 0} onClick={() => setMonth(month, count - 1)}>
-                  <svg viewBox="0 0 12 8" aria-hidden="true"><path d="m2 2 4 4 4-4" /></svg>
-                </button>
+        {preset ? null : (
+          <div className="meal-vouchers-months" ref={months} role="group" aria-labelledby="meal-vouchers-months">
+            {counts.map((count, month) => (
+              <div key={SHORT_MONTHS[month]} className={count ? undefined : "off"}>
+                <span>{SHORT_MONTHS[month]}</span>
+                <div className="meal-vouchers-field">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    aria-label={`Titres repas en ${MONTHS[month]}`}
+                    value={count}
+                    onFocus={(event) => event.target.select()}
+                    onChange={(event) => setMonth(month, Number(event.target.value.replace(/\D/g, "")))}
+                  />
+                  <button type="button" aria-label={`Un titre de plus en ${MONTHS[month]}`} disabled={count >= MEAL_VOUCHERS_PER_MONTH} onClick={() => setMonth(month, count + 1)}>
+                    <svg viewBox="0 0 12 8" aria-hidden="true"><path d="m2 6 4-4 4 4" /></svg>
+                  </button>
+                  <button type="button" aria-label={`Un titre de moins en ${MONTHS[month]}`} disabled={count <= 0} onClick={() => setMonth(month, count - 1)}>
+                    <svg viewBox="0 0 12 8" aria-hidden="true"><path d="m2 2 4 4 4-4" /></svg>
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+        {/* Ce que fait le choix sur l'année : le compte des titres pour une
+            répartition libre (les cartes le donnent pour un modèle), la part. */}
+        <div className="meal-vouchers-sum">
+          {preset ? null : (
+            <>
+              <p><span>Sur l’année</span><b>{total} titre{s(total)} sur {MEAL_VOUCHERS_PER_YEAR}</b></p>
+              <span className={`meal-vouchers-bar${excess > 0 ? " over" : ""}`} aria-hidden="true"><i style={{ width: `${Math.min(100, (total / MEAL_VOUCHERS_PER_YEAR) * 100)}%` }} /></span>
+            </>
+          )}
+          {tier ? <p><span>Votre part sur l’année</span><b>{euros((total * tier.agentCents) / 100)}</b></p> : null}
+          {excess > 0 ? <p className="meal-vouchers-alert" role="alert">{excess} titre{s(excess)} de trop : {MEAL_VOUCHERS_PER_YEAR} au plus sur l’année.</p> : null}
+          <small>Votre part est retenue sur la paie du mois où vous prenez les titres.</small>
         </div>
-      </div>
-
-      <div className="meal-vouchers-card meal-vouchers-total">
-        <p><span>Sur l’année</span><b>{total} titre{s(total)} sur {MEAL_VOUCHERS_PER_YEAR}</b></p>
-        <span className={`meal-vouchers-bar${excess > 0 ? " over" : ""}`} aria-hidden="true"><i style={{ width: `${Math.min(100, (total / MEAL_VOUCHERS_PER_YEAR) * 100)}%` }} /></span>
-        {tier ? <p><span>Votre part sur l’année</span><b>{euros((total * tier.agentCents) / 100)}</b></p> : null}
-        {excess > 0 ? <p className="meal-vouchers-alert" role="alert">{excess} titre{s(excess)} de trop : {MEAL_VOUCHERS_PER_YEAR} au plus sur l’année.</p> : null}
-        <small>Votre part est retenue sur la paie du mois où vous prenez les titres.</small>
       </div>
 
       {tier ? null : <p className="meal-vouchers-hint">Choisissez d’abord la valeur de votre titre.</p>}

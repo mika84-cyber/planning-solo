@@ -10,7 +10,8 @@ Les fonctions sans état sont isolées dans des modules ES testables :
 - `form-calendar.js` : jours fériés et cycle de travail ;
 - `form-file-utils.js` : lecture et validation locale des pièces jointes.
 - `form-signature-controller.js` : persistance mobile, synchronisation du
-  profil, canevas compact et fenêtre de saisie de la signature. Le contrôleur
+  profil (envoi au compte, renvoi d'une signature absente du compte, reprise
+  sur ordinateur), canevas compact et fenêtre de saisie de la signature. Le contrôleur
   reçoit explicitement ses éléments DOM, ses accès d’état et ses callbacks ;
   il ne dépend pas des variables internes d’`app.js`.
 

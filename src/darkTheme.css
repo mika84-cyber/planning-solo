@@ -284,3 +284,9 @@ html[data-theme="dark"] .help-sheet-qr img { border-color: #3a322c; background: 
 /* Contractuel / Fonctionnaire en sombre : le statut choisi ressort en clair. */
 html[data-theme="dark"] .work-accident-status { border-color: rgba(243, 238, 232, 0.2); background: rgba(255, 255, 255, 0.05); }
 html[data-theme="dark"] .work-accident-status button.active { color: #f3eee8; background: #3a322c; box-shadow: 0 0 0 1.5px rgba(243, 238, 232, 0.55), 0 6px 14px -8px rgba(0, 0, 0, 0.7); }
+
+/* Titres repas en sombre : le modèle choisi garde une teinte terracotta et
+   sa coche blanche, que la conversion automatique éteignait. */
+html[data-theme="dark"] .app-shell :is(.meal-vouchers-model, .meal-vouchers-custom)[aria-checked="true"] { background: color-mix(in srgb, #8a3d22 18%, #1f1a17); }
+html[data-theme="dark"] .meal-vouchers-model[aria-checked="true"] .meal-vouchers-check { border-color: #b8694b; background: #b8694b; }
+html[data-theme="dark"] .meal-vouchers-model[aria-checked="true"] .meal-vouchers-check::after { border-color: #fff; }
