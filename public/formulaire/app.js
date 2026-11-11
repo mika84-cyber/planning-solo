@@ -176,6 +176,10 @@ function onEdit(i, raw){
   });
   refreshAtt();
   if(f.n === 'nom' || f.n === 'groupe') profileWrite();
+  /* Plusieurs feuilles : la date de signature posée sur la première vaut
+     pour toutes les autres. */
+  if(f.n === 'date_sig' && pageIndex === 0 && pageCount > 1)
+    pageSnapshots.forEach(function(d, k){ if(k && d && d.v) d.v[i] = v; });
   /* Demande d'échange : les dates et horaires de la première partie se
      reportent dans celle du collègue, tant qu'elle n'a pas été modifiée. */
   var copie = M.mirror && byName[M.mirror[f.n]];

@@ -551,3 +551,40 @@ test("une feuille faite sur l’ordinateur se retrouve sur le téléphone par le
   await page.getByRole("button", { name: "Reprendre", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Feuilles déjà faites" }).getByRole("listitem")).toHaveCount(2);
 });
+
+test("la date de signature changée sur la première feuille passe sur les autres feuilles", async ({ page }) => {
+  page.on("dialog", (dialog) => dialog.accept());
+  // Le calendrier demande d'abord le groupe : il est déjà dans le profil.
+  await page.addInitScript(() => localStorage.setItem("demandes:v6:profil", JSON.stringify({ nom: "Mika Test", groupe: "2" })));
+  await page.goto("/formulaire/index.html?feuille=conges");
+  const signedOn = page.getByRole("textbox", { name: "Signature de l’agent — le", exact: true });
+  await expect(page.getByRole("combobox", { name: "Groupe", exact: true })).toHaveValue("2");
+  await page.locator("#btnSecond").click();
+  await page.locator("#btnSecond").click();
+  await expect(page.locator("#pageStatus")).toHaveText("Feuille 3 / 3");
+  await page.locator("#pagePrev").click();
+  await page.locator("#pagePrev").click();
+  await expect(page.locator("#pageStatus")).toHaveText("Feuille 1 / 3");
+
+  // Un autre jour que celui déjà posé, choisi au calendrier.
+  const before = await signedOn.inputValue();
+  await signedOn.click();
+  const calendar = page.locator("#calModal");
+  await expect(calendar).toHaveClass(/on/);
+  const days = calendar.locator(".calday:not(:disabled)");
+  const day = Number(before.slice(0, 2));
+  for (let index = 0, count = await days.count(); index < count; index += 1) {
+    if ((await days.nth(index).getAttribute("aria-label"))?.startsWith(`${day} `)) continue;
+    await days.nth(index).click();
+    break;
+  }
+  const after = await signedOn.inputValue();
+  expect(after).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+  expect(after).not.toBe(before);
+
+  await page.locator("#pageNext").click();
+  await expect(page.locator("#pageStatus")).toHaveText("Feuille 2 / 3");
+  await expect(signedOn).toHaveValue(after);
+  await page.locator("#pageNext").click();
+  await expect(signedOn).toHaveValue(after);
+});

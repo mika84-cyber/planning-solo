@@ -888,6 +888,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   formulaire » le relit (`normalizeFormSheet`), même sur un autre appareil ;
   un PDF venu d'ailleurs ou d'avant est refusé avec un message. Masqué pour
   une demande ouverte depuis le planning. Scénarios dans `e2e/form.spec.ts`.
+  Plusieurs feuilles dans un même PDF : la date de signature changée sur la
+  première se reporte sur les suivantes (`onEdit`) ; changée sur une autre
+  feuille, elle ne vaut que pour celle-ci.
   À l’ouverture, la feuille est celle d’un transfert (`?planning=1`,
   `?echange=1`), sinon celle que demande l’adresse (`?feuille=conges`, le
   formulaire vierge de l’application), sinon la dernière utilisée
