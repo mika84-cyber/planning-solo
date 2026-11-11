@@ -288,5 +288,7 @@ html[data-theme="dark"] .work-accident-status button.active { color: #f3eee8; ba
 /* Titres repas en sombre : le modèle choisi garde une teinte terracotta et
    sa coche blanche, que la conversion automatique éteignait. */
 html[data-theme="dark"] .app-shell :is(.meal-vouchers-model, .meal-vouchers-custom)[aria-checked="true"] { background: color-mix(in srgb, #8a3d22 18%, #1f1a17); }
-html[data-theme="dark"] .meal-vouchers-model[aria-checked="true"] .meal-vouchers-check { border-color: #b8694b; background: #b8694b; }
-html[data-theme="dark"] .meal-vouchers-model[aria-checked="true"] .meal-vouchers-check::after { border-color: #fff; }
+html[data-theme="dark"] :is(.meal-vouchers-model, .meal-vouchers-custom)[aria-checked="true"] .meal-vouchers-check { border-color: #b8694b; background: #b8694b; }
+html[data-theme="dark"] :is(.meal-vouchers-model, .meal-vouchers-custom)[aria-checked="true"] .meal-vouchers-check::after { border-color: #fff; }
+/* La courbe « à remplir » de Sur mesure : des pointillés lisibles sur le fond sombre. */
+html[data-theme="dark"] .meal-vouchers-custom-curve i { border-color: #b8925a; }

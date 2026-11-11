@@ -21,6 +21,8 @@ const SHORT_MONTHS = ["Janv.", "Févr.", "Mars", "Avril", "Mai", "Juin", "Juil."
 /** Ce qui distingue chaque modèle, en peu de mots pour sa carte. */
 const MODEL_NOTES: Record<string, string> = { spread: "puis 20 en nov et déc" };
 const PEN = "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4";
+/** La courbe « à remplir » de la carte Sur mesure : douze hauteurs au hasard. */
+const CUSTOM_SHAPE = [60, 75, 50, 85, 65, 90, 45, 70, 80, 55, 95, 60];
 const sameCounts = (left: readonly number[], right: readonly number[]) => left.join() === right.join();
 
 type Props = {
@@ -138,10 +140,12 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
         <p className="meal-vouchers-contact">
           Pour changer votre nombre de titres par mois, écrivez à <a href="mailto:bimpli@centrepompidou.fr">bimpli@centrepompidou.fr</a>.
         </p>
-        {/* Deux cartes pour les modèles, d'un regard : le nombre par mois, la
-            courbe des douze mois, le total. « Sur mesure » dessous ouvre les
-            douze cases. */}
+        {/* Trois choix sous leur titre : deux cartes pour les modèles, d'un
+            regard (le nombre par mois, la courbe des douze mois, le total),
+            et dessous la carte « Sur mesure », sœur des deux autres, qui
+            ouvre les douze cases. */}
         <div className="meal-vouchers-presets" role="radiogroup" aria-label="Répartition des titres sur l’année">
+          <p className="meal-vouchers-choose" aria-hidden="true">Choisissez une répartition</p>
           <div className="meal-vouchers-models">
             {MEAL_VOUCHER_PRESETS.map((item) => (
               <button
@@ -170,10 +174,33 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
               </button>
             ))}
           </div>
-          <button type="button" role="radio" className="meal-vouchers-custom" aria-checked={!preset} onClick={chooseCustom}>
-            <b aria-hidden="true"><svg viewBox="0 0 24 24"><path d={PEN} /></svg></b>
-            <span><strong>Sur mesure</strong><small>Le nombre de votre choix, mois par mois</small></span>
-            <i aria-hidden="true">›</i>
+          <button
+            type="button"
+            role="radio"
+            className="meal-vouchers-custom"
+            aria-checked={!preset}
+            aria-label="Sur mesure, le nombre de votre choix mois par mois"
+            onClick={chooseCustom}
+          >
+            <span className="meal-vouchers-check" aria-hidden="true" />
+            <span className="meal-vouchers-custom-body">
+              <span className="meal-vouchers-custom-title">
+                <strong><b aria-hidden="true"><svg viewBox="0 0 24 24"><path d={PEN} /></svg></b>Sur mesure</strong>
+                <small>mois par mois</small>
+              </span>
+              <span className="meal-vouchers-custom-side" aria-hidden="true">
+                <span className="meal-vouchers-custom-curve">
+                  {CUSTOM_SHAPE.map((height, month) => <i key={SHORT_MONTHS[month]} style={{ height: `${height}%` }} />)}
+                </span>
+                <span className="meal-vouchers-initials">
+                  {SHORT_MONTHS.map((name) => <span key={name}>{name[0]}</span>)}
+                </span>
+              </span>
+              <span className="meal-vouchers-model-note">
+                <b>Le nombre de votre choix</b>
+                {MEAL_VOUCHERS_PER_YEAR} titres au plus sur l’année
+              </span>
+            </span>
           </button>
         </div>
         {preset ? null : (

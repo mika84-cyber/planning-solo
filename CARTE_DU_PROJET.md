@@ -76,14 +76,18 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   loin », la liste des raccourcis, le profil (qui n'a plus de champ de retenue)
   et le geste d'un écart du bulletin, toujours en haut de page (`setPayScreen`,
   `usePayUiState.ts`). La valeur du titre (10,30 € ou 9,90 €, qui
-  donnent la part de l'agent), puis le nombre de titres de chaque mois : deux
-  modèles en cartes demi-largeur (`.meal-vouchers-model` : le nombre par mois,
-  la courbe des douze mois et leurs initiales, réduites à J et D sur carte
-  étroite par une requête de conteneur, ce qui distingue le modèle
-  (`MODEL_TEXT`) et le total, une coche ronde pour le choix), puis « Sur
-  mesure » en ligne pointillée (`.meal-vouchers-custom`) : les douze cases à
-  petites flèches n'apparaissent qu'avec elle (20 par mois au plus, 220 par
-  an). Sous la répartition, d'un filet (`.meal-vouchers-sum`) : le compte de
+  donnent la part de l'agent), puis le nombre de titres de chaque mois :
+  trois choix sous « Choisissez une répartition » (`.meal-vouchers-choose`).
+  Deux modèles en cartes demi-largeur (`.meal-vouchers-model` : le nombre par
+  mois, la courbe des douze mois et leurs initiales, réduites à J et D sur
+  carte étroite par une requête de conteneur, ce qui distingue le modèle
+  (`MODEL_NOTES`, « puis 20 en nov et déc ») et le total, une coche ronde
+  pour le choix), puis la carte « Sur mesure » (`.meal-vouchers-custom`),
+  sœur des deux autres : même liseré, même coche, une courbe en pointillés
+  « à remplir » (`CUSTOM_SHAPE`) qui se colore une fois choisie, à droite du
+  titre, ou dessous sur carte étroite (requête de conteneur à 18,4 rem). Les
+  douze cases à petites flèches n'apparaissent qu'avec elle (20 par mois au
+  plus, 220 par an). Sous la répartition, d'un filet (`.meal-vouchers-sum`) : le compte de
   l'année en sur mesure, la part de l'agent et l'alerte de dépassement ; il
   n'y a plus de carte « Sur l'année » à part. En sombre, le choix garde sa
   teinte et sa coche blanche (`darkTheme.css`). Sous l'année, trois lignes mènent à Docs (`MEAL_VOUCHER_LINKS`) :

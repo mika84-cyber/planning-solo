@@ -63,7 +63,7 @@ describe("l'écran des titres repas", () => {
     expect(html.indexOf('class="meal-vouchers-links"')).toBeLessThan(html.indexOf("La valeur de votre titre"));
   });
 
-  it("présente les deux modèles en cartes, et « Sur mesure » à part", () => {
+  it("présente trois choix sous leur titre : les deux modèles en cartes, et la carte « Sur mesure »", () => {
     const html = render();
     const cards = [...html.matchAll(/class="meal-vouchers-model" aria-checked="(true|false)" aria-label="([^"]+)">[^]*?class="meal-vouchers-number">(\d+)<small>par mois<\/small>[^]*?class="meal-vouchers-model-note"><b>([^<]+)<\/b>(\d+) titres sur l’année/g)]
       .map((match) => match.slice(1));
@@ -71,7 +71,12 @@ describe("l'écran des titres repas", () => {
       ["true", "20 par mois, rien en décembre", "20", "Rien en décembre", "220"],
       ["false", "18 par mois, 20 en novembre et décembre", "18", "puis 20 en nov et déc", "220"],
     ]);
-    expect(html).toMatch(/class="meal-vouchers-custom" aria-checked="false"><b aria-hidden="true"><svg[^]*?<\/svg><\/b><span><strong>Sur mesure<\/strong><small>Le nombre de votre choix, mois par mois<\/small><\/span>/);
+    expect(html).toContain('role="radiogroup" aria-label="Répartition des titres sur l’année"><p class="meal-vouchers-choose" aria-hidden="true">Choisissez une répartition</p>');
+    // « Sur mesure » : le même rond que les modèles, une courbe à remplir.
+    expect(html).toMatch(/class="meal-vouchers-custom" aria-checked="false" aria-label="Sur mesure, le nombre de votre choix mois par mois"><span class="meal-vouchers-check" aria-hidden="true"><\/span>/);
+    expect(html).toMatch(/<strong><b aria-hidden="true"><svg[^]*?<\/svg><\/b>Sur mesure<\/strong><small>mois par mois<\/small>/);
+    expect(html.match(/class="meal-vouchers-custom-curve">([^]*?)<\/span>/)?.[1].match(/<i /g)).toHaveLength(12);
+    expect(html).toContain('<b>Le nombre de votre choix</b>220 titres au plus sur l’année');
     // Plus de carte « Sur l’année » à part : la part de l'année reste sous la répartition.
     expect(html).not.toContain("meal-vouchers-total");
     expect(html).not.toContain("titres sur 220");
@@ -119,7 +124,7 @@ describe("l'écran des titres repas", () => {
   it("donne une répartition libre pour « Sur mesure »", () => {
     const counts = [20, 20, 20, 20, 20, 20, 0, 0, 20, 20, 20, 20];
     const html = render({ plans: { "2026": { faceCents: 990, counts } } });
-    expect(checked(html)).toEqual(["9,90 €", "Sur mesure"]);
+    expect(checked(html)).toEqual(["9,90 €", "Sur mesure, le nombre de votre choix mois par mois"]);
     // Les douze cases s'ouvrent, et le compte de l'année revient sous elles.
     expect(months(html)).toEqual(counts);
     expect(html).toContain("200 titres sur 220");
