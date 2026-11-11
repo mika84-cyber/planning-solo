@@ -34,7 +34,8 @@ type Props = {
   /** Ce que l'accueil montre du jour, des congés et des notes. */
   overview: Pick<ReturnType<typeof useWorkedDaysOverview>, "todayOverview" | "nextExtraWork">
     & Pick<ReturnType<typeof useNoteLists>, "upcoming" | "hasAnyNote" | "noteSearchResults">
-    & Pick<ReturnType<typeof useLeaveBalances>, "totalLeaveRemaining">;
+    & Pick<ReturnType<typeof useLeaveBalances>, "totalLeaveRemaining">
+    & { /** L'année des soldes, celle choisie dans le calendrier. */ leaveYear: number };
   /** Ce qui reste à renseigner dans les premières étapes. */
   setup: {
     missingCalculationProfile: boolean;
@@ -76,6 +77,7 @@ export function HomeSectionScreen({
           hasConfiguredGroup={Boolean(formProfile?.group)}
           today={overview.todayOverview}
           totalLeaveRemaining={overview.totalLeaveRemaining}
+          leaveYear={overview.leaveYear}
           nextExtraWork={overview.nextExtraWork}
           setupDismissKey={`planning:setup-dismissed-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
           setupItems={[

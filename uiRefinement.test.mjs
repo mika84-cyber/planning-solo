@@ -775,7 +775,6 @@ describe("finitions d’interface", () => {
     // le reste de l'année en trois chiffres (PlanningCommandCenter.test.tsx).
     expect(planningCommandCenter).toContain("travaillé{s(workedDays.month.worked)} ce mois-ci");
     expect(planningCommandCenter).toContain("d’absence ce mois-ci");
-    expect(planningCommandCenter).toContain("de travail restant{s(workedDays.remaining.worked)} en {workedDays.year}");
     expect(planningCommandCenter).not.toContain("workedDays.thirds");
     // L'accueil remplace « Travail restant » par le prochain mécénat ou heures sup.
     expect(home).not.toContain("today-remaining-work");

@@ -257,9 +257,15 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   travaillés du mois, `.worked-days-leave` jours d'absence du mois, toutes
   absences posées confondues, congés de tous types, Divers, grève, maladie,
   récupérations et demi-journées, soit `onLeave` tiré de
-  `personalPresenceForDate` ; `.worked-days-year` jours de travail restants
-  dans l'année d'aujourd'hui, `workedDays.year` venant de `now` ; la pilule et
-  son volet ont disparu le même jour) puis les vacances scolaires, avec sous
+  `personalPresenceForDate` ; `.worked-days-year` le travail de l'année
+  affichée dans le calendrier, `workedDays.year` et `tense` venant de `view` :
+  jours restants pour l'année en cours, jours de travail de l'année entière
+  pour une année à venir, jours travaillés pour une année passée ; la pilule
+  et son volet ont disparu le même jour). Depuis le 11 novembre 2026, changer
+  d'année dans le calendrier change aussi celle des soldes (`absenceYear`,
+  `App.tsx`) : la rubrique Congés et « Congés restants » de l'accueil
+  (`leaveYear`, « en 2027 » à la place de « à poser ») suivent l'année
+  choisie puis les vacances scolaires, avec sous
   l'interrupteur la période en cours ou la prochaine de la zone
   (`.school-vacation-next`, `nextSchoolVacation` et `vacationShortName` dans
   `SchoolVacationUi.tsx`). Auparavant la barre

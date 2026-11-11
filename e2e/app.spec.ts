@@ -675,6 +675,33 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   expect((await downloadPromise).suggestedFilename()).toBe("planning-2026-groupe-2-avec-conges.pdf");
 });
 
+test("changer d’année dans le calendrier change le compte de l’année et les congés restants de l’accueil", async ({ page }) => {
+  await page.clock.setFixedTime(OCTOBER_REFERENCE);
+  await prepareDemo(page);
+  const yearCount = page.locator(".planning-workspace-shell.framed .worked-days-year small");
+  const leave = page.locator(".today-leave-balance");
+  await expect(yearCount).toHaveText(/^jours? de travail restants? en 2026$/);
+  await expect(leave.locator(".today-block-note")).toHaveText("à poser");
+  const thisYear = await leave.locator("strong").textContent();
+
+  // Une année à venir : l'année entière, et ses congés.
+  const panel = await openMonthPanel(page);
+  await panel.getByRole("button", { name: "Année suivante" }).click();
+  await expect(yearCount).toHaveText(/^jours? de travail en 2027$/);
+  await expect(leave.locator(".today-block-note")).toHaveText("en 2027");
+  await expect(leave).toHaveAccessibleName(/^Congés restants en 2027 : /);
+  // Une année passée : ses jours travaillés.
+  await panel.getByRole("button", { name: "Année précédente" }).click();
+  await panel.getByRole("button", { name: "Année précédente" }).click();
+  await expect(yearCount).toHaveText(/^jours? travaillés? en 2025$/);
+  await expect(leave.locator(".today-block-note")).toHaveText("en 2025");
+  // Retour à aujourd'hui : les chiffres de l'année en cours reviennent.
+  await panel.getByRole("button", { name: "Aujourd’hui" }).click();
+  await expect(yearCount).toHaveText(/^jours? de travail restants? en 2026$/);
+  await expect(leave.locator(".today-block-note")).toHaveText("à poser");
+  await expect(leave.locator("strong")).toHaveText(thisYear!);
+});
+
 test("les outils de congés sont repliés par défaut sur tous les écrans", async ({ page }) => {
   await prepareDemo(page);
   if (page.viewportSize()!.width <= 720 || page.viewportSize()!.width >= 1280) {

@@ -61,6 +61,8 @@ type HomeDashboardProps = {
   hasConfiguredGroup: boolean;
   today: TodayDashboardData;
   totalLeaveRemaining: number;
+  /** L'année de ces congés restants, celle choisie dans le calendrier. */
+  leaveYear?: number;
   /** Le prochain mécénat ou les prochaines heures sup, à partir d'aujourd'hui. */
   nextExtraWork: { kind: "mecenat" | "overtime"; date: string; start: string; end: string } | null;
   setupItems: HomeSetupItem[];
@@ -83,6 +85,7 @@ export function HomeDashboard({
   hasConfiguredGroup,
   today,
   totalLeaveRemaining,
+  leaveYear = now.getFullYear(),
   nextExtraWork,
   setupItems,
   setupDismissKey,
@@ -134,6 +137,9 @@ export function HomeDashboard({
   const groupActionLabel = hasConfiguredGroup
     ? `Je suis groupe ${group}`
     : "Choisir mon groupe";
+  // Une autre année que l'année en cours, choisie dans le calendrier : les
+  // congés restants le disent à la place de « à poser ».
+  const otherLeaveYear = leaveYear !== now.getFullYear();
   // « Demain » se lit en toutes lettres ; une date, plus longue, s'écrit un
   // peu plus petit pour tenir sur la ligne.
   const nextWorkIsDate = Boolean(today.nextWork) && nextWorkDayLabel(today.nextWork!) !== "Demain";
@@ -275,7 +281,7 @@ export function HomeDashboard({
             className="today-block today-leave-balance"
             type="button"
             onClick={onOpenLeave}
-            aria-label={`Congés restants : ${totalLeaveRemaining.toLocaleString("fr-FR")} jours. Afficher le détail des soldes.`}
+            aria-label={`Congés restants${otherLeaveYear ? ` en ${leaveYear}` : ""} : ${totalLeaveRemaining.toLocaleString("fr-FR")} jours. Afficher le détail des soldes.`}
           >
             <span className="today-block-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -285,7 +291,7 @@ export function HomeDashboard({
             </span>
             <span className="today-block-label">Congés restants</span>
             <strong>{totalLeaveRemaining.toLocaleString("fr-FR")} jour{Math.abs(totalLeaveRemaining) > 1 ? "s" : ""}</strong>
-            <small className="today-block-note">à poser</small>
+            <small className="today-block-note">{otherLeaveYear ? `en ${leaveYear}` : "à poser"}</small>
             {chevron}
           </button>
           {today.nextWorkedHoliday ? (

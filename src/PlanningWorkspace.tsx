@@ -156,7 +156,12 @@ export function PlanningWorkspace({
       <PlanningCommandCenter
         isHome={homeSection === "home"}
         workQuota={workQuota}
-        workedDays={{ month: monthWorkedDays, remaining: remainingWorkedDays, year: now.getFullYear() }}
+        workedDays={{
+          month: monthWorkedDays,
+          remaining: remainingWorkedDays,
+          year: view.getFullYear(),
+          tense: view.getFullYear() === now.getFullYear() ? "now" : view.getFullYear() > now.getFullYear() ? "future" : "past",
+        }}
         recoveryRangeSelecting={recoveryRangeSelecting}
         recoveryDraft={recoveryDraft}
         setRecoveryDraft={setRecoveryDraft}

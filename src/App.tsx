@@ -223,6 +223,12 @@ export default function Home() {
   const [deletingMultipleDates, setDeletingMultipleDates] = useState(false);
   const [holidayChoiceEditing, setHolidayChoiceEditing] = useState<string | null>(null);
   const [absenceYear, setAbsenceYear] = useState(() => now.getFullYear());
+  // Changer d'année dans le calendrier change aussi celle des soldes : la
+  // rubrique Congés et « Congés restants » de l'accueil suivent l'année choisie.
+  const viewYear = view.getFullYear();
+  useEffect(() => {
+    setAbsenceYear(viewYear);
+  }, [viewYear]);
   const [manualAdjustmentsOpen, setManualAdjustmentsOpen] = useState(false);
   const [savingManualAdjustments, setSavingManualAdjustments] = useState(false);
   const [savingCet, setSavingCet] = useState(false);
@@ -996,7 +1002,7 @@ export default function Home() {
           formProfile={formProfile}
           entries={entries}
           ownNoteAuthorLabel={ownNoteAuthorLabel}
-          overview={{ ...workedDaysOverview, totalLeaveRemaining, upcoming, hasAnyNote, noteSearchResults }}
+          overview={{ ...workedDaysOverview, totalLeaveRemaining, leaveYear: absenceYear, upcoming, hasAnyNote, noteSearchResults }}
           setup={{ missingCalculationProfile, missingHolidayChoices, missingPayValues }}
           shell={appShellUi}
           pay={payUi}

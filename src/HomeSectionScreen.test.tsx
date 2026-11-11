@@ -21,6 +21,7 @@ const baseProps: ComponentProps<typeof HomeSectionScreen> = {
     },
     nextExtraWork: { kind: "mecenat", date: "2026-09-12", start: "19:00", end: "23:00" },
     totalLeaveRemaining: 20,
+    leaveYear: 2026,
     upcoming: [],
     hasAnyNote: false,
     noteSearchResults: [],

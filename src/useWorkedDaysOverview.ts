@@ -65,13 +65,15 @@ export function useWorkedDaysOverview({
       ),
     [view, group, periods, entries, recoveryUses, formProfile?.workQuota, exceptionalClosureFor],
   );
-  // Les jours réellement travaillés d'ici au 31 décembre : congés, fermetures
-  // et échanges déduits. Le volet de la case les annonce.
+  // Les jours réellement travaillés de l'année affichée dans le calendrier,
+  // congés, fermetures et échanges déduits : d'aujourd'hui au 31 décembre
+  // pour l'année en cours, l'année entière pour une autre, à venir ou passée.
+  const shownYear = view.getFullYear();
   const remainingWorkedDays = useMemo(
     () =>
       workedDayCountBetween(
-        now,
-        localDate(now.getFullYear(), 11, 31),
+        shownYear === now.getFullYear() ? now : localDate(shownYear, 0, 1),
+        localDate(shownYear, 11, 31),
         group,
         periods,
         entries,
@@ -80,7 +82,7 @@ export function useWorkedDaysOverview({
         (key) => Boolean(exceptionalClosureFor(key)),
         (key) => entries[key]?.exchangeRole || "",
       ),
-    [now, group, periods, entries, recoveryUses, formProfile?.workQuota, exceptionalClosureFor],
+    [now, shownYear, group, periods, entries, recoveryUses, formProfile?.workQuota, exceptionalClosureFor],
   );
   // Le prochain mécénat ou les prochaines heures sup déclarées, à partir
   // d'aujourd'hui : ce qui vient s'ajouter au planning habituel.

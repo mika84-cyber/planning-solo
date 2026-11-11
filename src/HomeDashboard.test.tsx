@@ -38,6 +38,16 @@ const baseProps = {
 };
 
 describe("HomeDashboard", () => {
+  it("donne les congés restants de l’année choisie dans le calendrier", () => {
+    const current = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
+    expect(current).toContain('aria-label="Congés restants : 20 jours. Afficher le détail des soldes."');
+    expect(current).toContain('<small class="today-block-note">à poser</small>');
+    const next = renderToStaticMarkup(<HomeDashboard {...baseProps} totalLeaveRemaining={33} leaveYear={2027} />);
+    expect(next).toContain('aria-label="Congés restants en 2027 : 33 jours. Afficher le détail des soldes."');
+    expect(next).toContain("<strong>33 jours</strong>");
+    expect(next).toContain('<small class="today-block-note">en 2027</small>');
+  });
+
   it("ne répète pas sur l’accueil les actions déjà accessibles dans la navigation", () => {
     const html = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
     expect(html).not.toContain("Accès rapide");

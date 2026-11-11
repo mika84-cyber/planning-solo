@@ -75,8 +75,8 @@ describe("PlanningCommandCenter", () => {
     expect(html).toContain('<div class="planning-settings-body"><section class="controls" aria-label="Repères du mois"><ul class="worked-days">');
     // Les jours travaillés du mois affiché, ses jours d'absence (toutes les
     // absences posées, pas seulement les congés : `onLeave`), puis les jours
-    // de travail restants dans l'année d'aujourd'hui : ce dernier compte
-    // vivait dans un volet déplié sous une pilule jusqu'au 9 novembre 2026.
+    // de travail restants dans l'année affichée : ce dernier compte vivait
+    // dans un volet déplié sous une pilule jusqu'au 9 novembre 2026.
     expect(html).toContain('<li class="worked-days-month"><b>16</b><small>jours travaillés ce mois-ci</small></li>');
     expect(html).toContain('<li class="worked-days-leave"><b>1</b><small>jour d’absence ce mois-ci</small></li>');
     expect(html).toContain('<li class="worked-days-year"><b>51</b><small>jours de travail restants en 2026</small></li>');
@@ -102,7 +102,18 @@ describe("PlanningCommandCenter", () => {
     );
     expect(html).toContain("<b>17,5</b><small>jours travaillés ce mois-ci</small>");
     expect(html).toContain("<b>0</b><small>jour d’absence ce mois-ci</small>");
-    // L'année est celle d'aujourd'hui, pas celle du mois affiché.
     expect(html).toContain("<b>1</b><small>jour de travail restant en 2027</small>");
+  });
+
+  it("suit l’année choisie dans le calendrier : une année entière à venir, une année passée travaillée", () => {
+    const render = (tense: "future" | "past", year: number, worked: number) => renderToStaticMarkup(
+      <PlanningCommandCenter
+        {...baseProps}
+        workedDays={{ ...baseProps.workedDays, remaining: { ...baseProps.workedDays.remaining, worked }, year, tense }}
+      />,
+    );
+    expect(render("future", 2027, 212)).toContain('<li class="worked-days-year"><b>212</b><small>jours de travail en 2027</small></li>');
+    expect(render("past", 2025, 205.5)).toContain('<li class="worked-days-year"><b>205,5</b><small>jours travaillés en 2025</small></li>');
+    expect(render("past", 2025, 1)).toContain("<small>jour travaillé en 2025</small>");
   });
 });

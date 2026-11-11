@@ -32,7 +32,10 @@ type WorkedDaySummary = {
 type WorkedDaysData = {
   month: WorkedDaySummary;
   remaining: WorkedDaySummary;
+  /** L'année affichée dans le calendrier, et sa place par rapport à
+   *  aujourd'hui : le reste de l'année en cours, une année entière sinon. */
   year: number;
+  tense?: "now" | "future" | "past";
 };
 
 type PlanningCommandCenterProps = {
@@ -117,8 +120,10 @@ export function PlanningCommandCenter({
                 congés de tous types, Divers, grève, maladie, récupérations,
                 demi-journées comprises ; c'est `onLeave`, tiré de
                 personalPresenceForDate), puis les jours de travail restants
-                dans l'année d'aujourd'hui. Jusqu'au 9 novembre 2026, ce
-                dernier compte vivait dans un volet déplié sous une pilule. */}
+                dans l'année affichée (depuis le 11 novembre 2026 : l'année
+                entière pour une autre que l'année en cours, « travaillés »
+                pour une année passée). Jusqu'au 9 novembre 2026, ce dernier
+                compte vivait dans un volet déplié sous une pilule. */}
             <ul className="worked-days">
               <li className="worked-days-month">
                 <b>{dayCountLabel(workedDays.month.worked)}</b>
@@ -130,7 +135,9 @@ export function PlanningCommandCenter({
               </li>
               <li className="worked-days-year">
                 <b>{dayCountLabel(workedDays.remaining.worked)}</b>
-                <small>jour{s(workedDays.remaining.worked)} de travail restant{s(workedDays.remaining.worked)} en {workedDays.year}</small>
+                <small>{workedDays.tense === "past"
+                  ? `jour${s(workedDays.remaining.worked)} travaillé${s(workedDays.remaining.worked)} en ${workedDays.year}`
+                  : `jour${s(workedDays.remaining.worked)} de travail${workedDays.tense === "future" ? "" : ` restant${s(workedDays.remaining.worked)}`} en ${workedDays.year}`}</small>
               </li>
             </ul>
           </section>
