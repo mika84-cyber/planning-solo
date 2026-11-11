@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
-import { useHelpTarget } from "./helpTargets";
+import { requestSection, useHelpTarget } from "./helpTargets";
 import "./resourceFolderList.css";
 import type { LeavePeriod } from "./appModel";
 import {
@@ -106,7 +106,7 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
       { title: "Formulaire de changement de coordonnées", file: "formulaire-changement-coordonnees.pdf", format: "PDF" },
       { title: "Changement de coordonnées bancaires", file: "changement-coordonnees-bancaires.docx", format: "DOCX" },
       { title: "Demande de carte de restauration BIMPLI", file: "demande-carte-restauration-bimpli.pdf", format: "PDF" },
-      { title: "Procuration pour le retrait des titres-restaurant", file: "procuration-retrait-titres-repas.pdf", format: "PDF" },
+      { title: "Procuration pour le retrait des titres repas", file: "procuration-retrait-titres-repas.pdf", format: "PDF" },
       { title: "Demande de Carte Culture A", file: "demande-carte-culture-a.pdf", format: "PDF" },
       { title: "Formulaire d’adhésion carte POP", file: "adhesion-carte-pop.pdf", format: "PDF", sendTo: "collectivites@centrepompidou.fr" },
       { title: "CET - Demande d’ouverture", file: "cet-demande-ouverture.pdf", format: "PDF" },
@@ -115,7 +115,7 @@ export const USEFUL_FORM_FOLDERS: UsefulFormsFolder[] = [
   },
   {
     key: "tickets",
-    title: "Horaires tickets resto",
+    title: "Titres repas : retrait",
     description: "Retrait des titres au guichet",
     documents: [],
     image: {
@@ -206,6 +206,10 @@ export function UsefulFormsSection({
   useHelpTarget((target) => {
     if (target === "work-accident") { setActiveFolder("work-accident"); return true; }
     if (target === "expo-folder") { setActiveFolder("expo"); return true; }
+    // Depuis Ma paie › Titres repas : les horaires de retrait.
+    if (target === "meal-folder") { setActiveFolder("tickets"); return true; }
+    // … et les formulaires (carte BIMPLI, procuration), dans le dossier Brantôme.
+    if (target === "meal-forms") { setActiveFolder("brantome"); return true; }
     if (target === "forms") setActiveFolder(null);
     return false;
   });
@@ -311,6 +315,15 @@ export function UsefulFormsSection({
         </header>
 
         {isAdmin && (folder.key === "expo" || folder.key === "sap" || folder.key === "brantome") ? <DocumentUpload key={folder.key} folder={folder.key} demoMode={demoMode} onAdded={document => setSharedDocuments(current => [...current.filter(item => item.id !== document.id), document])} /> : null}
+        {/* Les titres repas se règlent dans Ma paie, leurs formulaires sont
+            dans le dossier Brantôme : deux liens y mènent. */}
+        {folder.key === "tickets" ? (
+          <p className="useful-form-links">
+            Valeur du titre et nombre par mois : <button type="button" className="text-button" onClick={() => requestSection("meal")}>régler dans Ma paie ›</button>
+            <br />
+            Carte BIMPLI et procuration de retrait : <button type="button" className="text-button" onClick={() => setActiveFolder("brantome")}>dossier Formulaire Brantôme ›</button>
+          </p>
+        ) : null}
         {folder.image ? (
           <figure className="useful-form-information-image">
             <img

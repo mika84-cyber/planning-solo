@@ -78,7 +78,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `usePayUiState.ts`). La valeur du titre (10,30 € ou 9,90 €, qui
   donnent la part de l'agent), puis le nombre de titres de chaque mois : deux
   modèles et une saisie libre, avec de petites flèches (20 par mois au plus, 220
-  par an). L’écran dit à qui écrire pour changer son nombre de titres
+  par an). Sous l'année, trois lignes mènent à Docs (`MEAL_VOUCHER_LINKS`) :
+  les horaires de retrait (dossier « Titres repas : retrait », cible
+  `meal-folder`), les formulaires (dossier Brantôme, `meal-forms`) et le
+  contact (Contacts Pompidou › Tickets restaurants, `meal-contact`). L’écran dit à qui écrire pour changer son nombre de titres
   (bimpli@centrepompidou.fr). Les règles sont dans `src/mealVouchers.ts` : `mealVoucherRetention`
   donne la retenue du mois, à la paie du mois (`useMonthPayEstimate`) comme à
   l'année (`useYearPayOverview`). Gardé dans le profil sous l'année
@@ -118,6 +121,19 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   Un champ de recherche qui contient du texte n'a plus de loupe : la croix du
   navigateur prend sa place. `BalanceDetailDialog` dit « Jours passés / à
   venir » pour un suivi (maladie, grève…), « Congés » pour un solde.
+- La demande de congé n'a plus qu'un jeu de commandes (12 novembre 2026) : le
+  type (CA, RTT, fractionnement) et la durée se choisissent dans le bloc
+  « Dates touchées » au-dessus du calendrier (`planning-request-duration`,
+  `PlanningWorkspace`), qui reste collé en haut de l'écran pendant que le
+  calendrier défile (`position: sticky`, `scroll-margin-top` des cases dans
+  `09-responsive-refinements.css`). Le panneau (`RequestSelectionPanel`) ne
+  garde que la consigne, « Autres types de congé » et les boutons ; on
+  n'abandonne que par « Annuler la demande », en bas (la grève garde son
+  « Fermer » en tête, faute de relecture).
+- La fenêtre du mécénat est étiquetée « Heures et mécénats », plus « Ma
+  paie » : elle s'ouvre depuis Congés. Deux boutons de déclaration posés dans
+  Ma paie › Primes et jours fériés le 12 novembre 2026 ont été retirés le même
+  jour, à la demande de l'utilisateur.
 - Cohérence (audit, 12 novembre 2026) : les flèches de dépliage sont des
   chevrons dessinés en CSS (`productRefinements.css`, liste des sélecteurs ;
   le caractère « ⌄ » du code se lisait comme un « v ») ; un seul bouton plein
@@ -157,7 +173,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/AppNavigation.tsx` : en-tête et dock communs à tous les écrans. Plus
   de menu ☰ (retiré en octobre 2026, il répétait le dock) : l’en-tête garde
   deux boutons ronds, la mise à jour et le compte. Le menu du compte réunit
-  l’identité, le mode sombre, Mes données, Installer l’application (démo ou
+  l’identité, le mode sombre, « Mon profil » (depuis le 12 novembre 2026 : son
+  résumé sous l'entrée, « Groupe 2 · Fonctionnaire · Zone C », et la fiche
+  `ProfileSheet` de `HelpSheet.tsx`, même fenêtre que la liste des raccourcis
+  par `SheetShell` — quatre groupes : Mon travail, Mon planning, Mes
+  collègues, Application ; chaque ligne donne la valeur du réglage et
+  l'ouvre là où il existe déjà ; les lignes sont bâties par `profileColumns`
+  dans `AppShellChrome` ; le nom dans l'annuaire vient du dernier annuaire lu,
+  `colleagueBoardCache`), Mes données, Installer l’application (démo ou
   navigateur qui sait installer), la messagerie interne et les outils de
   l’administrateur, puis la déconnexion ; les messages non lus de
   l’administrateur se lisent en pastille sur le bouton du compte
@@ -314,6 +337,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `GalleryExpoRow`), et son audioguide (`AudioguideRow`), qui déplie sur place
   le QR code à scanner et le code d’accès. `AppShellChrome` (`chooseHelp`) change de page,
   et refuse de compiler si une question n’y a pas de chemin (`never`) ;
+  un écran qui renvoie vers une autre rubrique passe par `requestSection`
+  (la coque écoute avec `useSectionRequest` : Titres repas de Ma paie vers le
+  dossier « Titres repas : retrait » de Docs, cible `meal-folder`, et retour
+  par « meal ») ;
   l’onglet ou la sous-page s’ouvre par `src/helpTargets.ts`
   (`requestHelpTarget` / `useHelpTarget`), lu par `UsefulResourcesHub`,
   `UsefulContactsSection` (codes radio), `UsefulFormsSection` (accident,

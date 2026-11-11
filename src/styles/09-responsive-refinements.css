@@ -778,7 +778,12 @@
 .leave-moment-tabs button.active { border-color: color-mix(in srgb, var(--type-color) 55%, #1f2a33); background: color-mix(in srgb, var(--type-color) 55%, #1f2a33); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--type-color) 35%, transparent); }
 /* Au-dessus du planning, pendant une demande : le congé des dates qu'on va
    toucher (CA, RTT, fractionnement) en pastilles, puis, pour un CA, leur durée. */
-.planning-request-duration { margin-bottom: 12px; padding: 10px 12px 12px; border: 1px solid #e3d9cf; border-radius: 16px; background: var(--surface-high, #fff); }
+/* Le congé et la durée des dates qu'on touche : collés en haut de l'écran
+   tant que le calendrier défile, pour changer de type sans remonter. Le
+   calendrier et ses cases gardent leur place sous le bloc quand la page y
+   descend (scroll-margin). */
+.planning-request-duration { position: sticky; top: 6px; z-index: 30; margin-bottom: 12px; padding: 10px 12px 12px; border: 1px solid #e3d9cf; border-radius: 16px; background: var(--surface-high, #fff); box-shadow: 0 10px 22px rgba(44, 38, 33, 0.14); }
+.planning-calendar-section:has(> .planning-request-duration) :is(.month-card, .month-card .day) { scroll-margin-top: 170px; }
 .planning-request-duration > .leave-moment-label { display: block; margin-bottom: 8px; }
 .planning-request-duration .type-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
 .planning-request-duration .type-tabs button { flex: 1 1 auto; justify-content: center; gap: 6px; min-width: 0; min-height: 38px; border-radius: 999px; padding: 0 10px; font-size: .82rem; font-weight: 800; }

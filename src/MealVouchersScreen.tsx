@@ -1,3 +1,4 @@
+import { requestSection } from "./helpTargets";
 import { useRef, useState } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { euros } from "./appModel";
@@ -29,6 +30,14 @@ type Props = {
 
 /** Titres repas, dans Ma paie : la valeur du titre, puis le nombre de titres
  *  de chaque mois, d'où vient la retenue de la paie. */
+/** Les trois renvois de l'écran : les horaires de retrait, les formulaires
+ *  et le contact, tous dans Docs. */
+const MEAL_VOUCHER_LINKS = [
+  { title: "Horaires de retrait", detail: "Guichet des titres repas", target: "meal-folder", icon: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" },
+  { title: "Formulaires", detail: "Carte BIMPLI, procuration de retrait", target: "meal-forms", icon: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6" },
+  { title: "Contact titres repas", detail: "01 44 78 41 48 · bimpli@centrepompidou.fr", target: "meal-contact", icon: "M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2Z" },
+] as const;
+
 export function MealVouchersScreen({ plans, initialYear, knownRetention, onSave }: Props) {
   const [year, setYear] = useState(initialYear);
   // Chaque année a son brouillon : changer d'année repart de son choix.
@@ -81,6 +90,16 @@ function MealVoucherYear({ year, plans, knownRetention, onYearChange, onSave }: 
           <ChoicePicker value={year} options={YEAR_OPTIONS} onChange={onYearChange} ariaLabel="Choisir l’année des titres repas" className="leave-year-picker" />
         </label>
         <p className="meal-vouchers-status">{status}</p>
+      </div>
+      {/* Ce qui entoure les titres, rangé dans Docs : un toucher y mène. */}
+      <div className="meal-vouchers-links">
+        {MEAL_VOUCHER_LINKS.map(({ title, detail, icon, target }) => (
+          <button key={title} type="button" onClick={() => requestSection("pdf", target)}>
+            <b aria-hidden="true"><svg viewBox="0 0 24 24"><path d={icon} /></svg></b>
+            <span><strong>{title}</strong><small>{detail}</small></span>
+            <i aria-hidden="true">›</i>
+          </button>
+        ))}
       </div>
 
       <div className={`meal-vouchers-card${valueMissing && !tier ? " missing" : ""}`} ref={valueCard}>

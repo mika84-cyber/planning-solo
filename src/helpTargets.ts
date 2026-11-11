@@ -13,12 +13,16 @@ export type HelpTarget =
   | "forms"
   | "work-accident"
   | "expo-folder"
+  | "meal-folder"
+  | "meal-forms"
+  | "meal-contact"
   | "program-space"
   | "program-interexpo"
   | "overtime-mecenat"
   | "cet"
   | "colleague-share"
   | "colleague-groups"
+  | "colleague-settings"
   | "pay-gross" | "pay-contributions" | "pay-meal-vouchers" | "pay-tax" | "pay-navigo";
 
 const HELP_TARGET_EVENT = "planning:help-target";
@@ -60,5 +64,25 @@ export function useHelpTarget(handle: (target: HelpTarget) => boolean) {
     const listener = (event: Event) => respond((event as CustomEvent<HelpTarget>).detail);
     window.addEventListener(HELP_TARGET_EVENT, listener);
     return () => window.removeEventListener(HELP_TARGET_EVENT, listener);
+  }, []);
+}
+
+/** Depuis un écran, aller dans une autre rubrique : la coque écoute et y
+ *  mène (`useSectionRequest`), puis l'écran visé sert `target`. « meal » est
+ *  l'écran Titres repas de Ma paie. */
+export type SectionRequest = "pdf" | "meal";
+const SECTION_REQUEST_EVENT = "planning:open-section";
+
+export function requestSection(section: SectionRequest, target?: HelpTarget) {
+  window.dispatchEvent(new CustomEvent(SECTION_REQUEST_EVENT, { detail: section }));
+  if (target) requestHelpTarget(target);
+}
+
+export function useSectionRequest(open: (section: SectionRequest) => void) {
+  const respond = useEffectEvent(open);
+  useEffect(() => {
+    const listener = (event: Event) => respond((event as CustomEvent<SectionRequest>).detail);
+    window.addEventListener(SECTION_REQUEST_EVENT, listener);
+    return () => window.removeEventListener(SECTION_REQUEST_EVENT, listener);
   }, []);
 }

@@ -35,8 +35,14 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
     accountButtonRef: { current: null },
     setDataManagementOpen: noop,
     setFeedbackOpen: noop,
+    setGroupChooserOpen: noop,
+    showSchoolVacations: true,
+    schoolZone: "C",
   },
-  pay: { payScreen: "overview", setPayScreen: noop, setPayView: noop, setPayVerificationRequested: noop },
+  pay: {
+    payScreen: "overview", setPayScreen: noop, setPayView: noop, setPayVerificationRequested: noop,
+    setPayProfileOpen: noop, setPayAdvancedOpen: noop, setPayProfileFocusRequested: noop,
+  },
   calendar: { entries: {}, periods: [], formProfile: null, recoveryUses: [] },
   allowanceValues: {
     baseSalary: 1800,

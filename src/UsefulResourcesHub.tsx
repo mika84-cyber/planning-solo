@@ -32,8 +32,8 @@ export function UsefulResourcesHub({ forms, contacts, initialTab = "forms" }: Us
   // La fenêtre d'aide ouvre le bon onglet ; une sous-page (codes radio,
   // accident) est ensuite servie par l'onglet lui-même.
   useHelpTarget((target) => {
-    const tab: ResourceTab | null = target === "contacts" || target === "radio-codes" ? "contacts"
-      : target === "forms" || target === "work-accident" || target === "expo-folder" ? "forms" : null;
+    const tab: ResourceTab | null = target === "contacts" || target === "radio-codes" || target === "meal-contact" ? "contacts"
+      : target === "forms" || target === "work-accident" || target === "expo-folder" || target === "meal-folder" || target === "meal-forms" ? "forms" : null;
     if (!tab) return false;
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: "auto" });

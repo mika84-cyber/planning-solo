@@ -110,6 +110,8 @@ type AppHeaderProps = {
   install?: { available: boolean; onInstall: () => void };
   /** La messagerie interne, réservée à l'administrateur. */
   onOpenFeedback?: () => void;
+  /** « Mon profil » : la fiche des réglages, et son résumé sous l'entrée. */
+  profile?: { summary: string; onOpen: () => void };
   onOpenAdminTools?: () => void;
   /** « Liste des raccourcis » : ouvre la fenêtre des questions. */
   onOpenHelp?: () => void;
@@ -136,6 +138,7 @@ export function AppHeader({
   onOpenDataManagement,
   install,
   onOpenFeedback,
+  profile,
   onOpenAdminTools,
   onOpenHelp,
 }: AppHeaderProps) {
@@ -224,6 +227,9 @@ export function AppHeader({
                   {/* L'apparence est un réglage personnel : elle vit avec le compte. */}
                   <ThemeSwitch />
                   {/* Les outils de l'ancien menu principal, sous l'apparence. */}
+                  {profile ? <button className="account-menu-data" type="button" role="menuitem" onClick={profile.onOpen}>
+                    Mon profil<small>{profile.summary}</small>
+                  </button> : null}
                   <button className="account-menu-data" type="button" role="menuitem" onClick={onOpenDataManagement}>Mes données</button>
                   {install ? <button className="account-menu-data" type="button" role="menuitem" disabled={!install.available} onClick={install.onInstall}>
                     Installer l’application{install.available ? null : <small>Disponible après connexion</small>}

@@ -130,15 +130,80 @@ async function downloadDocument(href: string, name: string) {
   else await downloadUsefulFile(href, name);
 }
 
-function QuestionRow({ item, onChoose }: { item: Question; onChoose: (id: HelpChoice) => void }) {
+/** Une ligne : icône, intitulé, précision dessous, flèche. */
+function SheetRow({ icon: name, title, sub, onClick }: { icon: string; title: string; sub: string; onClick: () => void }) {
   return (
     <li>
-      <button type="button" className="help-sheet-row" onClick={() => onChoose(item.id)}>
-        <span className="help-sheet-icon">{ICONS[item.icon]}</span>
-        <span className="help-sheet-copy"><strong>{item.question}</strong><small>{item.where}</small></span>
+      <button type="button" className="help-sheet-row" onClick={onClick}>
+        <span className="help-sheet-icon">{ICONS[name]}</span>
+        <span className="help-sheet-copy"><strong>{title}</strong><small>{sub}</small></span>
         <span className="help-sheet-chevron" aria-hidden="true">›</span>
       </button>
     </li>
+  );
+}
+
+function QuestionRow({ item, onChoose }: { item: Question; onChoose: (id: HelpChoice) => void }) {
+  return <SheetRow icon={item.icon} title={item.question} sub={item.where} onClick={() => onChoose(item.id)} />;
+}
+
+/** La fenêtre commune à « Liste des raccourcis » et à « Mon profil » : un
+ *  panneau qui monte du bas sur téléphone, son titre et sa croix. */
+function SheetShell({ title, section, onClose, children }: { title: string; section?: string; onClose: () => void; children: ReactNode }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal?.();
+  }, []);
+  return (
+    <dialog
+      ref={dialogRef}
+      className="help-sheet"
+      data-section={section}
+      aria-label={title}
+      onClose={onClose}
+      onCancel={(event) => { event.preventDefault(); onClose(); }}
+      // Un toucher sur le voile, hors du panneau, ferme la fenêtre.
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+    >
+      <div className="help-sheet-panel">
+        <span className="help-sheet-grip" aria-hidden="true" />
+        <header className="help-sheet-head">
+          <h2 id="help-sheet-title">{title}</h2>
+          <button type="button" className="help-sheet-close" aria-label="Fermer" onClick={onClose}>×</button>
+        </header>
+        <div className="help-sheet-themes">{children}</div>
+      </div>
+    </dialog>
+  );
+}
+
+/** Un réglage de « Mon profil » : sa valeur du moment, et ce qu'il ouvre. */
+export type ProfileRow = { icon: string; title: string; value: string; onOpen: () => void };
+export type ProfileGroup = { key: Theme["key"]; title: string; rows: ProfileRow[] };
+
+/**
+ * « Mon profil », ouvert depuis le menu du compte : tous les réglages
+ * personnels réunis, chacun avec sa valeur. Une ligne ouvre le réglage là où
+ * il existe déjà (groupe, profil de paie, zone scolaire, annuaire…). Deux
+ * colonnes à l'ordinateur, une seule sur téléphone.
+ */
+export function ProfileSheet({ section, columns, onClose }: { section?: string; columns: ProfileGroup[][]; onClose: () => void }) {
+  return (
+    <SheetShell title="Mon profil" section={section} onClose={onClose}>
+      {columns.map((groups) => (
+        <div key={groups[0].key} className="help-sheet-column">
+          {groups.map((group) => (
+            <section key={group.key} className={`help-sheet-theme theme-${group.key}`}>
+              <h3 className={`help-sheet-group-title group-${group.key}`}>{group.title}</h3>
+              <ul className={`help-sheet-group group-${group.key}`} aria-label={group.title}>
+                {group.rows.map((row) => <SheetRow key={row.title} icon={row.icon} title={row.title} sub={row.value} onClick={row.onOpen} />)}
+              </ul>
+            </section>
+          ))}
+        </div>
+      ))}
+    </SheetShell>
   );
 }
 
@@ -248,12 +313,7 @@ export function HelpSheet({ today, section, onChoose, onClose }: {
   onChoose: (id: HelpChoice) => void;
   onClose: () => void;
 }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const { gallery, sheet } = useGalleryExpo(today);
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog && !dialog.open) dialog.showModal?.();
-  }, []);
   /** Les lignes de l'exposition n'existent que si elle est connue ce jour-là. */
   const row = (item: Question | GalleryRow) => {
     if (item === "expo-sheet") return gallery ? <GalleryExpoRow key={item} gallery={gallery} sheet={sheet} onChoose={onChoose} /> : null;
@@ -267,32 +327,14 @@ export function HelpSheet({ today, section, onChoose, onClose }: {
     </section>
   );
   return (
-    <dialog
-      ref={dialogRef}
-      className="help-sheet"
-      data-section={section}
-      aria-label="Liste des raccourcis"
-      onClose={onClose}
-      onCancel={(event) => { event.preventDefault(); onClose(); }}
-      // Un toucher sur le voile, hors du panneau, ferme la fenêtre.
-      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
-    >
-      <div className="help-sheet-panel">
-        <span className="help-sheet-grip" aria-hidden="true" />
-        <header className="help-sheet-head">
-          <h2 id="help-sheet-title">Liste des raccourcis</h2>
-          <button type="button" className="help-sheet-close" aria-label="Fermer" onClick={onClose}>×</button>
-        </header>
-        <div className="help-sheet-themes">
-          {THEME_COLUMNS.map((themes, index) => (
-            <div key={themes[0].key} className="help-sheet-column">
-              {themes.map(themeSection)}
-              {index === 0 ? <GrandPalaisArt /> : null}
-            </div>
-          ))}
+    <SheetShell title="Liste des raccourcis" section={section} onClose={onClose}>
+      {THEME_COLUMNS.map((themes, index) => (
+        <div key={themes[0].key} className="help-sheet-column">
+          {themes.map(themeSection)}
+          {index === 0 ? <GrandPalaisArt /> : null}
         </div>
-      </div>
-    </dialog>
+      ))}
+    </SheetShell>
   );
 }
 

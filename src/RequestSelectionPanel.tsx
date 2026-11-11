@@ -2,13 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { RequestValidationSummary, type LeaveRemainingByYear } from "./RequestValidationSummary";
 import type { RequestKind, SelectedDay } from "./appModel";
-import { LeaveDurationControl } from "./LeaveDurationControl";
-import { LeaveTypeTabs } from "./LeaveTypeTabs";
 import type { WorkQuota } from "./overtime";
 import {
-  DURATION_LEAVE_TYPES,
-  type LeaveHours,
-  type LeaveMoment,
   TYPE_COLORS,
   TYPE_LABELS,
   type SelectionType,
@@ -32,13 +27,6 @@ export type RequestSelectionPanelProps = {
   /** Sélection incomplète ou solde à zéro : l'enregistrement reste fermé. */
   selectionBlocked: boolean;
   onCancel: () => void;
-  onSelectLeaveType: (type: SelectionType) => void;
-  /** Congés annuels : journée entière, matin ou après-midi, et les heures
-   *  posées d'une demi-journée. */
-  leaveMoment?: LeaveMoment;
-  onSelectLeaveMoment?: (moment: LeaveMoment) => void;
-  leaveHours?: LeaveHours;
-  onChangeLeaveHours?: (hours: LeaveHours) => void;
   onSelectRecoveryType: (type: SelectionType) => void;
   onValidateAndOpenForm: () => void;
   onSaveToPlanning: () => void;
@@ -61,11 +49,6 @@ export function RequestSelectionPanel({
   savingRequest,
   selectionBlocked,
   onCancel,
-  onSelectLeaveType,
-  leaveMoment = "full",
-  onSelectLeaveMoment,
-  leaveHours = { start: "", end: "" },
-  onChangeLeaveHours,
   onSelectRecoveryType,
   onValidateAndOpenForm,
   onSaveToPlanning,
@@ -138,18 +121,16 @@ export function RequestSelectionPanel({
                 : "Sélectionnez vos récupérations"}
           </h2>
         </div>
-        <button
-          className="text-button danger"
-          type="button"
-          onClick={onCancel}
-          aria-label={requestKind === "strike" ? "Fermer" : "Annuler la demande"}
-        >
-          {requestKind === "strike" ? "Fermer" : "Annuler"}
-        </button>
+        {/* Une seule façon d'abandonner : le lien « Annuler la demande », sous
+            les boutons d'enregistrement. La grève, ajoutée tout de suite et
+            sans relecture, n'a que ce « Fermer ». */}
+        {requestKind === "strike" ? (
+          <button className="text-button danger" type="button" onClick={onCancel} aria-label="Fermer">Fermer</button>
+        ) : null}
       </div>
       {requestKind === "leave" && !sickRequest ? (
         <p className="multi-type-request-help">
-          Touchez les dates dans le planning. Vous pouvez changer de type entre deux dates : une même demande peut en mélanger plusieurs.
+          Choisissez le congé et sa durée juste au-dessus du planning, puis touchez les dates. Une même demande peut mélanger plusieurs types.
         </p>
       ) : null}
       {requestKind === "other" ? null : requestKind === "strike" ? (
@@ -195,16 +176,10 @@ export function RequestSelectionPanel({
           </div>
         ) : (
         <div className="request-option-groups request-option-groups-guided">
-          <section className="request-option-group request-option-group-primary">
-            <h3>Choix courants</h3>
-            <LeaveTypeTabs types={["annual", "rtt", "fraction"]} activeType={activeType} selectedCounts={selectedCounts} ariaLabel="Choix courants" onSelect={onSelectLeaveType} />
-            {/* Congés annuels : en journée entière ou en demi-journée, pour
-                les dates touchées ensuite ; le matin ou l'après-midi, aux
-                heures choisies. RTT et fractionnement : journée entière. */}
-            {(DURATION_LEAVE_TYPES as readonly string[]).includes(activeType) && onSelectLeaveMoment ? (
-              <LeaveDurationControl moment={leaveMoment} hours={leaveHours} color={TYPE_COLORS[activeType]} onSelectMoment={onSelectLeaveMoment} onChangeHours={onChangeLeaveHours} />
-            ) : null}
-          </section>
+          {/* CA, RTT, fractionnement et la durée se choisissent au-dessus du
+              planning (PlanningWorkspace), là où l'on touche les dates ; le
+              panneau ne garde que les types plus rares. Jusqu'au 12 novembre
+              2026, les deux jeux de commandes se suivaient. */}
           <details className="request-advanced-types" open={(["childcare", "exceptional", "cet"] as SelectionType[]).includes(activeType)}>
             <summary><span><strong>Autres types de congé</strong><small>Garde d’enfant, jour exceptionnel ou CET</small></span><b aria-hidden="true">⌄</b></summary>
             <section className="request-option-group">

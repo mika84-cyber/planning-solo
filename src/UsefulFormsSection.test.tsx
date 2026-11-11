@@ -15,12 +15,12 @@ describe("formulaires utiles", () => {
       "Formulaire Expo",
       "Formulaire SAP",
       "Formulaire Brantôme",
-      "Horaires tickets resto",
+      "Titres repas : retrait",
     ]);
     expect(html.indexOf("Formulaire Expo")).toBeLessThan(html.indexOf("Formulaire SAP"));
     expect(html.indexOf("Formulaire SAP")).toBeLessThan(html.indexOf("Formulaire Brantôme"));
-    expect(html.indexOf("Formulaire Brantôme")).toBeLessThan(html.indexOf("Horaires tickets resto"));
-    expect(html.indexOf("Horaires tickets resto")).toBeLessThan(html.indexOf("Déclarer un accident de travail"));
+    expect(html.indexOf("Formulaire Brantôme")).toBeLessThan(html.indexOf("Titres repas : retrait"));
+    expect(html.indexOf("Titres repas : retrait")).toBeLessThan(html.indexOf("Déclarer un accident de travail"));
     expect(html).toContain("useful-forms-root");
     expect(html).toContain("Rechercher un document");
     // L'audioguide Cézanne est passé sur la fiche de l'exposition (Programme GP).

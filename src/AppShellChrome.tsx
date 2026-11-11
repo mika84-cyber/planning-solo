@@ -1,14 +1,18 @@
 import { type Dispatch, lazy, type SetStateAction, Suspense, useState } from "react";
 import { AdaptiveNavigation, AppHeader } from "./AppNavigation";
 import { AppleInstallNotice } from "./AppleInstallNotice";
+import { PAY_STATUS_OPTIONS } from "./appModel";
+import { readColleagueBoardCache } from "./colleagueBoardCache";
 import { clearColleagueGroupsCache } from "./colleagueSharingApi";
 import { HomeAdminMessage } from "./HomeAdminMessage";
 import { InstallAppNotice } from "./InstallAppNotice";
-import type { HelpChoice } from "./HelpSheet";
-import { type HelpTarget, requestHelpTarget } from "./helpTargets";
+import type { HelpChoice, ProfileGroup } from "./HelpSheet";
+import { type HelpTarget, requestHelpTarget, useSectionRequest } from "./helpTargets";
+import { usableWorkSchedule, WORK_QUOTA_OPTIONS } from "./overtime";
 import { computePayAllowances } from "./payAllowances";
-import { dateKey, localDate } from "./planningLogic";
+import { dateKey, localDate, SCHOOL_ZONE_OPTIONS } from "./planningLogic";
 import { scrollWhenReady } from "./scrollWhenReady";
+import { currentResolvedTheme, setThemePreference } from "./theme";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { useAuthenticationActions } from "./useAuthenticationActions";
 import type { useCalendarDataState } from "./useCalendarDataState";
@@ -21,6 +25,7 @@ import type { useShellEffects } from "./useShellEffects";
 import type { useToast } from "./useToast";
 
 const HelpSheet = lazy(() => import("./HelpSheet"));
+const ProfileSheet = lazy(() => import("./HelpSheet").then((module) => ({ default: module.ProfileSheet })));
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
 
 type Props = {
@@ -45,9 +50,12 @@ type Props = {
     ReturnType<typeof useAppShellUiState>,
     | "homeSection" | "setHomeSection" | "accountMenuOpen" | "setAccountMenuOpen"
     | "checkingAppUpdate" | "appUpdateAvailable" | "appUpdatePromptOpen" | "accountMenuRef" | "accountButtonRef"
-    | "setDataManagementOpen" | "setFeedbackOpen"
+    | "setDataManagementOpen" | "setFeedbackOpen" | "setGroupChooserOpen" | "showSchoolVacations" | "schoolZone"
   >;
-  pay: Pick<ReturnType<typeof usePayUiState>, "payScreen" | "setPayScreen" | "setPayView" | "setPayVerificationRequested">;
+  pay: Pick<
+    ReturnType<typeof usePayUiState>,
+    "payScreen" | "setPayScreen" | "setPayView" | "setPayVerificationRequested" | "setPayProfileOpen" | "setPayAdvancedOpen" | "setPayProfileFocusRequested"
+  >;
   calendar: Pick<ReturnType<typeof useCalendarDataState>, "entries" | "periods" | "formProfile" | "recoveryUses">;
   /** Ce que le rappel des fériés recalcule pour une année : salaire de base
    *  et reports de dimanches. */
@@ -81,7 +89,7 @@ export function AppShellChrome({
   const {
     homeSection, setHomeSection, accountMenuOpen, setAccountMenuOpen,
     checkingAppUpdate, appUpdateAvailable, appUpdatePromptOpen, accountMenuRef, accountButtonRef,
-    setDataManagementOpen, setFeedbackOpen,
+    setDataManagementOpen, setFeedbackOpen, setGroupChooserOpen, showSchoolVacations, schoolZone,
   } = shell;
   const { payScreen, setPayScreen, setPayView } = pay;
   const { entries, periods, formProfile, recoveryUses } = calendar;
@@ -90,6 +98,64 @@ export function AppShellChrome({
   } = allowanceValues;
   const { navigateFromShell, checkForAppUpdate, disconnect } = actions;
   const [helpOpen, setHelpOpen] = useState(false);
+  // Un écran renvoie vers un autre : Titres repas de Ma paie vers Docs, et retour.
+  useSectionRequest((section) => {
+    navigateFromShell(section === "meal" ? "pay" : section);
+    if (section === "meal") setPayScreen("meal");
+    window.scrollTo({ top: 0, behavior: "auto" });
+  });
+  // « Mon profil » : la fiche des réglages, ouverte depuis le menu du compte.
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [dark, setDark] = useState(false);
+  const statusLabel = PAY_STATUS_OPTIONS.find((option) => option.value === formProfile?.status)?.label;
+  const zoneLabel = SCHOOL_ZONE_OPTIONS.find((option) => option.value === schoolZone)?.label ?? "";
+  /** Chaque réglage avec sa valeur ; une ligne referme la fiche et ouvre le
+   *  réglage là où il existe déjà. */
+  const profileColumns = (): ProfileGroup[][] => {
+    const close = (open: () => void) => () => { setProfileOpen(false); open(); };
+    const openPayProfile = close(() => {
+      navigateFromShell("pay");
+      setPayScreen("overview");
+      pay.setPayProfileOpen(true);
+      pay.setPayAdvancedOpen(false);
+      pay.setPayProfileFocusRequested(true);
+    });
+    const schedule = usableWorkSchedule(formProfile?.workSchedule);
+    const hour = (value: string) => value.replace(":", " h ");
+    const self = demoMode ? null : readColleagueBoardCache(userEmail)?.directory.self;
+    return [
+      [
+        { key: "docs", title: "Mon travail", rows: [
+          { icon: "team", title: "Groupe de planning", value: `Groupe ${group}`, onOpen: close(() => setGroupChooserOpen(true)) },
+          {
+            icon: "form", title: "Statut et quotité", onOpen: openPayProfile,
+            value: [statusLabel, WORK_QUOTA_OPTIONS.find((option) => option.value === formProfile?.workQuota)?.label].filter(Boolean).join(" · ") || "À renseigner",
+          },
+          { icon: "clock", title: "Horaires habituels", value: schedule ? `${hour(schedule.start)} – ${hour(schedule.end)}` : "À renseigner", onOpen: openPayProfile },
+        ] },
+        { key: "expo", title: "Mon planning", rows: [
+          {
+            icon: "leave", title: "Vacances scolaires", value: `${zoneLabel} · ${showSchoolVacations ? "affichées dans le planning" : "masquées"}`,
+            onOpen: close(() => { navigateFromShell("home"); scrollWhenReady("school-vacation-settings"); }),
+          },
+        ] },
+      ],
+      [
+        { key: "pay", title: "Mes collègues", rows: [
+          {
+            icon: "share", title: "Nom dans l’annuaire",
+            value: self?.displayName ? `${self.displayName} · ${self.visible ? "visible" : "masqué"}` : "Visible ou masqué, à régler dans Collègues",
+            onOpen: close(() => { navigateFromShell("colleagues"); requestHelpTarget("colleague-settings"); }),
+          },
+        ] },
+        { key: "declare", title: "Application", rows: [
+          // Le mode sombre bascule sur place : la fiche reste ouverte.
+          { icon: "sun", title: "Mode sombre", value: dark ? "Activé" : "Désactivé", onOpen: () => { setThemePreference(dark ? "light" : "dark"); setDark(!dark); } },
+          { icon: "download", title: "Mes données", value: "Sauvegarder, reprendre, effacer", onOpen: close(() => setDataManagementOpen(true)) },
+        ] },
+      ],
+    ];
+  };
   // Chaque question de la fenêtre d'aide : la page, puis l'onglet ou la
   // sous-page que l'écran visé ouvre de lui-même (helpTargets).
   const chooseHelp = (choice: HelpChoice) => {
@@ -185,7 +251,20 @@ export function AppShellChrome({
           setAccountMenuOpen(false);
           setHelpOpen(true);
         }}
+        profile={{
+          summary: [`Groupe ${group}`, statusLabel, zoneLabel].filter(Boolean).join(" · "),
+          onOpen: () => {
+            setAccountMenuOpen(false);
+            setDark(currentResolvedTheme() === "dark");
+            setProfileOpen(true);
+          },
+        }}
       />
+      {profileOpen ? (
+        <Suspense fallback={null}>
+          <ProfileSheet section={homeSection} columns={profileColumns()} onClose={() => setProfileOpen(false)} />
+        </Suspense>
+      ) : null}
       {helpOpen ? (
         <Suspense fallback={null}>
           <HelpSheet today={dateKey(now)} section={homeSection} onChoose={chooseHelp} onClose={() => setHelpOpen(false)} />

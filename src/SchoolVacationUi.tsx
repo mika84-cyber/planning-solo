@@ -31,7 +31,7 @@ export function SchoolVacationSettings({
   const zoneLabel = SCHOOL_ZONE_OPTIONS.find((option) => option.value === zone)?.label ?? "";
   const next = nextSchoolVacation(zone, today);
   return (
-    <section className="school-vacation-settings" aria-label="Vacances scolaires">
+    <section id="school-vacation-settings" className="school-vacation-settings" aria-label="Vacances scolaires">
       <div className="school-vacation-row">
         <button
           className="school-vacation-zone"

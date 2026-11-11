@@ -129,7 +129,12 @@ const budgets = {
   // Relevé le 6 novembre 2026 à 2 098 Kio bruts et 696 Kio compressés, avec
   // l'accord de l'administrateur : l'écran Titres repas et sa retenue mois par
   // mois (2 096,1 / 694,5 Kio mesurés).
-  totalJavaScript: { raw: 2_098 * KIB, gzip: 696 * KIB },
+  // Relevé le 12 novembre 2026 à 2 104 Kio bruts et 698 Kio compressés, à la
+  // demande de publication de l'administrateur après l'annonce du dépassement :
+  // la fiche « Mon profil » du menu du compte, les renvois de l'écran Titres
+  // repas et la demande de congé à un seul jeu de commandes (2 101,4 / 696,1
+  // Kio mesurés).
+  totalJavaScript: { raw: 2_104 * KIB, gzip: 698 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

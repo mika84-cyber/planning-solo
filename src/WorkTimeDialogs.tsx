@@ -52,7 +52,7 @@ export function MecenatDialog({
         <button className="modal-close" type="button" onClick={onClose} aria-label="Fermer">
           ×
         </button>
-        <span className="step-label">Ma paie</span>
+        <span className="step-label">Heures et mécénats</span>
         <h2 id="mecenat-title">Déclarer un mécénat</h2>
         <p>
           Indiquez les horaires : Planning Solo sépare automatiquement le taux de

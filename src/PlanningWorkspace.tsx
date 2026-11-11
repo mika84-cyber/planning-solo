@@ -269,11 +269,6 @@ export function PlanningWorkspace({
           leaveSelectionOverBalance
         }
         onCancel={cancelRequest}
-        onSelectLeaveType={selectLeaveType}
-        leaveMoment={leaveMoment}
-        onSelectLeaveMoment={selectLeaveMoment}
-        leaveHours={leaveHoursFor(leaveHours, leaveMoment)}
-        onChangeLeaveHours={selectLeaveHours}
         onSelectRecoveryType={selectRecoveryType}
         onValidateAndOpenForm={() => void validateAndOpenForm()}
         onSaveToPlanning={() => void saveRequestToPlanning()}
@@ -297,8 +292,9 @@ export function PlanningWorkspace({
       {/* Pendant une demande de congé, le congé des dates qu'on va toucher,
           juste au-dessus d'elles — CA, RTT, fractionnement, et le type choisi
           s'il est autre — puis, pour un CA, leur durée : un RTT, un CA et une
-          demi-journée se posent dans la même demande sans remonter au
-          panneau. */}
+          demi-journée se posent dans la même demande. C'est le seul endroit
+          où ils se choisissent ; le bloc reste en haut de l'écran pendant
+          qu'on fait défiler le calendrier (09-responsive-refinements.css). */}
       {requestKind === "leave" && !sickRequest ? (
         <div className="planning-request-duration">
           <span className="leave-moment-label" aria-hidden="true">Dates touchées</span>

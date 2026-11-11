@@ -307,7 +307,11 @@ async function pickWorkDay(page: Page, index = 0) {
     await page.waitForTimeout(200);
     return (await page.evaluate(() => window.scrollY)) === before;
   }, { message: "le défilement vers le calendrier doit être terminé" }).toBe(true);
-  await page.locator(".month-card .day.work").nth(index).click();
+  // La case au milieu de l'écran, sans défilement en douceur : elle ne bouge
+  // plus pendant le toucher, et le bloc collant du haut ne la cache pas.
+  const day = page.locator(".month-card .day.work").nth(index);
+  await day.evaluate((node) => node.scrollIntoView({ block: "center", behavior: "instant" }));
+  await day.click();
 }
 
 /** Ouvre une rubrique par le dock, seul chemin vers les pages. */
@@ -2333,6 +2337,7 @@ test("le menu du compte garde Mes données, l’installation et la messagerie", 
 
   const accountMenu = await openAccountMenu(page);
   await expect(accountMenu.getByRole("menuitem")).toHaveText([
+    /^Mon profil/,
     "Mes données",
     /^Installer l’application/,
     /^Messagerie interne/,
@@ -2433,7 +2438,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     /Formulaire Expo/,
     /Formulaire SAP.*3 documents/,
     /Formulaire Brantôme.*8 documents/,
-    /Horaires tickets resto.*Information pratique/,
+    /Titres repas : retrait.*Information pratique/,
   ]);
   // L'accident de travail, à part, sous la liste.
   const accident = page.locator(".resource-accident-card");
@@ -2494,7 +2499,7 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     "Formulaire de changement de coordonnées",
     "Changement de coordonnées bancaires",
     "Demande de carte de restauration BIMPLI",
-    "Procuration pour le retrait des titres-restaurant",
+    "Procuration pour le retrait des titres repas",
     "Demande de Carte Culture A",
     "Formulaire d’adhésion carte POP",
     "CET - Demande d’ouverture",
@@ -2504,8 +2509,8 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(page.getByRole("link", { name: "collectivites@centrepompidou.fr" }))
     .toHaveAttribute("href", "mailto:collectivites@centrepompidou.fr");
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
-  await page.getByRole("button", { name: /Horaires tickets resto/ }).click();
-  await expect(page.getByRole("heading", { name: "Horaires tickets resto" })).toBeVisible();
+  await page.getByRole("button", { name: /Titres repas : retrait/ }).click();
+  await expect(page.getByRole("heading", { name: "Titres repas : retrait" })).toBeVisible();
   await expect(page.locator(".useful-form-information-image img")).toHaveAttribute(
     "src",
     "/useful-forms/horaires-tickets-repas-fast.webp",
@@ -2637,6 +2642,85 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
   expect(Math.abs(box!.y + box!.height / 2 - viewport.height / 2)).toBeLessThan(3);
   await popup.getByRole("button", { name: "D’accord" }).click();
   await expect(popup).toHaveCount(0);
+});
+
+test("« Mon profil » réunit les réglages dans le menu du compte et ouvre chacun", async ({ page }) => {
+  await prepareDemo(page);
+  const openProfile = async () => {
+    await (await openAccountMenu(page)).getByRole("menuitem", { name: /^Mon profil/ }).click();
+    const sheet = page.getByRole("dialog", { name: "Mon profil" });
+    await expect(sheet).toBeVisible();
+    return sheet;
+  };
+  // L'entrée du menu résume le profil ; la fiche donne chaque réglage et sa valeur.
+  // Le statut s'y ajoute une fois renseigné : la démo des tests n'en a pas.
+  await expect((await openAccountMenu(page)).getByRole("menuitem", { name: /^Mon profil/ })).toHaveText(/^Mon profilGroupe 2 · (Fonctionnaire · |Contractuel · )?Zone C$/);
+  await page.keyboard.press("Escape");
+  let sheet = await openProfile();
+  await expect(sheet.getByRole("list")).toHaveCount(4);
+  await expect(sheet.getByRole("button", { name: /^Groupe de planning/ })).toContainText("Groupe 2");
+  await expect(sheet.getByRole("button", { name: /^Statut et quotité/ })).toContainText(/À renseigner|Fonctionnaire|Contractuel|Temps/);
+  await expect(sheet.getByRole("button", { name: /^Vacances scolaires/ })).toContainText("Zone C");
+  // Le groupe : la fenêtre qui existe déjà, sans quitter la page.
+  await sheet.getByRole("button", { name: /^Groupe de planning/ }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Choisir mon groupe" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  // Le statut : Ma paie, profil déplié.
+  sheet = await openProfile();
+  await sheet.getByRole("button", { name: /^Statut et quotité/ }).click();
+  await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
+  await expect(page.locator(".pay-profile-summary")).toHaveAttribute("aria-expanded", "true");
+  // La zone scolaire : l'accueil, descendu jusqu'au réglage.
+  sheet = await openProfile();
+  await sheet.getByRole("button", { name: /^Vacances scolaires/ }).click();
+  await expect(page.locator(".top-header h1")).toHaveText("Accueil");
+  await expect(page.locator("#school-vacation-settings")).toBeInViewport();
+  // Le mode sombre bascule sur place, la fiche reste ouverte.
+  sheet = await openProfile();
+  const darkRow = sheet.getByRole("button", { name: /^Mode sombre/ });
+  const before = await page.evaluate(() => document.documentElement.dataset.theme === "dark");
+  await darkRow.click();
+  await expect(darkRow).toContainText(before ? "Désactivé" : "Activé");
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme === "dark")).toBe(!before);
+  await darkRow.click();
+  await expect(darkRow).toContainText(before ? "Activé" : "Désactivé");
+  await sheet.getByRole("button", { name: "Fermer" }).click();
+  await expect(sheet).toHaveCount(0);
+});
+
+test("les titres repas de Ma paie et ceux de Docs renvoient l’un à l’autre", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  const openMealVouchers = async () => {
+    await goToSection(page, "pay");
+    await page.locator(".pay-bulletin-shortcut", { hasText: "Titres repas" }).click();
+    return page.locator(".meal-vouchers-links");
+  };
+  // Les trois renvois de l'écran : le contact, les formulaires, les horaires.
+  let links = await openMealVouchers();
+  await expect(links.getByRole("button")).toHaveText([/^Horaires de retrait/, /^Formulaires/, /^Contact titres repas.*01 44 78 41 48/]);
+  await links.getByRole("button", { name: /^Contact titres repas/ }).click();
+  await expect(page.locator(".top-header h1")).toHaveText("Documents et contacts");
+  await expect(page.getByRole("link", { name: /^Appeler Tickets restaurants au 01 44 78 41 48/ })).toBeVisible();
+  links = await openMealVouchers();
+  await links.getByRole("button", { name: /^Formulaires/ }).click();
+  await expect(page.getByRole("heading", { name: "Formulaire Brantôme" })).toBeVisible();
+  links = await openMealVouchers();
+  // De Ma paie vers Docs : les horaires de retrait.
+  await links.getByRole("button", { name: /^Horaires de retrait/ }).click();
+  await expect(page.locator(".top-header h1")).toHaveText("Documents et contacts");
+  await expect(page.getByRole("heading", { name: "Titres repas : retrait" })).toBeVisible();
+  // Le dossier mène aux formulaires du dossier Brantôme…
+  await page.getByRole("button", { name: "dossier Formulaire Brantôme ›" }).click();
+  await expect(page.getByRole("heading", { name: "Formulaire Brantôme" })).toBeVisible();
+  await expect(page.getByText("Procuration pour le retrait des titres repas")).toBeVisible();
+  // … et ramène à Ma paie pour régler ses titres.
+  await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+  await page.getByRole("button", { name: /Titres repas : retrait/ }).click();
+  await page.getByRole("button", { name: "régler dans Ma paie ›" }).click();
+  await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
+  await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Titres repas");
 });
 
 test("les documents d’un dossier portent tous la couleur du dossier", async ({ page }) => {
@@ -5848,7 +5932,7 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   await expect(datedChooser).toContainText("Choisissez le type à appliquer");
   await datedChooser.getByRole("button", { name: /^RTT/ }).click();
   const datedRequest = page.locator("#request-panel");
-  await expect(datedRequest.getByRole("button", { name: /^RTT/ })).toHaveClass(/active/);
+  await expect(page.getByRole("group", { name: "Congé des dates touchées" }).getByRole("button", { name: /^RTT/ })).toHaveClass(/active/);
   await expect(datedRequest.locator(".request-advanced-types")).toHaveCSS("border-left-width", "6px");
   await expect(datedRequest.locator(".request-advanced-types")).not.toHaveCSS("box-shadow", "none");
   await expect(datedRequest.getByLabel("Résumé avant validation").getByText("1 date", { exact: true })).toBeVisible();
@@ -5864,7 +5948,9 @@ test("la demande guide sans masquer les options avancées", async ({ page }) => 
 
   const request = page.locator("#request-panel");
   await expect(request.getByText(/Étape 2 sur 3/)).toBeVisible();
-  await expect(request.getByRole("button", { name: "Congés annuels" })).toBeVisible();
+  // CA, RTT et fractionnement : au-dessus du planning, plus dans le panneau.
+  await expect(page.getByRole("group", { name: "Congé des dates touchées" }).getByRole("button", { name: /^CA/ })).toBeVisible();
+  await expect(request.getByText("Choix courants")).toHaveCount(0);
   const advanced = request.locator(".request-advanced-types");
   await expect(advanced).not.toHaveAttribute("open", "");
   await advanced.getByText("Autres types de congé").click();
@@ -5880,8 +5966,8 @@ test("un CA choisi depuis une case se pose en journée entière, ou le matin ou 
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
   await chooser.getByRole("button", { name: /^CA/ }).click();
   const request = page.locator("#request-panel");
-  // La durée se choisit sous le type : journée entière par défaut.
-  const duration = request.getByRole("group", { name: "Durée du congé" });
+  // La durée se choisit au-dessus du planning : journée entière par défaut.
+  const duration = page.getByRole("group", { name: "Durée des dates touchées" });
   await expect(duration.getByRole("button", { name: "Journée", exact: true })).toHaveAttribute("aria-pressed", "true");
   const summary = request.getByLabel("Résumé avant validation");
   await expect(summary).toContainText("Congés annuels");
@@ -5889,15 +5975,15 @@ test("un CA choisi depuis une case se pose en journée entière, ou le matin ou 
   // dessous ; la date déjà choisie reste une journée : les deux se mélangent.
   await duration.getByRole("button", { name: "Après-midi" }).click();
   await expect(duration.getByRole("button", { name: "Après-midi" })).toHaveAttribute("aria-pressed", "true");
-  const hours = request.getByRole("group", { name: "Heures posées l’après-midi" });
+  const hours = page.getByRole("group", { name: "Heures posées l’après-midi" });
   await hours.getByRole("combobox", { name: "Début — heures" }).selectOption("14");
   await hours.getByRole("combobox", { name: "Fin — heures" }).selectOption("17");
-  await page.locator(".month-card .day.work").nth(1).click();
+  await pickWorkDay(page, 1);
   await expect(summary).toContainText("Congés annuels");
   await expect(summary).toContainText("Congés en demi-journée");
   await expect(summary).toContainText("14:00 → 17:00");
   await duration.getByRole("button", { name: "Journée", exact: true }).click();
-  await expect(request.getByRole("group", { name: "Heures posées l’après-midi" })).toHaveCount(0);
+  await expect(page.getByRole("group", { name: "Heures posées l’après-midi" })).toHaveCount(0);
   // Puis d'un toucher sous la ligne CA de « Que voulez-vous poser ? » : les
   // heures d'abord, la date touchée est déjà une demi-journée du matin, et
   // la durée se retrouve au-dessus du planning, pour les dates suivantes.
@@ -5913,10 +5999,8 @@ test("un CA choisi depuis une case se pose en journée entière, ou le matin ou 
   await expect(duration.getByRole("button", { name: "Matin" })).toHaveAttribute("aria-pressed", "true");
   await expect(summary).toContainText("Congés en demi-journée");
   await expect(summary).toContainText("09:00 → 13:00");
-  const nearCalendar = page.getByRole("group", { name: "Durée des dates touchées" });
-  await expect(nearCalendar.getByRole("button", { name: "Matin" })).toHaveAttribute("aria-pressed", "true");
-  await nearCalendar.getByRole("button", { name: "Journée", exact: true }).click();
-  await page.locator(".month-card .day.work").nth(1).click();
+  await duration.getByRole("button", { name: "Journée", exact: true }).click();
+  await pickWorkDay(page, 1);
   await expect(summary).toContainText("Congés annuels");
   await expect(summary).toContainText("Congés en demi-journée");
 });
@@ -5929,24 +6013,24 @@ test("les RTT et le fractionnement se posent en journée entière", async ({ pag
     .click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
   const request = page.locator("#request-panel");
-  const duration = request.getByRole("group", { name: "Durée du congé" });
+  // Le congé et la durée des dates touchées, au-dessus du planning.
+  const nearCalendar = page.getByRole("group", { name: "Congé des dates touchées" });
+  const duration = page.getByRole("group", { name: "Durée des dates touchées" });
   await expect(duration).toBeVisible();
   // Ni demi-journée de RTT, ni de fractionnement : la durée disparaît.
   const summary = request.getByLabel("Résumé avant validation");
-  await request.getByRole("button", { name: /^RTT/ }).click();
+  await nearCalendar.getByRole("button", { name: /^RTT/ }).click();
   await expect(duration).toHaveCount(0);
   await expect(summary).toContainText("RTT");
   await expect(summary).not.toContainText("demi-journée");
-  await request.getByRole("button", { name: /^Jour de fractionnement/ }).click();
+  await nearCalendar.getByRole("button", { name: /^Fractionnement/ }).click();
   await expect(duration).toHaveCount(0);
   await expect(summary).not.toContainText("demi-journée");
   // De retour aux congés annuels, la durée revient.
-  await request.getByRole("button", { name: /^Congés annuels/ }).click();
+  await nearCalendar.getByRole("button", { name: /^CA/ }).click();
   await expect(duration).toBeVisible();
-  // Au-dessus du planning, le congé des dates qu'on va toucher : deux RTT,
-  // puis un CA dans la même demande sans remonter au panneau ; les dates
-  // déjà choisies gardent leur type.
-  const nearCalendar = page.getByRole("group", { name: "Congé des dates touchées" });
+  // Deux RTT, puis un CA dans la même demande ; les dates déjà choisies
+  // gardent leur type.
   await nearCalendar.getByRole("button", { name: /^RTT/ }).click();
   await expect(nearCalendar.getByRole("button", { name: /^RTT/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("group", { name: "Durée des dates touchées" })).toHaveCount(0);
@@ -5958,6 +6042,33 @@ test("les RTT et le fractionnement se posent en journée entière", async ({ pag
   await expect(nearCalendar.getByRole("button", { name: /^CA/ })).toContainText("1");
   await expect(summary).toContainText("RTT");
   await expect(summary).toContainText("Congés annuels");
+});
+
+test("pendant une demande, le congé et sa durée restent en haut de l’écran, et on n’annule que d’une façon", async ({ page }) => {
+  await prepareDemo(page);
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA / }).click();
+  const request = page.locator("#request-panel");
+  await expect(request).toBeVisible();
+  // Un seul jeu de commandes, un seul « Annuler la demande » (le bouton
+  // rouge en tête de panneau a disparu le 12 novembre 2026).
+  await expect(request.getByText("Choix courants")).toHaveCount(0);
+  await expect(page.getByRole("group", { name: "Durée du congé" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Annuler la demande" })).toHaveCount(1);
+  // Le bloc du planning suit le calendrier : descendu jusqu'aux dernières
+  // semaines, il reste en haut de l'écran, au-dessus des cases.
+  const block = page.locator(".planning-request-duration");
+  await expect(block).toHaveCSS("position", "sticky");
+  await page.locator(".month-card .day").last().evaluate((node) => node.scrollIntoView({ block: "end", behavior: "instant" }));
+  // Collé en haut sur un écran court, ou encore à sa place sur un grand :
+  // dans les deux cas visible, au-dessus des dernières cases.
+  await expect(block).toBeInViewport();
+  const [blockBox, lastDay] = await Promise.all([block.boundingBox(), page.locator(".month-card .day").last().boundingBox()]);
+  expect(lastDay!.y).toBeGreaterThan(blockBox!.y + blockBox!.height);
+  // Un type changé d'en haut vaut pour les cases touchées ensuite.
+  await block.getByRole("button", { name: /^RTT/ }).click();
+  await page.locator(".month-card .day.work").last().click();
+  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
 });
 
 test("sans CA restant, une demi-journée de CA est bloquée ; en RTT, elle devient une journée entière", async ({ page }) => {
@@ -5987,12 +6098,12 @@ test("sans CA restant, une demi-journée de CA est bloquée ; en RTT, elle devie
     .click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
   const request = page.locator("#request-panel");
-  await request.getByRole("group", { name: "Durée du congé" }).getByRole("button", { name: "Matin" }).click();
+  await page.getByRole("group", { name: "Durée des dates touchées" }).getByRole("button", { name: "Matin" }).click();
   // Plus de CA : la demi-journée de CA ne s'enregistre pas ; passée en RTT,
   // qui ne se pose pas en demi-journée, elle devient une journée entière.
   const save = request.getByRole("button", { name: "Enregistrer sans formulaire" });
   await expect(save).toBeDisabled();
-  await request.getByRole("button", { name: /^RTT/ }).click();
+  await page.getByRole("group", { name: "Congé des dates touchées" }).getByRole("button", { name: /^RTT/ }).click();
   await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
   await expect(request.getByLabel("Résumé avant validation")).not.toContainText("demi-journée");
   await expect(save).toBeEnabled();
@@ -6113,19 +6224,18 @@ test("une demande mixte accepte 3 CA, 2 RTT et 3 CET", async ({ page }) => {
   // chargement de la page 17 s, ce qui dépassait parfois les 60 s communes.
   test.setTimeout(120_000);
   await prepareDemo(page);
-  const workDays = page.locator(".month-card .day.work");
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^CA / })
     .click();
   const request = page.locator("#request-panel");
-  await expect(request).toContainText("une même demande peut en mélanger plusieurs");
-  for (let index = 0; index < 3; index += 1) await workDays.nth(index).click();
-  await request.getByRole("button", { name: "RTT", exact: true }).click();
-  for (let index = 3; index < 5; index += 1) await workDays.nth(index).click();
+  await expect(request).toContainText("Une même demande peut mélanger plusieurs types.");
+  for (let index = 0; index < 3; index += 1) await pickWorkDay(page, index);
+  await page.getByRole("group", { name: "Congé des dates touchées" }).getByRole("button", { name: /^RTT/ }).click();
+  for (let index = 3; index < 5; index += 1) await pickWorkDay(page, index);
   await request.locator(".request-advanced-types > summary").click();
   await request.getByRole("button", { name: "Congé CET", exact: true }).click();
-  for (let index = 5; index < 8; index += 1) await workDays.nth(index).click();
+  for (let index = 5; index < 8; index += 1) await pickWorkDay(page, index);
   const summary = request.getByLabel("Résumé avant validation");
   await expect(summary).toContainText(/\d+ CA restants?/);
   await expect(summary).toContainText(/\d+ RTT restants?/);

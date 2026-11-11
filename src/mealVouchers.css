@@ -8,6 +8,19 @@
 .meal-vouchers-card h3 { margin: 0; font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; }
 .meal-vouchers-card h3 + p { margin: -6px 0 0; color: var(--muted); font-size: 0.8rem; font-weight: 550; line-height: 1.35; }
 .meal-vouchers-contact { margin: 0; font-size: 0.8rem; font-weight: 550; line-height: 1.35; }
+/* Les trois renvois vers Docs : une liste aux lignes de Ma paie (pastille
+   ocre des titres repas, intitulé et précision, flèche). */
+.meal-vouchers-links { display: grid; border: 1px solid rgba(44, 38, 33, 0.4); border-radius: 14px; overflow: hidden; background: #fdfbf8; }
+.meal-vouchers-links button { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 62px; margin: 0; border: 0; border-radius: 0; padding: 10px 14px; background: transparent; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.meal-vouchers-links button + button { border-top: 1px solid var(--line); }
+.meal-vouchers-links b { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #c08a2e; color: #fff; }
+.meal-vouchers-links svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.meal-vouchers-links span { display: grid; gap: 2px; min-width: 0; }
+.meal-vouchers-links strong { font-size: 0.98rem; }
+.meal-vouchers-links small { color: var(--muted); font-size: 0.8rem; overflow-wrap: anywhere; }
+.meal-vouchers-links i { color: var(--muted); font-style: normal; }
+.useful-form-links .text-button { min-height: 0; padding: 0; color: #8a3d22; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.useful-form-links { margin: 12px 14px 0; color: var(--muted); font-size: 0.86rem; line-height: 1.9; }
 .meal-vouchers-contact a { color: #8a3d22; font-weight: 700; overflow-wrap: anywhere; }
 
 .meal-vouchers-values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

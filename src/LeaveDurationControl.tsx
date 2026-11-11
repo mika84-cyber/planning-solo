@@ -4,10 +4,9 @@ import type { LeaveHours, LeaveMoment } from "./planningLogic";
 
 /**
  * Journée, Matin ou Après-midi pour les dates touchées ensuite et, pour une
- * moitié de journée, les heures posées. Le même sélecteur sert dans le
- * panneau de la demande et juste au-dessus du planning, là où l'on touche
- * les dates : une journée entière et une demi-journée se posent dans la même
- * demande sans aller chercher le réglage plus loin.
+ * moitié de journée, les heures posées. Le sélecteur sert juste au-dessus du
+ * planning, là où l'on touche les dates (et dans « Que voulez-vous poser ? ») :
+ * une journée entière et une demi-journée se posent dans la même demande.
  */
 export function LeaveDurationControl({
   moment,

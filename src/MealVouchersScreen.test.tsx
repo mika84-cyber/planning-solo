@@ -37,8 +37,22 @@ describe("l'écran des titres repas", () => {
     expect(html).toContain("Pour changer votre nombre de titres par mois, écrivez à");
     expect(html).toContain('<a href="mailto:bimpli@centrepompidou.fr">bimpli@centrepompidou.fr</a>');
     // Dans l'encadré des mois, avant le choix de la répartition.
-    expect(html.indexOf("bimpli@centrepompidou.fr")).toBeGreaterThan(html.indexOf("Vos titres, mois par mois"));
-    expect(html.indexOf("bimpli@centrepompidou.fr")).toBeLessThan(html.indexOf("meal-vouchers-presets"));
+    const mail = html.indexOf('href="mailto:bimpli@centrepompidou.fr"');
+    expect(mail).toBeGreaterThan(html.indexOf("Vos titres, mois par mois"));
+    expect(mail).toBeLessThan(html.indexOf("meal-vouchers-presets"));
+  });
+
+  it("mène d’un toucher aux horaires de retrait, aux formulaires et au contact, sous l’année", () => {
+    const html = render();
+    const rows = [...html.matchAll(/<button type="button"><b aria-hidden="true"><svg[^]*?<\/svg><\/b><span><strong>([^<]+)<\/strong><small>([^<]+)<\/small><\/span><i aria-hidden="true">›<\/i><\/button>/g)].map((match) => [match[1], match[2]]);
+    expect(rows).toEqual([
+      ["Horaires de retrait", "Guichet des titres repas"],
+      ["Formulaires", "Carte BIMPLI, procuration de retrait"],
+      ["Contact titres repas", "01 44 78 41 48 · bimpli@centrepompidou.fr"],
+    ]);
+    // Juste sous l'année, avant la valeur du titre.
+    expect(html.indexOf('class="meal-vouchers-links"')).toBeGreaterThan(html.indexOf("meal-vouchers-head"));
+    expect(html.indexOf('class="meal-vouchers-links"')).toBeLessThan(html.indexOf("La valeur de votre titre"));
   });
 
   it("donne à chaque mois deux petites flèches, arrêtées à 20 et à 0", () => {

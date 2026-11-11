@@ -256,6 +256,8 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
   // la liste des annuaires.
   useHelpTarget((target) => {
     if (target === "radio-codes") { setDirectory("radio"); setPompidouSection(null); return true; }
+    // Depuis Ma paie › Titres repas : la rubrique Tickets restaurants.
+    if (target === "meal-contact") { setDirectory("pompidou"); setPompidouSection("tickets"); return true; }
     if (target === "contacts") { setDirectory(null); setPompidouSection(null); }
     return false;
   });
@@ -446,7 +448,7 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
       ) : null}
       <div className="resource-folder-list">
           {([
-            ["pompidou", "Contacts Pompidou", contacts?.pompidou.reduce((sum, section) => sum + section.contacts.length, 0), "RAS, RH, médical, informatique, tickets resto", "#3a5f8f"],
+            ["pompidou", "Contacts Pompidou", contacts?.pompidou.reduce((sum, section) => sum + section.contacts.length, 0), "RAS, RH, médical, informatique, titres repas", "#3a5f8f"],
             ["gprmn", "Contact GP‑RMN", contacts?.gprmn.length, "Sûreté, sécurité, superviseurs, billetteries", "#2f7a52"],
             ["visitors", "Pour les visiteurs", VISITOR_QR_LINKS.length, "Réclamation et objet perdu, en QR code", "#a45f2d"],
             ...(contacts.radioCodes?.length ? [["radio", "Codes urgences radio", contacts.radioCodes.length, "Codes d’urgence à la radio", "#b3261e"] as const] : []),

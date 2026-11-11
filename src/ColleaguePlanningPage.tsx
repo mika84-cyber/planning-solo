@@ -424,6 +424,9 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
   useHelpTarget((target) => {
     if (target === "colleague-share") setShareOpen(true);
     else if (target === "colleague-groups") setGroupsOpen(true);
+    // Depuis « Mon profil » : les réglages du partage, sauf s'ils sont déjà
+    // affichés dans la page (première visite, nom pas encore inscrit).
+    else if (target === "colleague-settings") setSettingsOpen(true);
     else return false;
     return true;
   });
@@ -864,7 +867,7 @@ export function ColleaguePlanningPage({ demoMode, initialName, accountId = "", g
       {data?.blocked.length ? <section className="colleague-card"><p className="eyebrow">Noms bloqués</p><h3>Gérer mes blocages</h3><p>Ces personnes ne peuvent pas vous trouver ni vous envoyer leur planning.</p><div className="colleague-list">{data.blocked.map((person) => <div key={person.userId}><strong>{person.displayName}</strong><button className="secondary" type="button" disabled={busy} onClick={() => confirmMutation(`Débloquer ${person.displayName} ?`, { action: "unblock-person", userId: person.userId })}>Débloquer</button></div>)}</div></section> : null}
       </div>
 
-      {settingsOpen ? <ColleagueDialog id="colleague-settings-title" eyebrow="Partage privé" title="Réglages du partage" className="colleague-settings-dialog" onClose={() => setSettingsOpen(false)}>
+      {settingsOpen && settingsCollapsed ? <ColleagueDialog id="colleague-settings-title" eyebrow="Partage privé" title="Réglages du partage" className="colleague-settings-dialog" onClose={() => setSettingsOpen(false)}>
         {error ? <p className="colleague-error" role="alert">{error}</p> : null}
         {profileCard}
         {howItWorksCard}
