@@ -105,7 +105,21 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   brut, cotisations, passage au net), sans tableau qui la répète dessous —,
   navigation, heures supplémentaires et mécénats.
 - `src/WorkTimeDialogs.tsx` : saisie des heures supplémentaires, récupérations,
-  mécénats et crédits manuels.
+  mécénats et crédits manuels. Les champs d'une fenêtre d'heures ne prennent
+  leur style que dans `.overtime-form` (la grille des heures manuelles porte
+  cette classe depuis le 11 novembre 2026) ; l'erreur d'horaires d'un mécénat
+  n'apparaît qu'une fois les deux heures saisies.
+- Lisibilité et toucher (audit du 11 novembre 2026) : une quinzaine de
+  libellés sont passés à 11 px, chacun dans sa règle d'origine ; restent
+  volontairement plus petits les chiffres des pastilles, le mois du petit
+  calendrier des règles de congés et « jours de fermeture » des inter-expos
+  (à 11 px, il poussait la date sous le filet sur petit écran). Les petites
+  cibles gardent leur dessin : un `::after` invisible porte leur zone de
+  toucher à 36 px environ (liste dans `productRefinements.css` ; « Pas
+  maintenant » ne s'étend que vers le bas, la ligne du dessus ouvre l'étape).
+  Un champ de recherche qui contient du texte n'a plus de loupe : la croix du
+  navigateur prend sa place. `BalanceDetailDialog` dit « Jours passés / à
+  venir » pour un suivi (maladie, grève…), « Congés » pour un solde.
 - `src/LeaveDialogs.tsx` : reprise des absences antérieures et sélection manuelle
   d'une période de congés.
 - `src/PlanningView.tsx` : grille mensuelle et contenu de recherche des notes.
@@ -394,7 +408,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
   L’encadré « Déclarer un accident de travail » porte une croix de secours.
   Comme `UsefulContactsSection.tsx`, l’en-tête se limite au surtitre et au
-  titre (phrases d’explication retirées le 4 novembre 2026).
+  titre (phrases d’explication retirées le 4 novembre 2026). Une recherche
+  sans résultat le dit (« Aucun document ne porte ce nom. »). L'écran
+  `.useful-resources-screen` n'a plus de fond : blanc, il dépassait en bande
+  à angles droits sous la carte arrondie.
 - `src/DocumentAnnouncementNotice.tsx` et `src/usefulDocumentsApi.ts` : alerte
   centrée des nouveaux documents, lecture et ajout administrateur.
 - `src/DocumentEditDialog.tsx` et `netlify/lib/documentVersions.mts` : remplacement

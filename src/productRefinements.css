@@ -21,7 +21,19 @@
 .pay-missing-guidance button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .pay-elements-card { scroll-margin-top: 100px; }
 .app-shell input[type="search"]{padding-right:44px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a94d24' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m16.5 16.5 4 4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:18px 18px}
-.app-shell input[type="search"]:not(:placeholder-shown){background-position:right 38px center}
+/* Petites cibles : leur zone de toucher monte à 36 px environ, par un
+   pseudo-élément invisible, sans rien changer à l'œil (11 novembre 2026). */
+:is(.home-setup-skip, .pay-field-link, .expo-card-links a, .colleague-row-open, .pay-year-table th button, .school-vacation-zone, .school-vacation-switch, .allowance-note > .text-button, .expo-audioguide-body > a, .colleague-board-mode button, .header-help-button) { position: relative; }
+:is(.home-setup-skip, .pay-field-link, .expo-card-links a, .colleague-row-open, .pay-year-table th button, .school-vacation-zone, .school-vacation-switch, .allowance-note > .text-button, .expo-audioguide-body > a, .colleague-board-mode button, .header-help-button)::after { position: absolute; inset: -9px 0; content: ""; }
+/* Déjà hautes de 28 à 30 px : 4 px de plus suffisent. Même poids que la règle
+   du dessus, donc c'est l'ordre qui tranche. */
+:is(.school-vacation-zone, .school-vacation-switch, .allowance-note > .text-button, .expo-audioguide-body > a, .colleague-board-mode button, .header-help-button)::after { inset: -4px 0; }
+/* « Pas maintenant » : la zone descend sous le lien, sans remonter sur la
+   ligne du dessus, qui ouvre l'étape. */
+.home-setup-steps .home-setup-skip::after { inset: -2px -8px -16px; }
+/* Du texte saisi : la croix d'effacement du navigateur prend la place de la
+   loupe. Décalée à 38 px, la loupe se retrouvait sous la croix. */
+.app-shell input[type="search"]:not(:placeholder-shown){padding-right:12px;background-image:none}
 /* Le dock est fixé en bas de l’écran. Sans marge de défilement réservée,
    un élément amené à l’écran par le navigateur — ancre, passage au clavier,
    champ qui prend le focus — peut s’arrêter dessous et devenir impossible à

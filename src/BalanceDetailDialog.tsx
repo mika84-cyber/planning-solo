@@ -120,7 +120,7 @@ export function BalanceDetailDialog({
           </div>
         ) : null}
         <p className="balance-detail-guidance">
-          Ouvrez les congés déjà pris ou les congés à venir. Touchez ensuite une date
+          Ouvrez les {balanceDetail.quota ? "congés déjà pris ou les congés" : "jours passés ou les jours"} à venir. Touchez ensuite une date
           pour la gérer depuis sa fiche.
         </p>
         <div className="balance-detail-months">
@@ -128,7 +128,8 @@ export function BalanceDetailDialog({
           <details className={`balance-detail-month balance-detail-${period.key}`} key={period.key}>
             <summary>
               <span className="balance-detail-month-label">
-                <strong>{period.label}</strong>
+                {/* Un suivi (maladie, grève, accident…) n'est pas un congé. */}
+                <strong>{balanceDetail.quota ? period.label : period.key === "taken" ? "Jours passés" : "Jours à venir"}</strong>
                 <small>{period.units.toLocaleString("fr-FR")} jour{s(period.units)}</small>
               </span>
               <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5" /></svg>
@@ -168,7 +169,7 @@ export function BalanceDetailDialog({
                                 ? "Retenue à calculer · voir et gérer"
                                 : `Retenue estimée : −${euros(deduction)} brut · voir et gérer`;
                             })()
-                          : `${isUpcoming ? "À venir" : "Déjà pris"} · voir et gérer cette absence`}
+                          : `${isUpcoming ? "À venir" : balanceDetail.quota ? "Déjà pris" : "Passé"} · voir et gérer cette absence`}
                       </small>
                     </span>
                     <span className="balance-detail-value">

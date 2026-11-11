@@ -27,6 +27,25 @@ describe("fenêtres de temps de travail", () => {
     expect(html).not.toMatch(/<button[^>]*disabled[^>]*>Enregistrer le mécénat/);
   });
 
+  it("ne reproche rien à un mécénat vide, mais dit quand les deux heures sont les mêmes", () => {
+    const mecenat = (start: string, end: string) => renderToStaticMarkup(
+      <MecenatDialog
+        open
+        draft={{ date: "", start, end }}
+        setDraft={vi.fn()}
+        calculation={null}
+        warnings={[]}
+        saving={false}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+    const message = "Les heures de début et de fin doivent être différentes.";
+    expect(mecenat("", "")).not.toContain(message);
+    expect(mecenat("19:00", "")).not.toContain(message);
+    expect(mecenat("19:00", "19:00")).toContain(message);
+  });
+
   it("ne rend rien quand une fenêtre est fermée", () => {
     const html = renderToStaticMarkup(
       <OvertimeDialog
@@ -271,6 +290,11 @@ describe("reprise du solde de récupération", () => {
     expect(html).not.toContain("Que contient ce total ?");
     expect(html).toContain("déjà calculé, majoration comprise");
     expect(html).toContain("3 h faites en journée comptent pour 3 h 45");
+  });
+
+  it("donne aux deux champs le style des autres fenêtres d’heures", () => {
+    // Hors de .overtime-form, les champs restaient ceux du navigateur.
+    expect(solde("credited")).toContain('<div class="overtime-form overtime-duration-grid solidarity-duration-grid"><label><span>Heures</span>');
   });
 
   it("ne majore rien : le solde est ajouté tel quel", () => {

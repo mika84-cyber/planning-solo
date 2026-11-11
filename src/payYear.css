@@ -30,7 +30,7 @@
 .pay-year-bar i { display: block; align-self: end; border-radius: 4px 4px 0 0; background: #b3a08f; }
 .pay-year-bar.verified i { background: #8a3d22; }
 .pay-year-bar.future i { background: #e4dacd; }
-.pay-year-bar small { margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 700; text-align: center; }
+.pay-year-bar small { margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 700; text-align: center; }
 
 /* Quatre colonnes de montants : sur un petit écran à police agrandie, le
    tableau défile de côté dans son cadre au lieu d'élargir la page. */

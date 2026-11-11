@@ -105,11 +105,11 @@ export function MecenatDialog({
               </p>
               <small className="mecenat-rate-source">Barème de l’{rates.source}</small>
             </section>
-          ) : (
+          ) : draft.start && draft.end ? (
             <p className="allowance-note warn">
               Les heures de début et de fin doivent être différentes.
             </p>
-          )}
+          ) : null}
         </div>
         <div className="modal-actions">
           <button className="secondary-button" type="button" onClick={onClose}>
@@ -361,7 +361,7 @@ export function SolidarityHoursDialog({
           exemple, 3 h faites en journée comptent pour 3 h 45. Il est ajouté
           tel quel à votre solde.
         </p>
-        <div className="overtime-duration-grid solidarity-duration-grid">
+        <div className="overtime-form overtime-duration-grid solidarity-duration-grid">
           <label>
             <span>Heures</span>
             <input

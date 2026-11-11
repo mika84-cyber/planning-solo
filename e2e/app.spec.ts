@@ -2620,6 +2620,37 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
   await expect(popup).toHaveCount(0);
 });
 
+test("la recherche d’un document dit quand rien ne correspond, et garde une seule icône", async ({ page }) => {
+  await prepareDemo(page);
+  await openUsefulResource(page, "Formulaires");
+  const search = page.getByLabel("Rechercher un document");
+  // Champ vide : la loupe. Du texte : la croix du navigateur prend sa place
+  // (le 11 novembre 2026, elles se superposaient).
+  await expect(search).toHaveCSS("background-image", /svg/);
+  await search.fill("zzz");
+  await expect(search).toHaveCSS("background-image", "none");
+  await expect(page.getByRole("button", { name: /Formulaire SAP/ })).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "Aucun document ne porte ce nom." })).toBeVisible();
+  await search.fill("sap");
+  await expect(page.getByRole("button", { name: /Formulaire SAP/ })).toBeVisible();
+  await expect(page.getByText("Aucun document ne porte ce nom.")).toHaveCount(0);
+});
+
+test("sur un petit écran en grande police, le bouton de l’audioguide reste dans sa carte", async ({ page }) => {
+  await prepareDemo(page);
+  await page.setViewportSize({ width: 344, height: 740 });
+  await goToSection(page, "program");
+  await page.addStyleTag({ content: "html { font-size: 125% !important; }" });
+  const link = page.locator(".expo-audioguide-body > a").first();
+  await expect(link).toBeVisible();
+  const [linkBox, cardBox] = await Promise.all([link.boundingBox(), page.locator(".expo-audioguide-card").first().boundingBox()]);
+  // Sur une ligne, « Ouvrir l’audioguide » dépassait le bord droit de la carte.
+  expect(linkBox!.x + linkBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width);
+  // Sa zone de toucher fait au moins 36 px de haut, même si le bouton en fait moins.
+  const zone = await link.evaluate((node) => parseFloat(getComputedStyle(node, "::after").height));
+  expect(zone).toBeGreaterThanOrEqual(36);
+});
+
 test("un long message de Mika se lit en entier et se ferme sur un petit écran", async ({ page }) => {
   // Le 10 novembre 2026, une collègue ne pouvait plus ouvrir l'application :
   // avec un long message et une grande police, « D’accord » sortait de

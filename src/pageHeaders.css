@@ -42,7 +42,7 @@
 :root .app-shell .top-header .header-command-area:has(.account-button.open) { z-index: 4 !important; }
 :root .app-shell .top-header .top-header-title { position: relative !important; z-index: 1 !important; grid-column: 1 / -1 !important; grid-row: 1 !important; align-self: center !important; width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; background: none !important; text-shadow: none !important; transform: translateY(7px) !important; }
 :root .app-shell .top-header .top-header-title::before { display: none !important; }
-:root .app-shell .top-header .top-header-title .eyebrow { margin: 0 0 3px !important; color: rgba(255, 255, 255, 0.82) !important; text-shadow: none !important; font-size: 0.62rem !important; letter-spacing: 0.14em !important; }
+:root .app-shell .top-header .top-header-title .eyebrow { margin: 0 0 3px !important; color: rgba(255, 255, 255, 0.82) !important; text-shadow: none !important; font-size: 0.6875rem !important; letter-spacing: 0.14em !important; }
 /* Le corps du titre : 1,55 à 2,1 rem selon la largeur (1,7 à 2,3 jusqu'au
    8 novembre 2026, jugé un peu grand). */
 :root .app-shell .top-header .top-header-title h1 { display: -webkit-box !important; overflow: hidden !important; padding-bottom: 0.14em !important; color: #fff !important; font-size: clamp(1.55rem, 6.3vw, 2.1rem) !important; line-height: 1.08 !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.25) !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }

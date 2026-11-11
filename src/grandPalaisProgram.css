@@ -716,6 +716,6 @@
   .app-shell .expo-audioguide-qr { padding: 6px; }
   .expo-audioguide-code { gap: 5px; white-space: nowrap; font-size: 0.7rem; }
   .expo-audioguide-code b { padding: 0 4px 0 6px; font-size: 0.8rem; letter-spacing: 0.1em; }
-  .app-shell .expo-audioguide-body > a { gap: 5px; padding: 6px 9px; font-size: 0.74rem; white-space: nowrap; }
+  .app-shell .expo-audioguide-body > a { gap: 5px; padding: 6px 9px; font-size: 0.74rem; }
   .expo-audioguide-body > a svg { width: 14px; height: 14px; }
 }

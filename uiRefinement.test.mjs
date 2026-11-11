@@ -466,8 +466,8 @@ describe("finitions d’interface", () => {
     expect(app).not.toContain("balance-multi-delete-toggle");
     expect(app).not.toContain("balance-detail-checkbox");
     expect(app).not.toContain("balance-detail-cancel");
-    expect(app).toContain("voir et gérer cette absence");
-    expect(app).toContain("Ouvrez les congés déjà pris ou les congés à venir");
+    // « voir et gérer cette absence » et la consigne du détail se vérifient
+    // par le rendu (BalanceDetailDialog.test.tsx).
   });
 
   it("place les absences avant les notes avec deux actions de même taille", () => {
@@ -595,8 +595,8 @@ describe("finitions d’interface", () => {
     expect(leaveDialogs).toContain("Prime de juillet");
     expect(leaveDialogs).toContain("Prime d’octobre");
     expect(leaveDialogs).toContain("Prime de décembre");
-    expect(app).toContain('className="balance-detail-open"');
-    expect(app).toContain('className="balance-detail-guidance"');
+    // L'ouverture d'une date et la consigne du détail d'un solde se vérifient
+    // par le rendu (BalanceDetailDialog.test.tsx).
     expect(app).toContain('label: "Congés déjà pris"');
     expect(app).toContain('label: "Congés à venir"');
     expect(app).toContain("manualSundayLeaveJanJun");

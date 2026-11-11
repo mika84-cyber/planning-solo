@@ -278,7 +278,7 @@
 
 .useful-form-file-copy small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: .06em;
 }
@@ -946,7 +946,7 @@
 
 .useful-contact-actions small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 850;
   text-transform: uppercase;
 }
@@ -984,7 +984,7 @@
 
 .useful-contact-group-email strong { font-size: 13px; }
 
-.useful-contact-group-email small { color: var(--muted); font-size: 10px; }
+.useful-contact-group-email small { color: var(--muted); font-size: 11px; }
 
 .useful-contact-group-email:hover { background: var(--surface); }
 
@@ -1057,7 +1057,7 @@
   padding: 8px 10px;
   background: #7a6f5f;
   color: #fff !important;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 850;
   text-decoration: none;
 }

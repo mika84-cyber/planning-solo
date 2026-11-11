@@ -20,7 +20,7 @@
 .note-modal .day-action-grid .day-note-tile { --tile-color: #b0832c; }
 .note-modal .day-action-grid :is(.leave-choices-primary > button, .day-note-tile):is(:hover, .active) { border-color: var(--tile-color); }
 .note-modal .day-action-grid .leave-choices-primary:disabled > button { opacity: .55; cursor: not-allowed; }
-.note-modal .day-closure-link { display: block; margin: 0 0 14px; border: 0; padding: 6px 2px; background: none; box-shadow: none; color: var(--muted); font: inherit; font-size: .78rem; font-weight: 700; text-align: left; text-decoration: underline; text-decoration-color: var(--border-control); text-underline-offset: 3px; cursor: pointer; }
+.note-modal .day-closure-link { display: block; margin: 0 0 6px; border: 0; padding: 10px 2px; background: none; box-shadow: none; color: var(--muted); font: inherit; font-size: .78rem; font-weight: 700; text-align: left; text-decoration: underline; text-decoration-color: var(--border-control); text-underline-offset: 3px; cursor: pointer; }
 .note-modal .day-closure-link:hover { color: var(--text); }
 .note-modal .day-closure-link:disabled { opacity: .55; cursor: wait; }
 @media (max-width: 380px) {

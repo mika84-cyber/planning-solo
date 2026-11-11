@@ -427,6 +427,7 @@ export function UsefulFormsSection({
       <label className="resource-search-field"><span>Rechercher un document</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom du document" /></label>
       <div className="useful-form-content-stack">
       <div className="resource-folder-list">
+        {visibleFolders.length ? null : <p role="status">Aucun document ne porte ce nom.</p>}
         {visibleFolders.map((item) => (
           <button
             key={item.key}
