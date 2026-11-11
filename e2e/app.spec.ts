@@ -745,12 +745,28 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   const boxes = await page.locator("details.leave-tool-disclosure").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(new Set(boxes.map((box) => Math.round(box.y))).size).toBe(1);
   expect(Math.max(...boxes.map((box) => box.width)) - Math.min(...boxes.map((box) => box.width))).toBeLessThan(2);
-  await page.locator("details.leave-tool-disclosure").first().locator("summary").click();
-  await expect(page.locator("details.leave-tool-disclosure").first()).toHaveAttribute("open", "");
-  await expect(page.locator("details.leave-tool-disclosure").nth(1)).toBeHidden();
-  await expect(page.locator("details.leave-tool-disclosure").nth(2)).toBeHidden();
-  const openedBox = await page.locator("details.leave-tool-disclosure").first().boundingBox();
+  const tools = page.locator("details.leave-tool-disclosure");
+  await tools.first().locator("summary").click();
+  await expect(tools.first()).toHaveAttribute("open", "");
+  // Les deux autres restent au-dessus, en petit, pour passer de l'une à
+  // l'autre (jusqu'au 12 novembre 2026, elles disparaissaient).
+  await expect(tools.nth(1).locator("summary")).toBeVisible();
+  await expect(tools.nth(2).locator("summary")).toBeVisible();
+  const [openedBox, secondBox, thirdBox] = await Promise.all([tools.first().boundingBox(), tools.nth(1).boundingBox(), tools.nth(2).boundingBox()]);
   expect(openedBox?.width).toBeGreaterThan(boxes[0].width * 2.8);
+  expect(secondBox!.y + secondBox!.height).toBeLessThanOrEqual(openedBox!.y + 1);
+  expect(Math.abs(secondBox!.y - thirdBox!.y)).toBeLessThan(2);
+  expect(secondBox!.height).toBeLessThan(90);
+  // Une seule tuile ouverte : toucher la deuxième referme la première.
+  await tools.nth(1).locator("summary").click();
+  await expect(tools.nth(1)).toHaveAttribute("open", "");
+  await expect(tools.first()).not.toHaveAttribute("open", "");
+  await expect(tools.first().locator("summary")).toBeVisible();
+  // L'en-tête de la tuile ouverte la replie : les trois grandes tuiles reviennent.
+  await tools.nth(1).locator("summary").click();
+  await expect(page.locator("details.leave-tool-disclosure[open]")).toHaveCount(0);
+  const closedAgain = await tools.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
+  expect(new Set(closedAgain.map((box) => Math.round(box.y))).size).toBe(1);
 });
 
 test("les congés reportables au 30 avril se lisent en une phrase, sans séparateur orphelin", async ({ page }) => {
@@ -2005,17 +2021,20 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   const overtimeCard = secondaryDisclosures.nth(0).locator(".overtime-balance-card");
   const mecenatCard = secondaryDisclosures.nth(1).locator(".mecenat-balance-card");
   const cetCard = secondaryDisclosures.nth(2).locator(".cet-section-static");
+  // Une tuile ouverte : les deux autres restent visibles, repliées ; en ouvrir
+  // une autre referme la première, sans passer par un état fermé.
   await secondaryDisclosures.nth(0).locator("summary").click();
-  await expect(secondaryDisclosures.nth(1)).toBeHidden();
+  await expect(secondaryDisclosures.nth(1).locator("summary")).toBeVisible();
+  await expect(mecenatCard).toBeHidden();
   await expect(overtimeCard).toBeVisible();
   await expect(overtimeCard).toHaveCSS("border-top-width", "0px");
-  await secondaryDisclosures.nth(0).locator("summary").click();
   await secondaryDisclosures.nth(1).locator("summary").click();
-  await expect(secondaryDisclosures.nth(0)).toBeHidden();
+  await expect(secondaryDisclosures.nth(0).locator("summary")).toBeVisible();
+  await expect(overtimeCard).toBeHidden();
   await expect(mecenatCard).toBeVisible();
   await expect(mecenatCard).toHaveCSS("border-top-width", "0px");
-  await secondaryDisclosures.nth(1).locator("summary").click();
   await secondaryDisclosures.nth(2).locator("summary").click();
+  await expect(mecenatCard).toBeHidden();
   await expect(cetCard).toBeVisible();
   await expect(secondaryDisclosures.nth(0)).toHaveCSS("border-left-width", "1px");
   await expect(secondaryDisclosures.nth(1)).toHaveCSS("border-left-width", "1px");
@@ -2618,6 +2637,36 @@ test("l’administrateur peut afficher un message collectif sans envoyer d’e-m
   expect(Math.abs(box!.y + box!.height / 2 - viewport.height / 2)).toBeLessThan(3);
   await popup.getByRole("button", { name: "D’accord" }).click();
   await expect(popup).toHaveCount(0);
+});
+
+test("les documents d’un dossier portent tous la couleur du dossier", async ({ page }) => {
+  await prepareDemo(page);
+  await openUsefulResource(page, "Formulaires");
+  for (const [folder, tone] of [["Formulaire SAP", "rgb(83, 104, 168)"], ["Formulaire Brantôme", "rgb(185, 120, 30)"]] as const) {
+    await page.getByRole("button", { name: new RegExp(folder) }).click();
+    const cards = page.locator(".useful-form-download-list > .useful-form-download-card");
+    await expect(cards.first()).toBeVisible();
+    // Jusqu'au 12 novembre 2026 : six teintes en boucle, sans signification.
+    const borders = await cards.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).borderLeftColor));
+    expect(borders.length).toBeGreaterThan(1);
+    expect(new Set(borders)).toEqual(new Set([tone]));
+    await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+  }
+});
+
+test("les flèches de dépliage sont des chevrons dessinés, pas la lettre « v »", async ({ page }) => {
+  await prepareDemo(page);
+  const drawn = async (selector: string) => page.locator(selector).first().evaluate((node) => {
+    const mark = getComputedStyle(node, "::before");
+    return { text: getComputedStyle(node).fontSize, width: mark.width, border: mark.borderBottomWidth };
+  });
+  expect(await drawn(".home-notes-toggle > b")).toEqual({ text: "0px", width: "7px", border: "2px" });
+  await goToSection(page, "leave");
+  expect(await drawn(".request-archive-caret")).toEqual({ text: "0px", width: "7px", border: "2px" });
+  await goToSection(page, "pay");
+  await page.locator(".pay-bulletin-shortcut", { hasText: "Profil et réglages" }).click();
+  await expect(page.locator(".pay-profile-summary > i")).toBeVisible();
+  expect(await drawn(".pay-profile-summary > i")).toEqual({ text: "0px", width: "7px", border: "2px" });
 });
 
 test("la recherche d’un document dit quand rien ne correspond, et garde une seule icône", async ({ page }) => {
@@ -5057,8 +5106,9 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   await expect(officialBalance).toHaveValue("");
   await officialBalance.fill("18");
   const existingRights = page.getByRole("button", { name: "Mes droits sont déjà ouverts" });
-  await expect(existingRights).toHaveCSS("background-color", "rgb(166, 64, 0)");
-  await expect(existingRights).toHaveCSS("color", "rgb(255, 255, 255)");
+  // Second choix à côté de « Faire une demande d’ouverture » : en contour, plus en rouille.
+  await expect(existingRights).toHaveCSS("background-color", await cssTokenRgb(page, "--surface-high"));
+  await expect(existingRights).toHaveCSS("color", await cssTokenRgb(page, "--text"));
   await existingRights.click();
 
   await expect(page.locator(".cet-balance-main")).toContainText("18");
@@ -6116,6 +6166,14 @@ test("nettoyage et gestion d’un congé utilisent des actions directes", async 
   const deleteNotes = cleanup.getByRole("button", { name: "Effacer les notes" });
   await expect(deleteAbsences).toBeVisible();
   await expect(deleteNotes).toBeVisible();
+  // Deux gestes de danger, un seul dessin : contour et texte rouges (orange
+  // et gris jusqu'au 12 novembre 2026).
+  for (const button of [deleteAbsences, deleteNotes]) {
+    await expect(button).toHaveCSS("color", "rgb(169, 36, 58)");
+    await expect(button).toHaveCSS("border-top-color", "rgb(169, 36, 58)");
+  }
+  expect(await deleteAbsences.evaluate((node) => getComputedStyle(node).backgroundColor))
+    .toBe(await deleteNotes.evaluate((node) => getComputedStyle(node).backgroundColor));
   await cleanup.getByRole("button", { name: "Annuler" }).click();
 
   await page.locator('.month-card .day[aria-current="date"]').click();
@@ -7672,7 +7730,8 @@ test("« Liste des raccourcis » ouvre, de n’importe quelle page, la page ou l
   // Un écran de Ma paie, et la fenêtre se ferme d'un toucher sur la croix.
   await help.click();
   await sheet.getByRole("button", { name: /Le détail de mes primes/ }).click();
-  await expect(page.locator("header.top-header h1")).toHaveText("Primes et jours fériés");
+  await expect(page.locator("header.top-header h1")).toHaveText("Ma paie");
+  await expect(page.locator(".pay-detail-sticky-header h2")).toHaveText("Primes et jours fériés");
   await help.click();
   await sheet.getByRole("button", { name: "Fermer" }).click();
   await expect(sheet).toBeHidden();

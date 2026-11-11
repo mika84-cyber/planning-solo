@@ -67,17 +67,14 @@ export function AdaptiveNavigation({ homeSection, onNavigate }: {
   );
 }
 
-function headerTitle(section: MainSection, payScreen: PayScreen) {
+function headerTitle(section: MainSection) {
   if (section === "home") return "Accueil";
   if (section === "leave") return "Congés et récupérations";
   if (section === "pdf" || section === "forms") return "Documents et contacts";
   if (section === "program") return "Programme GP";
   if (section === "colleagues") return "Planning partagé";
-  if (payScreen === "allowances") return "Primes et jours fériés";
-  if (payScreen === "payslip") return "Détail du calcul";
-  // « coup d’œil » reste ensemble : sur téléphone, « coup » ouvre la 2e ligne.
-  if (payScreen === "year") return "L’année en un coup d’œil";
-  if (payScreen === "meal") return "Titres repas";
+  // Un sous-écran de Ma paie dit son nom dans sa barre de retour, juste
+  // dessous : l'en-tête garde celui de la rubrique.
   return "Ma paie";
 }
 
@@ -161,7 +158,7 @@ export function AppHeader({
             <><span className="header-title-line">Contacts et</span>{" "}<span className="header-title-line">formulaires</span></>
           ) : homeSection === "pdf" ? (
             <><span className="header-title-line">Documents et</span>{" "}<span className="header-title-line">contacts</span></>
-          ) : headerTitle(homeSection, payScreen)}
+          ) : headerTitle(homeSection)}
         </h1>
       </div>
       {/* Mise à jour en attente : un bouton bien visible au milieu de l'image
@@ -251,7 +248,7 @@ export function AppHeader({
       {onOpenHelp && !updateCallVisible ? (
         <button type="button" className="header-help-button" aria-haspopup="dialog" onClick={onOpenHelp}>
           <span className="header-help-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>
+            <svg viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11M4 6.5h.01M4 12h.01M4 17.5h.01" /></svg>
           </span>
           Liste des raccourcis
           <span className="header-help-go" aria-hidden="true">›</span>

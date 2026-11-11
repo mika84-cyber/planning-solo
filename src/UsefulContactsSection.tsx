@@ -193,41 +193,31 @@ export function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulCo
               {contact.context ? <small>{contact.context}</small> : null}
             </span>
           </div>
+          {/* Les mêmes barres que l'annuaire GP-RMN : l'adresse puis un numéro
+              par ligne, que l'on touche pour écrire ou appeler ; le SMS à
+              côté d'un portable. */}
           <div className="useful-contact-actions">
             {contact.email ? (
               <a
                 href={mailComposeHref(contact.email)}
-                className="useful-contact-email"
+                className="useful-contact-email contact-theme-number"
                 aria-label={`Écrire à ${contact.name} avec l’application de messagerie`}
               >
-                <b>{contact.email}</b>
+                <span aria-hidden="true">✉</span>{contact.email}
               </a>
             ) : null}
             {contact.phones?.map((phone) => {
               const mobile = isMobilePhone(phone.number);
               const displayedNumber = formatPhone(phone.number);
               return (
-                <div
-                  className={`useful-contact-phone${mobile ? " mobile" : " fixed"}`}
-                  key={`${contact.name}-${phone.number}`}
-                >
-                  <span>
-                    <small>{phone.label || (mobile ? "Portable" : "Téléphone fixe")}</small>
-                    <b>{displayedNumber}</b>
-                  </span>
-                  <span className="useful-contact-phone-actions">
-                    {phone.allowCall !== false ? (
-                      <a href={phoneHref(phone.number)} aria-label={`Appeler ${contact.name} au ${displayedNumber}`}>
-                        <span aria-hidden="true">☎</span> Appeler
-                      </a>
-                    ) : null}
-                    {offersSms(phone) ? (
-                      <a href={smsHref(phone.number)} aria-label={`Envoyer un SMS à ${contact.name} au ${displayedNumber}`}>
-                        <span aria-hidden="true">✉</span> SMS
-                      </a>
-                    ) : null}
-                  </span>
-                </div>
+                <span className={`useful-contact-phone contact-theme-phone${mobile ? " mobile" : " fixed"}`} key={`${contact.name}-${phone.number}`}>
+                  {phone.allowCall !== false ? (
+                    <a className="contact-theme-number" href={phoneHref(phone.number)} aria-label={`Appeler ${contact.name} au ${displayedNumber}`}>
+                      <span aria-hidden="true">☎</span>{displayedNumber}
+                    </a>
+                  ) : <span className="contact-theme-number">{displayedNumber}</span>}
+                  {offersSms(phone) ? <a className="contact-theme-sms" href={smsHref(phone.number)} aria-label={`Envoyer un SMS à ${contact.name} au ${displayedNumber}`}>SMS</a> : null}
+                </span>
               );
             })}
           </div>

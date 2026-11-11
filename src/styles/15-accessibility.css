@@ -1,6 +1,6 @@
 
 .cet-actions .cet-rights-open-action {
-  border-color: #8c3600;
-  background: #a64000;
-  color: #fff;
+  border-color: var(--border-control);
+  background: var(--surface-high);
+  color: var(--text);
 }

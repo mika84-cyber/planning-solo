@@ -264,22 +264,18 @@
 }
 
 /* Finitions des actions de nettoyage et des formulaires mobiles. */
+/* Deux gestes de danger, un seul dessin : le contour rouge du bouton
+   « Effacer plusieurs dates ou notes » (orange et gris jusqu'au 12 novembre
+   2026). */
 .calendar-delete-actions .delete-notes-button,
 .calendar-delete-actions .delete-absences-button {
   flex: 1 1 calc(50% - 0.35rem);
-  border: 0;
+  border: 1.5px solid #a9243a;
   border-radius: 0.8rem;
-  color: #fff;
+  background: var(--surface-high);
+  color: #a9243a;
   font: inherit;
   font-weight: 800;
-}
-
-.calendar-delete-actions .delete-notes-button {
-  background: #dc7a24;
-}
-
-.calendar-delete-actions .delete-absences-button {
-  background: #7a6f5f;
 }
 
 .note-modal .modal-actions,

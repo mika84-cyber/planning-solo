@@ -21,6 +21,20 @@ describe("navigation principale", () => {
     expect(html).not.toContain("notification-button");
   });
 
+  it("garde « Ma paie » en en-tête d’un sous-écran, qui dit son nom dans sa barre de retour", () => {
+    for (const payScreen of ["allowances", "payslip", "year", "meal"] as const) {
+      const html = renderToStaticMarkup(<AppHeader {...headerProps} homeSection="pay" payScreen={payScreen} />);
+      expect(html).toContain("<h1>Ma paie</h1>");
+      expect(html).toContain(`data-pay-screen="${payScreen}"`);
+    }
+  });
+
+  it("montre une liste, pas une loupe, sur « Liste des raccourcis » : elle n’a pas de recherche", () => {
+    const html = renderToStaticMarkup(<AppHeader {...headerProps} onOpenHelp={vi.fn()} />);
+    expect(html).toContain('<span class="header-help-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11M4 6.5h.01M4 12h.01M4 17.5h.01"></path></svg></span>Liste des raccourcis');
+    expect(html).not.toContain("<circle");
+  });
+
   it("range Mes données, l’installation et la messagerie dans le menu du compte", () => {
     const user = renderToStaticMarkup(<AppHeader {...headerProps} accountMenuOpen install={{ available: false, onInstall: vi.fn() }} />);
     const items = (html: string) => [...html.matchAll(/role="menuitem"[^>]*>([^<]+)/g)].map((match) => match[1]);

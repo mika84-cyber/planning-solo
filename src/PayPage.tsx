@@ -183,7 +183,6 @@ export function PayPage({
           <header className="pay-detail-sticky-header">
             <button className="native-back-button" type="button" onClick={() => onScreenChange("overview")} aria-label="Revenir au tableau de bord de paie"><span aria-hidden="true">←</span></button>
             <button type="button" className="pay-detail-title-button" onClick={() => onScreenChange("overview")} aria-label="Fermer cette page et revenir à Ma paie">
-              <span className="step-label">Ma paie</span>
               <h2>{screen === "allowances" ? "Primes et jours fériés" : screen === "year" ? "L’année en un coup d’œil" : screen === "meal" ? "Titres repas" : "Détail du calcul"}</h2>
               <small>{screen === "year" ? "Net, primes, mécénats, impôt" : screen === "meal" ? "Valeur du titre, nombre par mois" : `${MONTHS[month]} ${year}`}</small>
             </button>

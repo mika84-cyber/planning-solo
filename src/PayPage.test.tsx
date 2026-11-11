@@ -51,7 +51,8 @@ describe("PayPage", () => {
     ["meal", "Titres repas", "Valeur du titre, nombre par mois", "Contenu des titres repas"],
   ])("sous-écran %s : son titre, son repère et son contenu", (screen, title, detail, content) => {
     const html = renderPage(screen);
-    expect(html).toContain(`<h2>${title}</h2>`);
+    // L'en-tête de la page dit déjà « Ma paie » : la barre ne le répète pas.
+    expect(html).toContain(`aria-label="Fermer cette page et revenir à Ma paie"><h2>${title}</h2>`);
     expect(html).toContain(`<small>${detail}</small>`);
     expect(html).toContain(content);
     expect(html).not.toContain("pay-dashboard-motion");

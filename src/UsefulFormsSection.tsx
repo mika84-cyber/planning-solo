@@ -323,7 +323,7 @@ export function UsefulFormsSection({
             />
           </figure>
         ) : folder.documents.length || folder.audioguides?.length ? (
-          <div className="useful-form-download-list">
+          <div className="useful-form-download-list" style={{ "--contact-category-accent": FOLDER_TONES[folder.key] ?? DEFAULT_TONE } as CSSProperties}>
             {!secureContext ? (
               <p className="useful-form-local-notice">
                 Mode de test local : les PDF s’ouvrent dans le lecteur du navigateur. Utilisez ensuite son bouton Enregistrer. Le téléchargement direct sans alerte sera disponible sur la version sécurisée.

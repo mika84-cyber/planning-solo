@@ -144,8 +144,10 @@ export function LeaveManagementPage({
       {longAbsenceContent}
       {balancesContent}
       <section className="leave-tools-area" aria-label="Récupérations, mécénats et CET" ref={toolsRef}>
+        {/* Trois volets, un seul ouvert à la fois (même `name`) : les deux autres
+            restent visibles au-dessus, en petit, pour passer de l'un à l'autre. */}
         <div className="leave-secondary-grid">
-          <details className="leave-tool-disclosure">
+          <details className="leave-tool-disclosure" name="leave-tools">
             <summary>
               <span className="leave-tool-illustration work-time" aria-hidden="true"><img src="/leave-tools/leave-tool-overtime.webp" alt="" /></span>
               <span className="leave-tool-copy"><strong>Heures supp et récupérations</strong></span>
@@ -192,7 +194,7 @@ export function LeaveManagementPage({
             ) : null}
           </section>
           </details>
-          <details className="leave-tool-disclosure">
+          <details className="leave-tool-disclosure" name="leave-tools">
             <summary>
               <span className="leave-tool-illustration mecenat" aria-hidden="true"><img src="/leave-tools/leave-tool-mecenat.webp" alt="" /></span>
               <span className="leave-tool-copy"><strong>Mécénats</strong></span>
@@ -235,7 +237,7 @@ export function LeaveManagementPage({
             ) : null}
           </section>
           </details>
-          <details className="leave-tool-disclosure cet-disclosure" ref={cetRef}>
+          <details className="leave-tool-disclosure cet-disclosure" name="leave-tools" ref={cetRef}>
             <summary>
               <span className="leave-tool-illustration cet" aria-hidden="true"><img src="/leave-tools/leave-tool-cet.webp" alt="" /></span>
               <span className="leave-tool-copy"><strong>Mon CET</strong></span>

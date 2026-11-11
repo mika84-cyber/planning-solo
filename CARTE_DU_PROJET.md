@@ -88,9 +88,7 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   bulletin ; ce montant donne aussi d'emblée la valeur du titre. Sans valeur,
   « Enregistrer » répond en le disant sur sa carte ; une fois enregistré, une
   confirmation prend sa place, et il revient au moindre changement de formule.
-- `src/PayYearOverview.tsx` : « L'année en un coup d'œil » (dans l’en-tête,
-  « coup d’œil » reste sur la seconde ligne : espace insécable dans
-  `AppNavigation`), quatrième carte de Ma paie — les totaux de l'année (brut, primes, mécénats, impôt, net perçu,
+- `src/PayYearOverview.tsx` : « L'année en un coup d'œil », quatrième carte de Ma paie — les totaux de l'année (brut, primes, mécénats, impôt, net perçu,
   dans la langue des lignes de la paie), le net mois par mois en barres, les
   douze mois en tableau, chacun ouvrant son détail du calcul (dans
   `.pay-year-table-shell`, qui défile de côté sans élargir la page ; sous
@@ -120,6 +118,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   Un champ de recherche qui contient du texte n'a plus de loupe : la croix du
   navigateur prend sa place. `BalanceDetailDialog` dit « Jours passés / à
   venir » pour un suivi (maladie, grève…), « Congés » pour un solde.
+- Cohérence (audit, 12 novembre 2026) : les flèches de dépliage sont des
+  chevrons dessinés en CSS (`productRefinements.css`, liste des sélecteurs ;
+  le caractère « ⌄ » du code se lisait comme un « v ») ; un seul bouton plein
+  terracotta par groupe, les autres en contour (« Ajouter des heures
+  manuellement », « Mes droits sont déjà ouverts ») ; les deux boutons
+  d'effacement groupé partagent le contour rouge du danger. L'en-tête d'un
+  sous-écran de Ma paie garde « Ma paie » : son nom est dans sa barre de
+  retour (`pay-detail-sticky-header`), qui ne répète plus « Ma paie ».
 - `src/LeaveDialogs.tsx` : reprise des absences antérieures et sélection manuelle
   d'une période de congés.
 - `src/PlanningView.tsx` : grille mensuelle et contenu de recherche des notes.
@@ -259,8 +265,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   4 novembre 2026 : à 160 px, libellés sur trois lignes et note illisible.
 - « Liste des raccourcis » (anciennement « Que cherchez-vous ? », renommée le
   1er novembre 2026) : une petite pastille crème au même endroit de
-  chaque en-tête, en bas à gauche — loupe dans un
-  rond, flèche au bout, entière dans la partie foncée avant la diagonale (`AppHeader`, style dans
+  chaque en-tête, en bas à gauche — trois lignes de liste dans un
+  rond (une loupe jusqu'au 12 novembre 2026 : la fenêtre n'a pas de recherche), flèche au bout, entière dans la partie foncée avant la diagonale (`AppHeader`, style dans
   `src/pageHeaders.css`), même surface que les trois commandes du haut, le
   texte à la couleur foncée de l’en-tête. Sur grand écran, le titre est centré
   au-dessus (en-tête de 150 à 176 px). Sur téléphone, l'en-tête fait 150 px
@@ -349,7 +355,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/ColleagueRequestNotice.tsx`) est contrôlé à l’acceptation avec les mêmes
   règles (`validateWorkExchange`, groupe du profil du destinataire).
 - `src/LeaveManagementPage.tsx` : composition de la page congés et
-  récupérations.
+  récupérations. Les trois tuiles (heures, mécénats, CET) sont des
+  `<details name="leave-tools">` : une seule ouverte à la fois, les deux
+  autres restent au-dessus d'elle, en petit (vignette et titre sur une
+  ligne, `19-leave-page.css`), et l'en-tête de la tuile ouverte la replie.
+  Jusqu'au 12 novembre 2026, ouvrir une tuile faisait disparaître les autres.
 - `src/PayPage.tsx`, `src/PayDashboard.tsx` (Ma paie : le mois et le net,
   les lignes de la paie — sous chaque montant, en toutes lettres, où la ligne
   mène (`go`, `pay-bulletin-line-value em`) : le fixe « Voir le profil »
@@ -409,7 +419,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   L’encadré « Déclarer un accident de travail » porte une croix de secours.
   Comme `UsefulContactsSection.tsx`, l’en-tête se limite au surtitre et au
   titre (phrases d’explication retirées le 4 novembre 2026). Une recherche
-  sans résultat le dit (« Aucun document ne porte ce nom. »). L'écran
+  sans résultat le dit (« Aucun document ne porte ce nom. »). Les documents
+  d'un dossier portent tous la couleur du dossier (`FOLDER_TONES`, posée en
+  `--contact-category-accent` sur `.useful-form-download-list`), plus six
+  teintes en boucle. L'écran
   `.useful-resources-screen` n'a plus de fond : blanc, il dépassait en bande
   à angles droits sous la carte arrondie.
 - `src/DocumentAnnouncementNotice.tsx` et `src/usefulDocumentsApi.ts` : alerte
@@ -446,9 +459,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   (`context`) une petite ligne dessous ; `allowSms: false` retire le SMS d’un
   portable (responsables et superviseurs). Une modification depuis
   l’application garde ces réglages. Ailleurs (Pompidou, recherche), les
-  cartes de contact : le nom prend toute la largeur à côté de la pastille des
-  initiales (une ligne, deux au plus), la place du bouton ✎ n’est réservée
-  qu’à l’administrateur. Un test refuse tout doublon de nom, numéro ou
+  cartes de contact (`ContactCards`) : le nom prend toute la largeur à côté
+  de la pastille des initiales (une ligne, deux au plus), la place du bouton
+  ✎ n’est réservée qu’à l’administrateur ; depuis le 12 novembre 2026, elles
+  reprennent les barres de l'annuaire GP-RMN (`.contact-theme-number`,
+  `.contact-theme-sms`, `--tone` au bleu du dossier Pompidou) : l'adresse,
+  puis un numéro par ligne que l'on touche pour appeler, le SMS à côté d'un
+  portable, sans libellé « Portable / Bureau » ni bouton « Appeler ». Un test refuse tout doublon de nom, numéro ou
   adresse.
   « Codes urgences radio » (FOX, TANGO…) : `netlify/lib/usefulRadioCodes.mts`,
   envoyés par `/api/contacts` aux seuls comptes connectés, jamais enregistrés.

@@ -635,8 +635,56 @@
   align-items: start;
   gap: 14px;
 }
-.leave-secondary-grid:has(> .leave-tool-disclosure[open]) > .leave-tool-disclosure:not([open]) {
+/* Une tuile ouverte : les deux autres restent au-dessus d'elle, en petit, pour
+   passer de l'une à l'autre ; les trois en-têtes tiennent sur une ligne
+   (vignette, titre) et celui de la tuile ouverte porte un chevron qui la
+   replie. Jusqu'au 12 novembre 2026, les deux autres disparaissaient, sans
+   retour visible. */
+.leave-secondary-grid:has(> .leave-tool-disclosure[open]) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.leave-secondary-grid:has(> [open]) > .leave-tool-disclosure > summary {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 8px 10px;
+}
+.leave-secondary-grid:has(> [open]) .leave-tool-illustration {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+.leave-secondary-grid:has(> [open]) .leave-tool-illustration img {
+  transform: none;
+}
+.leave-secondary-grid:has(> [open]) .leave-tool-copy {
+  place-content: center start;
+  justify-items: start;
+  min-height: 0;
+  text-align: left;
+}
+.leave-secondary-grid:has(> [open]) .leave-tool-copy strong {
+  font-size: 0.9rem;
+}
+.leave-secondary-grid:has(> [open]) > :not([open]) > summary > b {
   display: none;
+}
+/* Petit téléphone : vignette et titre resserrés, pour que « Mécénats » tienne
+   sans se couper. */
+@media (max-width: 400px) {
+  .leave-secondary-grid:has(> [open]) > .leave-tool-disclosure > summary {
+    gap: 8px;
+    padding: 8px;
+  }
+  .leave-secondary-grid:has(> [open]) .leave-tool-illustration {
+    width: 34px;
+    height: 34px;
+  }
+  .leave-secondary-grid:has(> [open]) .leave-tool-copy strong {
+    font-size: 0.82rem;
+  }
 }
 .leave-tool-disclosure {
   --tool-ink: var(--text);
@@ -722,26 +770,23 @@
 }
 .leave-tool-disclosure[open] {
   grid-column: 1 / -1;
+  order: 1;
 }
 .leave-tool-disclosure[open] > summary {
-  min-height: 0;
   border-bottom: 1px solid var(--border-control);
 }
-/* Carte ouverte : l'illustration garde toute sa place, centrée dans un cadre
-   de largeur mesurée, sans zoom ni rognage. */
-.leave-tool-disclosure[open] > summary .leave-tool-illustration {
-  width: min(100%, 380px);
-  height: 176px;
-  margin: 0 auto;
-}
-.leave-tool-disclosure[open] > summary .leave-tool-illustration img {
-  transform: none;
-}
-.leave-tool-disclosure[open] > summary .leave-tool-copy {
-  min-height: 0;
-}
 .leave-tool-disclosure[open] > summary > b {
-  margin-top: 0;
+  margin: 0;
+}
+.leave-tool-disclosure[open] > summary::after {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 4px 6px 0 4px;
+  border: solid var(--muted);
+  border-width: 2px 0 0 2px;
+  transform: rotate(45deg);
+  content: "";
 }
 .leave-tool-disclosure > .overtime-balance-card,
 .leave-tool-disclosure > .cet-section {
@@ -821,16 +866,12 @@
 }
 .solidarity-hours-action {
   min-height: 46px;
-  border-color: #c96c12;
   border-radius: 12px;
   padding: 0 18px;
-  background: linear-gradient(135deg, #ed9638, #dc781d);
-  color: #fff;
   font-family: inherit;
   font-size: inherit;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(203, 103, 18, 0.2);
 }
 .overtime-history-toggle {
   justify-self: start;
@@ -1067,14 +1108,6 @@
     align-items: center;
     justify-content: center;
     min-height: 2.4em;
-  }
-  .leave-tool-disclosure[open] > summary {
-    min-height: 0;
-    padding: 10px;
-  }
-  .leave-tool-disclosure[open] > summary .leave-tool-illustration {
-    width: min(100%, 320px);
-    height: 156px;
   }
   .overtime-balance-card {
     gap: 16px;
