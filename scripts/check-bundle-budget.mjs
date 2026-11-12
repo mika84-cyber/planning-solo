@@ -138,7 +138,13 @@ const budgets = {
   // l'accord de l'administrateur : « Reprendre » dans le formulaire autonome
   // (feuilles déjà faites rangées sur le compte, reprise, PDF qui emporte sa
   // feuille et se rouvre) (2 113,1 / 700,0 Kio mesurés).
-  totalJavaScript: { raw: 2_115 * KIB, gzip: 701 * KIB },
+  // Relevé le 12 novembre 2026 à 2 120 Kio bruts et 702 Kio compressés, avec
+  // l'accord de l'administrateur : le rappel du formulaire avant de
+  // télécharger une demande d'absence (Docs › Formulaire SAP), chargé avec
+  // Docs seulement ; le chargement initial ne bouge pas (167,3 / 181 Kio).
+  // La marge reste mince : un allègement est à prévoir plutôt qu'un
+  // relèvement à chaque nouveauté (2 116,9 / 701,1 Kio mesurés).
+  totalJavaScript: { raw: 2_120 * KIB, gzip: 702 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -173,7 +179,11 @@ const budgets = {
   // Relevé le 11 novembre 2026 à 103 Kio gzip avec l'accord de
   // l'administrateur : la liste « Reprendre » et le bandeau de reprise du
   // formulaire autonome (102,7 Kio mesurés).
-  totalCss: { raw: 537 * KIB, gzip: 103 * KIB },
+  // Relevé le 12 novembre 2026 à 104 Kio gzip avec l'accord de
+  // l'administrateur : la fenêtre de rappel du formulaire de Formulaire SAP,
+  // son mode sombre et la couleur des congés posés sur une formation en
+  // sombre (103,3 Kio mesurés).
+  totalCss: { raw: 537 * KIB, gzip: 104 * KIB },
 };
 
 async function filesUnder(directory) {

@@ -12,6 +12,7 @@ import "./usefulDocumentAdmin.css";
 import { DocumentShareDialog } from "./DocumentShareDialog";
 import { DocumentUpload } from "./DocumentUpload";
 import { DocumentEditDialog } from "./DocumentEditDialog";
+import { AbsenceFormReminder, absenceFormFor, type AbsenceForm } from "./AbsenceFormReminder";
 import {
   getSharedUsefulDocuments,
   type SharedUsefulDocument,
@@ -224,6 +225,8 @@ export function UsefulFormsSection({
   const [shareDocument, setShareDocument] = useState<UsefulFormDocument | null>(null);
   const [editDocument, setEditDocument] = useState<UsefulFormDocument | null>(null);
   const [documentEdits, setDocumentEdits] = useState<UsefulDocumentEdit[]>([]);
+  // « Télécharger » une demande d'absence propose d'abord le formulaire de l'appli.
+  const [formReminder, setFormReminder] = useState<{ title: string; file: string; href: string; action: "preview" | "download"; form: AbsenceForm } | null>(null);
   const allFolders = useMemo(() => usefulFormFoldersForDate(today).map((item) => ({
     ...item,
     documents: [
@@ -254,15 +257,9 @@ export function UsefulFormsSection({
   const folder = visibleFolders.find((item) => item.key === activeFolder);
   const headings = folder ? folderListHeadings(folder.documents.length, folder.audioguides?.length ?? 0) : null;
   const secureContext = typeof window === "undefined" || window.isSecureContext;
-  const downloadForm = async (
-    event: MouseEvent<HTMLAnchorElement>,
-    file: string,
-    action: "preview" | "download",
-  ) => {
-    event.preventDefault();
-
+  const downloadForm = async (href: string, file: string, action: "preview" | "download") => {
     if (action === "preview") {
-      window.open(event.currentTarget.href, "_blank", "noopener");
+      window.open(href, "_blank", "noopener");
       return;
     }
 
@@ -270,7 +267,7 @@ export function UsefulFormsSection({
     setDownloadError("");
 
     try {
-      await downloadUsefulFile(event.currentTarget.href, file);
+      await downloadUsefulFile(href, file);
     } catch {
       setDownloadError("Le téléchargement n’a pas pu démarrer. Vérifiez votre connexion puis réessayez.");
     } finally {
@@ -373,7 +370,15 @@ export function UsefulFormsSection({
                   download
                   aria-label={`${action === "preview" ? "Ouvrir" : "Télécharger"} ${document.title}`}
                   aria-busy={downloadingFile === document.file}
-                  onClick={(event) => void downloadForm(event, document.file, action)}
+                  onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+                    event.preventDefault();
+                    const href = event.currentTarget.href;
+                    // Une demande d'absence du dossier SAP : d'abord le rappel
+                    // du formulaire de l'appli, le PDF vierge reste au choix.
+                    const form = folder.key === "sap" ? absenceFormFor(document.title) : null;
+                    if (form) setFormReminder({ title: document.title, file: document.file, href, action, form });
+                    else void downloadForm(href, document.file, action);
+                  }}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 3v12m-4-4 4 4 4-4M5 19h14" />
@@ -432,6 +437,18 @@ export function UsefulFormsSection({
             <p>Ce dossier est prêt à recevoir les futurs formulaires Expo.</p>
           </div>
         )}
+        {formReminder ? (
+          <AbsenceFormReminder
+            title={formReminder.title}
+            form={formReminder.form}
+            previewOnly={formReminder.action === "preview"}
+            onClose={() => setFormReminder(null)}
+            onDownload={() => {
+              setFormReminder(null);
+              void downloadForm(formReminder.href, formReminder.file, formReminder.action);
+            }}
+          />
+        ) : null}
         {isAdmin && shareDocument ? <DocumentShareDialog document={shareDocument} demoMode={demoMode} onClose={() => setShareDocument(null)} /> : null}
         {isAdmin && editDocument ? <DocumentEditDialog document={editDocument} demoMode={demoMode} onClose={() => setEditDocument(null)} onEdited={edit => setDocumentEdits(current => [...current.filter(item => item.id !== edit.id), { ...current.find(item => item.id === edit.id), ...edit }])} /> : null}
       </section>

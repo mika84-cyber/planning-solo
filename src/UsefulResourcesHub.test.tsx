@@ -16,8 +16,11 @@ describe("documents et contacts", () => {
     expect(html).not.toContain("Page des contacts");
     expect(html).not.toContain("Choisir une rubrique");
     expect(html).not.toContain("Toutes les rubriques");
-    // Les plannings PDF s’ouvrent depuis le calendrier de l’accueil.
+    // Les plannings PDF s’ouvrent depuis le calendrier de l’accueil : deux
+    // onglets seulement, Formulaires et Contacts, dans l'écran des ressources.
     expect(html).not.toContain("Plannings PDF");
+    expect([...html.matchAll(/role="tab"[^>]*aria-label="([^"]+)"/g)].map((match) => match[1])).toEqual(["Formulaires", "Contacts"]);
+    expect(html).toContain("useful-resources-screen");
   });
 
   it("peut s’ouvrir sur les contacts", () => {

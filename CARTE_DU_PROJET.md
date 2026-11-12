@@ -399,7 +399,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   conviennent encore. En mode sombre, le calendrier reprend les couleurs du
   planning (`darkTheme.css`) ; la formation y est, comme dans le planning,
   d'un gris plus prononcé (#9e9e9e) que le gris clair du mode jour depuis le
-  9 novembre 2026, pour se détacher du beige des jours travaillés.
+  9 novembre 2026, pour se détacher du beige des jours travaillés. Un congé
+  ou une récupération posé sur une formation y prend sa couleur, comme en
+  clair (depuis le 12 novembre 2026, la case restait grise en sombre).
   Un échange proposé par un collègue (`netlify/functions/colleagues.mts`,
   `src/ColleagueRequestNotice.tsx`) est contrôlé à l’acceptation avec les mêmes
   règles (`validateWorkExchange`, groupe du profil du destinataire).
@@ -474,6 +476,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   teintes en boucle. L'écran
   `.useful-resources-screen` n'a plus de fond : blanc, il dépassait en bande
   à angles droits sous la carte arrondie.
+- `src/AbsenceFormReminder.tsx` : dans Formulaire SAP, « Télécharger » une
+  demande d'absence (congés, récupérations, annulation, échange, férié,
+  reconnue à son titre par `absenceFormFor`) ouvre d'abord une fenêtre qui
+  propose de la remplir dans l'appli (lien vers `/formulaire/index.html?feuille=…`
+  sur la bonne feuille, demande du planning en attente oubliée comme pour
+  « Formulaire vierge ») ; « Télécharger le PDF vierge » reste dessous.
+  Styles dans `absenceFormReminder.css`, mode sombre dans `darkTheme.css`.
 - `src/DocumentAnnouncementNotice.tsx` et `src/usefulDocumentsApi.ts` : alerte
   centrée des nouveaux documents, lecture et ajout administrateur.
 - `src/DocumentEditDialog.tsx` et `netlify/lib/documentVersions.mts` : remplacement

@@ -1,0 +1,11 @@
+/* Rappel du formulaire de l'appli avant de télécharger une demande d'absence
+   (Docs › Formulaire SAP) : remplir à l'écran d'abord, au bleu du dossier ;
+   le PDF vierge dessous, en blanc. Mode sombre dans darkTheme.css. */
+.absence-form-reminder { width: min(420px, 100%); }
+.absence-form-reminder-icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 12px; border-radius: 14px; background: #eceff7; color: #3c4c80; }
+.absence-form-reminder-icon svg { width: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.absence-form-reminder-actions { display: grid; gap: 10px; }
+.absence-form-reminder-actions > * { display: grid; gap: 3px; box-sizing: border-box; min-height: 58px; border: 1px solid var(--border-card); border-radius: 14px; padding: 10px 16px; background: var(--surface); color: var(--text); text-align: left; text-decoration: none; cursor: pointer; }
+.absence-form-reminder-actions > a { border-color: #3c4c80; background: #3c4c80; color: #fff; }
+.absence-form-reminder-actions strong { font-size: 15px; }
+.absence-form-reminder-actions small { color: inherit; font-size: 12px; font-weight: 600; opacity: .82; }

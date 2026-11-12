@@ -638,8 +638,8 @@ describe("finitions d’interface", () => {
     expect(documentsSectionScreen).toContain("<UsefulResourcesHub");
     // Les plannings PDF s'ouvrent depuis le calendrier, dans une fenêtre.
     expect(planningWorkspace).toContain("planning-pdf-dialog");
-    expect(usefulResourcesHub).not.toContain('key: "pdf"');
-    expect(usefulResourcesHub).toContain("useful-resources-screen");
+    // Deux onglets seulement, sans plannings PDF : vérifié par le rendu dans
+    // UsefulResourcesHub.test.tsx.
     expect(app).not.toContain("Sauvegarde et restauration");
     expect(app).toContain("header-command-area");
     expect(app).toContain("header-update-button");

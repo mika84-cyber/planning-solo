@@ -11,10 +11,14 @@ html[data-theme="dark"] .calendar-grid .day.work:not(.leave-day):not(.recovery-d
 html[data-theme="dark"] .calendar-grid .day.off { border: 2px solid #9d8b7b !important; background: #0a0807; color: #c6b8ab; }
 /* Formation : case d'un gris plus prononcé que le --training clair (#b4b4b4),
    pour se détacher du beige des jours travaillés (depuis le 9 novembre 2026),
-   chiffre sombre pour rester lisible. */
-html[data-theme="dark"] .calendar-grid .day.training { border-color: #8d8d8d; background: #9e9e9e; }
-html[data-theme="dark"] .calendar-grid .day.training,
-html[data-theme="dark"] .calendar-grid .day.training :is(.date-number, span, b) { color: #211c18; }
+   chiffre sombre pour rester lisible. Un congé ou une récupération posé sur
+   la formation garde sa couleur, comme en mode clair. */
+html[data-theme="dark"] .calendar-grid .day.training:not(.leave-day, .recovery-day) { border-color: #8d8d8d; background: #9e9e9e; }
+html[data-theme="dark"] .calendar-grid .day.training:not(.leave-day, .recovery-day),
+html[data-theme="dark"] .calendar-grid .day.training:not(.leave-day, .recovery-day) :is(.date-number, span, b) { color: #211c18; }
+/* « CET » reste brun foncé sur le beige du CET : la conversion l'éclaircissait
+   (gris clair sur beige, illisible). */
+html[data-theme="dark"] .calendar-grid .day .leave-calendar-marker-cet { color: #2c2621; }
 /* Titre du calendrier : --accent et --accent-strong ne sont pas convertis en
    sombre (darkStyles.ts ne reconnaît pas ces noms) ; le chevron du sélecteur
    s'éclaircit et le texte garde sa teinte une fois la liste ouverte. */
@@ -162,6 +166,10 @@ html[data-theme="dark"] .colleague-sharing-page button.colleague-today-step { bo
 html[data-theme="dark"] .colleague-sharing-page button.colleague-today-step:hover { background: rgba(155, 132, 214, 0.16); }
 html[data-theme="dark"] .useful-resource-tab.resource-pdf { --tile-tint: #3a2620; --tile-ink: #f0a988; }
 html[data-theme="dark"] .useful-form-download-list > .useful-form-download-card > a { background: color-mix(in srgb, var(--contact-category-accent) 72%, #000); color: #fff; }
+/* Rappel du formulaire (Formulaire SAP) : « Remplir dans l'appli » garde le
+   bleu du dossier, la vignette passe en bleu nuit. */
+html[data-theme="dark"] .absence-form-reminder-actions > a { border-color: #5368a8; background: #5368a8; color: #fff; }
+html[data-theme="dark"] .absence-form-reminder-icon { background: #2b3045; color: #c9d1f2; }
 html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #1f3327; --tile-ink: #8fd1a8; }
 html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #1f2a3a; --tile-ink: #9ec0ec; }
 /* Dossiers de formulaires et annuaires : icône, lettre, flèche et nombre de

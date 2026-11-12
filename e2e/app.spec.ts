@@ -2514,9 +2514,15 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     "Demande de récupérations",
     "Demande d’annulation de congés",
   ]);
-  const downloadPromise = page.waitForEvent("download");
+  // Une demande d'absence : « Télécharger » propose d'abord le formulaire de
+  // l'appli ; le PDF vierge reste à un toucher.
   await sapLinks.first().click();
+  const reminder = page.getByRole("dialog", { name: "Et si vous la remplissiez dans l’appli ?" });
+  await expect(reminder.getByRole("link", { name: /Remplir dans l’appli/ })).toHaveAttribute("href", "/formulaire/index.html?feuille=conges");
+  const downloadPromise = page.waitForEvent("download");
+  await reminder.getByRole("button", { name: /Télécharger le PDF vierge/ }).click();
   expect((await downloadPromise).suggestedFilename()).toBe("demande-conges.pdf");
+  await expect(reminder).toHaveCount(0);
   await expect(page.locator(".useful-form-download-error")).toHaveCount(0);
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
 
@@ -4854,6 +4860,15 @@ test("un congé posé sur une formation retire cette date du prochain jour trava
   const nextWork = page.locator(".today-next-work strong");
 
   await expect(nextWork).toHaveText(nextWorkDayLabel(expectedNext));
+  // La case de la formation prend la couleur du congé, et ne reste pas grise,
+  // en mode clair comme en mode sombre.
+  await expect(page.locator(".calendar-grid .day").first()).toBeVisible();
+  const coveredTraining = page.locator(".calendar-grid .day.training.leave-day.leave-annual");
+  if (!(await coveredTraining.count())) await page.getByRole("button", { name: "Mois suivant" }).first().click();
+  await expect(coveredTraining).toHaveCSS("background-color", "rgb(108, 189, 240)");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(coveredTraining).toHaveCSS("background-color", "rgb(108, 189, 240)");
 });
 
 test("une formation posée en récupération est retirée du prochain jour travaillé", async ({ page }) => {
@@ -4975,6 +4990,26 @@ test("le formulaire de demande s’ouvre directement depuis Congés et récupér
   // Le formulaire vierge s'ouvre sur la demande de congés.
   await expect(page).toHaveURL(/\/formulaire\/index\.html\?feuille=conges$/);
   await expect(page.locator("#sheet option:checked")).toHaveText("Demande de congés");
+});
+
+test("télécharger une demande d’absence rappelle le formulaire de l’appli, qui s’ouvre sur la bonne feuille", async ({ page }) => {
+  await prepareDemo(page);
+  await openUsefulResource(page, "Formulaires");
+  await page.getByRole("button", { name: /Formulaire SAP/ }).click();
+  await page.getByRole("link", { name: "Télécharger Demande de récupérations" }).click();
+  const reminder = page.getByRole("dialog", { name: "Et si vous la remplissiez dans l’appli ?" });
+  await expect(reminder).toBeVisible();
+  await expect(reminder).toBeInViewport();
+  await expect(reminder.locator(".step-label")).toHaveText("Demande de récupérations");
+  // Échap referme le rappel sans rien télécharger.
+  await page.keyboard.press("Escape");
+  await expect(reminder).toHaveCount(0);
+  await page.getByRole("link", { name: "Télécharger Demande de récupérations" }).click();
+  // La fenêtre tient dans l'écran, sans défilement horizontal.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  await reminder.getByRole("link", { name: /Remplir dans l’appli/ }).click();
+  await expect(page).toHaveURL(/\/formulaire\/index\.html\?feuille=recup$/);
+  await expect(page.locator("#sheet option:checked")).toHaveText("Demande de récupérations");
 });
 
 test("le balayage mobile navigue entre toutes les rubriques", async ({ page }, testInfo) => {
