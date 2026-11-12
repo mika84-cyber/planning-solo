@@ -2440,7 +2440,10 @@ var SHEET_IDS = SHEETS.map(function(s){ return s.id; });
 var SHEET_INFO_KEY = 'PlanningSoloFeuille', SHEETS_KEY = 'demandes:v1:feuilles';
 var takeId = null, takeUndo = null, pdfEntry = null;
 var takeModal = document.getElementById('takeModal'), takeList = document.getElementById('takeList');
-var takeBanner = document.getElementById('takeBanner'), takeFile = document.getElementById('takeFile');
+/* Le champ « Ouvrir un PDF du formulaire » ne doit pas s'appeler takeFile :
+   ce nom écrasait la fonction qui lit les justificatifs (garde d'enfant,
+   jours exceptionnels), et le fichier choisi n'était jamais pris en compte. */
+var takeBanner = document.getElementById('takeBanner'), takePdfInput = document.getElementById('takeFile');
 function currentSheetEntry(){
   if(pageCount>1) pageSnapshots[pageIndex]=capturePage();
   var now = new Date().toISOString();
@@ -2646,10 +2649,10 @@ document.getElementById('takeClose').addEventListener('click', closeTake);
 takeModal.addEventListener('click', function(e){ if(e.target === takeModal) closeTake(); });
 document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeTake(); });
 window.addEventListener('resize', function(){ if(!takeModal.hidden) placeTake(); });
-document.getElementById('takeOpen').addEventListener('click', function(){ takeFile.value = ''; takeFile.click(); });
+document.getElementById('takeOpen').addEventListener('click', function(){ takePdfInput.value = ''; takePdfInput.click(); });
 /* Un PDF créé par ce formulaire depuis cette mise à jour : sa feuille revient. */
-takeFile.addEventListener('change', function(){
-  var file = takeFile.files && takeFile.files[0];
+takePdfInput.addEventListener('change', function(){
+  var file = takePdfInput.files && takePdfInput.files[0];
   if(!file) return;
   say('Lecture du PDF…');
   readArrayBuffer(file).then(function(buffer){

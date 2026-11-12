@@ -511,6 +511,38 @@ test("un PDF du formulaire rouvert rend sa feuille, un autre PDF est refusé", a
   await expect(page.locator("#msg")).toHaveText(/ne contient pas de feuille à reprendre/);
 });
 
+test("le justificatif d’un congé garde d’enfant choisi dans le dossier est bien joint", async ({ page }) => {
+  // Le champ « Ouvrir un PDF du formulaire » portait le nom de la fonction
+  // qui lit les justificatifs et l'écrasait : le fichier choisi était ignoré.
+  const runtimeErrors: string[] = [];
+  page.on("pageerror", (error) => runtimeErrors.push(error.message));
+  await page.goto("/formulaire/index.html?feuille=conges");
+  await page.evaluate(() => {
+    for (const label of ["Congés garde enfant — ligne 1 — du", "Congés garde enfant — ligne 1 — au"]) {
+      const field = document.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
+      field.value = "16/11/2026";
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
+  const row = page.locator(".att-row").filter({ hasText: "Justificatif — Congés garde enfant" });
+  const fileName = row.locator(".att-name");
+  await expect(fileName).toHaveText("aucun fichier joint");
+
+  const picker = page.getByLabel("Choisir un justificatif pour Congés garde enfant");
+  await picker.setInputFiles("public/favicon-48.png");
+  await expect(fileName).toHaveText(/^favicon-48\.png/);
+  await expect(page.locator("#msg")).toHaveText("Justificatif joint : favicon-48.png");
+  await expect(row.locator(".att-btn-text")).toHaveText("Remplacer");
+
+  // Un PDF remplace la photo, puis « Retirer » rend la ligne vide. Le moteur
+  // PDF se charge à ce moment-là : la première fois, il lui faut du temps.
+  await picker.setInputFiles("public/useful-forms/demande-conges.pdf");
+  await expect(fileName).toHaveText(/^demande-conges\.pdf/, { timeout: 20_000 });
+  await row.getByRole("button", { name: "Retirer" }).click();
+  await expect(fileName).toHaveText("aucun fichier joint");
+  expect(runtimeErrors).toEqual([]);
+});
+
 test("une feuille faite sur l’ordinateur se retrouve sur le téléphone par le compte, et inversement", async ({ page, browser, isMobile }) => {
   test.skip(isMobile, "Le scénario ouvre lui-même un téléphone à côté de l’ordinateur.");
   const { account, handler } = formSheetsAccount();

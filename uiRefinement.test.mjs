@@ -97,7 +97,6 @@ const payMonthNav = readFileSync(new URL("./src/PayMonthNav.tsx", import.meta.ur
 const appSections = readFileSync(new URL("./src/appSections.ts", import.meta.url), "utf8");
 const leaveDialogs = readFileSync(new URL("./src/LeaveDialogs.tsx", import.meta.url), "utf8");
 const workTimeDialogs = readFileSync(new URL("./src/WorkTimeDialogs.tsx", import.meta.url), "utf8");
-const cetSection = readFileSync(new URL("./src/CetSection.tsx", import.meta.url), "utf8");
 const requestValidationSummary = readFileSync(new URL("./src/RequestValidationSummary.tsx", import.meta.url), "utf8");
 const planningDialogs = readFileSync(new URL("./src/PlanningDialogs.tsx", import.meta.url), "utf8");
 
@@ -149,12 +148,8 @@ describe("finitions d’interface", () => {
   it("affiche le CET en rubrique ouverte et distingue la rubrique Autre", () => {
     expect(css.hasRule(".cet-section-static .cet-heading-static")).toBe(true);
     expect(css.hasRuleWithSelectors([".leave-tool-disclosure > .overtime-balance-card", ".leave-tool-disclosure > .cet-section"])).toBe(true);
-    expect(cetSection).toContain('className="cet-section open cet-section-static"');
-    expect(cetSection).toContain("alimentation du 15 novembre au 31 décembre");
-    expect(cetSection).not.toContain("setOpen");
-    expect(cetSection).not.toContain("Planning Solo vous aide à suivre et simuler votre CET");
-    expect(cetSection).toContain('placeholder="0" value={initialBalanceInput}');
-    expect(cetSection).toContain('setInitialBalanceInput(value)');
+    // La rubrique ouverte, la période d'alimentation et le solde vide à
+    // saisir : test de rendu dans src/CetSection.test.tsx.
     expect(css.mentions(".leave-request-archive .request-archive-icon")).toBe(true);
   });
 

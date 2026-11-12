@@ -907,6 +907,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   formulaire » le relit (`normalizeFormSheet`), même sur un autre appareil ;
   un PDF venu d'ailleurs ou d'avant est refusé avec un message. Masqué pour
   une demande ouverte depuis le planning. Scénarios dans `e2e/form.spec.ts`.
+  Son champ s'appelle `takePdfInput` (l'id HTML reste `#takeFile`) : nommé
+  `takeFile` jusqu'au 12 novembre 2026, il écrasait la fonction `takeFile`
+  qui lit les justificatifs (garde d'enfant, jours exceptionnels), et le
+  fichier choisi était ignoré. Scénario « le justificatif d’un congé garde
+  d’enfant… ».
   Plusieurs feuilles dans un même PDF : la date de signature changée sur la
   première se reporte sur les suivantes (`onEdit`) ; changée sur une autre
   feuille, elle ne vaut que pour celle-ci.
