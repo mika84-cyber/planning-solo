@@ -2828,6 +2828,12 @@ test("sur un petit écran en grande police, le bouton de l’audioguide reste da
   const [linkBox, cardBox] = await Promise.all([link.boundingBox(), page.locator(".expo-audioguide-card").first().boundingBox()]);
   // Sur une ligne, « Ouvrir l’audioguide » dépassait le bord droit de la carte.
   expect(linkBox!.x + linkBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width);
+  // Avec une police système plus large (celle de Linux, imitée ici par
+  // Verdana), « Code d’accès » élargissait la colonne et poussait le bouton
+  // hors de la carte : le code passe dessous.
+  await page.addStyleTag({ content: ".expo-audioguide-card, .expo-audioguide-card * { font-family: Verdana, 'DejaVu Sans', sans-serif !important; }" });
+  const [wideLink, wideCard] = await Promise.all([link.boundingBox(), page.locator(".expo-audioguide-card").first().boundingBox()]);
+  expect(wideLink!.x + wideLink!.width).toBeLessThanOrEqual(wideCard!.x + wideCard!.width);
   // Sa zone de toucher fait au moins 36 px de haut, même si le bouton en fait moins.
   const zone = await link.evaluate((node) => parseFloat(getComputedStyle(node, "::after").height));
   expect(zone).toBeGreaterThanOrEqual(36);

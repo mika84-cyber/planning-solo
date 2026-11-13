@@ -695,7 +695,9 @@
 .expo-audioguide-qr img { display: block; width: 100%; max-width: 130px; height: auto; }
 .expo-audioguide-zoom { position: absolute; right: -6px; bottom: -6px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid #fff; border-radius: 50%; background: var(--ag); color: #fff; }
 .expo-audioguide-zoom svg { width: 12px; height: 12px; stroke-width: 2.6; }
-.expo-audioguide-body { display: grid; justify-items: start; gap: 4px; min-width: 0; }
+/* Une colonne qui ne dépasse jamais la carte, quelle que soit la police du
+   système (plus large sous Linux qu'avec Segoe UI). */
+.expo-audioguide-body { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; gap: 4px; min-width: 0; }
 .expo-audioguide-body strong { display: flex; align-items: center; gap: 6px; color: var(--text); font-size: 0.95rem; }
 .expo-audioguide-body strong svg { width: 18px; height: 18px; color: var(--ag); }
 .expo-card .expo-audioguide-body small { color: var(--muted); font-size: 0.76rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
@@ -710,11 +712,14 @@
    collé sous la carte, il semblait en faire partie. */
 .expo-card-info:has(> .expo-audioguide) + .expo-price { margin-top: 16px; padding-top: 0; border-top: 0; }
 /* Téléphone étroit : colonnes un peu resserrées pour garder « Code d'accès »
-   et « Ouvrir l'audioguide » sur une ligne. */
+   et « Ouvrir l'audioguide » sur une ligne ; si la police est trop large, le
+   code passe sous « Code d'accès » plutôt que de pousser la carte. */
 @media (max-width: 389px) {
-  .expo-audioguide-card { grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); gap: 12px; padding: 12px; }
+  .expo-audioguide-card { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); gap: 10px; padding: 12px; }
   .app-shell .expo-audioguide-qr { padding: 6px; }
-  .expo-audioguide-code { gap: 5px; white-space: nowrap; font-size: 0.7rem; }
+  .expo-audioguide-body strong { gap: 5px; font-size: 0.88rem; }
+  .expo-audioguide-body strong svg { width: 16px; height: 16px; }
+  .expo-audioguide-code { flex-wrap: wrap; gap: 2px 5px; white-space: nowrap; font-size: 0.7rem; }
   .expo-audioguide-code b { padding: 0 4px 0 6px; font-size: 0.8rem; letter-spacing: 0.1em; }
   .app-shell .expo-audioguide-body > a { gap: 5px; padding: 6px 9px; font-size: 0.74rem; }
   .expo-audioguide-body > a svg { width: 14px; height: 14px; }
