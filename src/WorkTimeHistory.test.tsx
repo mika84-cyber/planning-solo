@@ -18,7 +18,9 @@ const entry = (id: string, date: string, payMonth = 10) => ({
 describe("MecenatHistoryList", () => {
   it("liste les soirées du mois avec la date en éphéméride et le mois de paie dans l'en-tête", () => {
     const html = renderToStaticMarkup(<MecenatHistoryList entries={[entry("a", "2026-10-12"), entry("b", "2026-10-14")]} onDelete={vi.fn()} today={new Date(2026, 9, 20)} />);
-    expect(html).toMatch(/254,50\s€ brut · paie de novembre/);
+    // Ce que la paie verse : 22 h – minuit au tarif jour, la majoration à part.
+    expect(html).toMatch(/206,10\s€ brut · paie de novembre/);
+    expect(html).toMatch(/4 h 30 · dont 2 h de nuit · 24,20\s€ à régulariser<\/small><\/span><span class="mecenat-history-value">103,05\s€<\/span>/);
     expect(html).toContain("mecenat-history-date");
     expect(html).toContain("<small>mer</small><b>14</b>");
     expect(html).toContain("19 h 30 – 0 h");
@@ -31,7 +33,7 @@ describe("MecenatHistoryList", () => {
 
   it("précise le mois de paie sur chaque ligne quand il diffère", () => {
     const html = renderToStaticMarkup(<MecenatHistoryList entries={[entry("a", "2026-10-02", 9), entry("b", "2026-10-14")]} onDelete={vi.fn()} />);
-    expect(html).toMatch(/254,50\s€ brut<\/small>/);
+    expect(html).toMatch(/206,10\s€ brut<\/small>/);
     expect(html).toContain("paie d’octobre 2026");
     expect(html).toContain("paie de novembre 2026");
   });

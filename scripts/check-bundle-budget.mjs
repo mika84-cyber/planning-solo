@@ -151,8 +151,10 @@ const budgets = {
   // Relevé le même jour à 2 126 / 705 Kio, avec l'accord de l'administrateur :
   // la nouvelle « Mise en route » de l'accueil (anneau, frise des étapes,
   // carte de l'étape à faire) et le filet du bandeau CET (2 125,5 / 704,0 Kio
-  // mesurés).
-  totalJavaScript: { raw: 2_126 * KIB, gzip: 705 * KIB },
+  // mesurés). Relevé le 13 novembre 2026 à 2 130 / 706 Kio, avec l'accord de
+  // l'administrateur : la majoration de 22 h à minuit des mécénats, attendue
+  // à part jusqu'à sa régularisation (2 128,8 / 705,2 Kio mesurés).
+  totalJavaScript: { raw: 2_130 * KIB, gzip: 706 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -196,8 +198,10 @@ const budgets = {
   // délai) et la nouvelle « Mise en route » de l'accueil, après retrait des
   // anciens styles de la liste et de deux blocs morts (« Que s'est-il
   // passé ? » du bulletin, introduction des congés) ; 537,6 / 104,5 Kio
-  // mesurés.
-  totalCss: { raw: 538 * KIB, gzip: 105 * KIB },
+  // mesurés. Relevé le 13 novembre 2026 à 540 Kio brut, avec l'accord de
+  // l'administrateur : l'encadré « À régulariser » des mécénats et ses notes
+  // (538,6 / 104,7 Kio mesurés).
+  totalCss: { raw: 540 * KIB, gzip: 105 * KIB },
 };
 
 async function filesUnder(directory) {

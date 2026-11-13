@@ -586,6 +586,8 @@
 }
 /* Source du barème, discrète sous le total. */
 .mecenat-preview > .mecenat-rate-source { grid-column: 1 / -1; padding: 0 5px; color: var(--muted); font-size: 11px; }
+/* La majoration de 22 h à minuit qui attendra sa régularisation. */
+.mecenat-pending-preview { grid-column: 1 / -1; border-left: 3px solid #4f6b8a; padding: 6px 9px; background: #f3f6fa; color: #2f4156; font-size: 12px; }
 .mecenat-preview > p strong {
   color: var(--muted);
   font-size: 18px;

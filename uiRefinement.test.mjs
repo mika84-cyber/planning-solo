@@ -760,15 +760,13 @@ describe("finitions d’interface", () => {
   });
 
   it("compte les jours travaillés du mois et le reste de l’année dans le calendrier et annonce le prochain mécénat ou heures sup", () => {
-    const home = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
     // La carte donne le mois affiché (travaillés, absences de toute nature) et
     // le reste de l'année en trois chiffres (PlanningCommandCenter.test.tsx).
     expect(planningCommandCenter).toContain("travaillé{s(workedDays.month.worked)} ce mois-ci");
     expect(planningCommandCenter).toContain("d’absence ce mois-ci");
     expect(planningCommandCenter).not.toContain("workedDays.thirds");
-    // L'accueil remplace « Travail restant » par le prochain mécénat ou heures sup.
-    expect(home).not.toContain("today-remaining-work");
-    expect(home).toContain('className="today-block today-next-extra"');
+    // L'accueil remplace « Travail restant » par le prochain mécénat ou heures
+    // sup : son rendu se vérifie dans HomeDashboard.test.tsx.
     expect(app).toContain("nextExtraWork");
   });
 

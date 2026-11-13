@@ -146,8 +146,11 @@ describe("HomeDashboard", () => {
     expect(html).toContain("Avec le groupe 3");
   });
 
+  // Ancien contrôle textuel d'uiRefinement.test.mjs, devenu test de rendu.
   it("annonce le prochain mécénat ou les prochaines heures sup à la place du travail restant", () => {
     const html = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
+    expect(html).toContain('<button class="today-block today-next-extra" type="button" aria-label="Prochain mécénat : Sam 12/09, 19 h – 23 h. Afficher les heures et mécénats.">');
+    expect(html).not.toContain("today-remaining-work");
     expect(html).toContain("Prochain mécénat");
     expect(html).toContain("19 h – 23 h");
     expect(html).not.toContain("Travail restant");

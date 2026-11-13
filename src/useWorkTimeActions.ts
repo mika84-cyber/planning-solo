@@ -2,7 +2,7 @@ import type { Dispatch, RefObject, SetStateAction } from "react";
 import { browserConfirm, type ConfirmAction } from "./confirmDialog";
 import { calendarErrorMessage } from "./calendarApi";
 import { createClientId } from "./clientId";
-import { calculateMecenatVacation, type MecenatEntry, type MecenatSignup } from "./mecenat";
+import { calculateMecenatVacation, mecenatPayment, type MecenatEntry, type MecenatSignup } from "./mecenat";
 import {
   defaultRecoveryMinutes,
   trainingRecoveryMinutes,
@@ -434,7 +434,10 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
       const retained = mecenatSignups.find((signup) => signup.id === retainedSignupRef.current);
       retainedSignupRef.current = null;
       if (retained) await removeMecenatSignup(retained);
-      confirmMessage(`Mécénat enregistré : ${euros(localEntry.grossAmountCents / 100)} brut, intégré automatiquement à la paie du mois suivant.`);
+      const payment = mecenatPayment(localEntry);
+      confirmMessage(payment.pendingCents
+        ? `Mécénat enregistré : ${euros(payment.paidCents / 100)} brut sur la paie du mois suivant, et ${euros(payment.pendingCents / 100)} de majoration de nuit à régulariser.`
+        : `Mécénat enregistré : ${euros(localEntry.grossAmountCents / 100)} brut, intégré automatiquement à la paie du mois suivant.`);
     } catch (error) {
       notify(calendarErrorMessage(error, "Le mécénat n’a pas pu être enregistré."));
     } finally {

@@ -8,7 +8,7 @@
  *  affiche et les actions de paie les exécutent. */
 import { euros } from "./appModel";
 import { matchEarlyPayment } from "./earlyPayment";
-import type { MecenatEntry } from "./mecenat";
+import { mecenatPaidCents, type MecenatEntry } from "./mecenat";
 import type { PayslipReviewCheck } from "./payslipReview";
 import { MONTHS, s, sundayCountLabel } from "./planningLogic";
 import type { PayDraftKey } from "./usePayUiState";
@@ -60,7 +60,7 @@ const monthLabel = (year: number, month: number) => `${MONTHS[month]} ${year}`;
 export function unpaidMecenats(lines: MecenatEntry[], bulletinCents: number) {
   if (!lines.length) return [];
   if (bulletinCents <= 0) return lines;
-  const { matched } = matchEarlyPayment(lines, (entry) => entry.grossAmountCents, bulletinCents);
+  const { matched } = matchEarlyPayment(lines, mecenatPaidCents, bulletinCents);
   const paid = new Set(matched.map((entry) => entry.id));
   return matched.length ? lines.filter((entry) => !paid.has(entry.id)) : [];
 }
@@ -133,7 +133,7 @@ export function payslipGapChoices(issue: PayslipReviewCheck, context: PayslipGap
   if (issue.key === "gross" && found !== undefined && found < expected) {
     const unpaid = unpaidMecenats(context.mecenatLines, context.bulletinMecenatCents);
     if (unpaid.length) {
-      const total = unpaid.reduce((sum, entry) => sum + entry.grossAmountCents, 0) / 100;
+      const total = unpaid.reduce((sum, entry) => sum + mecenatPaidCents(entry), 0) / 100;
       const several = unpaid.length > 1;
       return [{
         id: "defer-mecenats",

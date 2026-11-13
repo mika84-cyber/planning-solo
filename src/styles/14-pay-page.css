@@ -25,6 +25,7 @@
 .pay-dedicated-content.pay-month-in-right { animation: pay-month-in-right 190ms ease-out; }
 
 .mecenat-pay-detail { border-color: var(--border-control); background: var(--surface-high); }
+.mecenat-pay-detail > .mecenat-pending-note { border-left: 3px solid #4f6b8a; padding: 6px 9px; background: #f3f6fa; color: #2f4156; font-size: 12px; }
 
 .mecenat-pay-detail .overtime-pay-lines article { border-color: var(--bg); }
 

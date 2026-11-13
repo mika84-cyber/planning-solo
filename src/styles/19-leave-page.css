@@ -925,6 +925,13 @@
   color: var(--muted);
   font-size: 13px;
 }
+/* La majoration de 22 h à minuit en attente : un liseré ardoise, comme une
+   somme qui viendra, pas comme une erreur. */
+.mecenat-regularisation { display: grid; gap: 4px; border: 1px solid #d3dce7; border-left: 4px solid #4f6b8a; border-radius: 12px; padding: 11px 13px; background: #f3f6fa; color: #2f4156; }
+.mecenat-regularisation-kicker { color: #4f6b8a; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.mecenat-regularisation h4 { margin: 0; font-size: 14.5px; }
+.mecenat-regularisation strong { font-family: var(--font-display); font-size: 17px; }
+.mecenat-regularisation p { margin: 0; font-size: 12.5px; line-height: 1.45; }
 
 /* Mes dates d'inscription : une date à ajouter, puis la liste, chaque date
    avec « Retenir » (la déclaration s'ouvre, date remplie) et « Effacer ». */

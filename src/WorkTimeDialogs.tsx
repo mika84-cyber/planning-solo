@@ -1,8 +1,8 @@
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { ClockTimePicker } from "./ClockTimePicker";
 import { euros } from "./appModel";
-import { mecenatRateLabels, mecenatRatesFor } from "./mecenat";
-import { defaultRecoveryMinutes, minutesLabel, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
+import { MECENAT_NIGHT_REGULARISATION, mecenatPayment, mecenatRateLabels, mecenatRatesFor } from "./mecenat";
+import { defaultRecoveryMinutes, minutesLabel, nextPayPeriod, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
 import { DAY_LABELS, MONTHS, getDayInfo } from "./planningLogic";
 
 type MecenatDraft = { date: string; start: string; end: string };
@@ -37,6 +37,12 @@ export function MecenatDialog({
   // Le barème du jour de la vacation : plages et taux de l'arrêté en vigueur.
   const rates = mecenatRatesFor(draft.date);
   const rateLabels = mecenatRateLabels(rates);
+  // Ce que versera la paie du mois suivant, la majoration de 22 h à minuit
+  // attendant sa régularisation.
+  const pay = /^\d{4}-\d{2}-\d{2}$/.test(draft.date) ? nextPayPeriod(draft.date) : null;
+  const payment = calculation && pay
+    ? mecenatPayment({ ...draft, grossAmountCents: calculation.grossAmountCents, payYear: pay.year, payMonth: pay.month })
+    : null;
   return (
     <div
       className="modal-backdrop"
@@ -104,6 +110,13 @@ export function MecenatDialog({
                 <strong>{euros(calculation.grossAmountCents / 100)}</strong>
               </p>
               <small className="mecenat-rate-source">Barème de l’{rates.source}</small>
+              {payment?.pendingCents && pay ? (
+                <small className="mecenat-pending-preview">
+                  Sur la paie {/^[aeiou]/.test(MONTHS[pay.month]) ? "d’" : "de "}{MONTHS[pay.month]} : {euros(payment.paidCents / 100)}. Les{" "}
+                  {euros(payment.pendingCents / 100)} de majoration de 22 h à minuit attendront la
+                  régularisation annoncée pour {MECENAT_NIGHT_REGULARISATION.expected}.
+                </small>
+              ) : null}
             </section>
           ) : draft.start && draft.end ? (
             <p className="allowance-note warn">

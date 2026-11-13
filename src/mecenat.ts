@@ -1,7 +1,7 @@
 import type { WorkQuota } from "./overtime";
-import { calculateRegulatoryMecenatVacation } from "./mecenatRegulation";
+import { MECENAT_NIGHT_REGULARISATION, calculateRegulatoryMecenatVacation, mecenatPayment } from "./mecenatRegulation";
 import { matchEarlyPayment } from "./earlyPayment";
-export { MECENAT_REGULATORY_RATES, mecenatRatesFor, mecenatRateLabels } from "./mecenatRegulation";
+export { MECENAT_NIGHT_REGULARISATION, MECENAT_REGULATORY_RATES, mecenatPayment, mecenatRatesFor, mecenatRateLabels, pendingMajorationWord } from "./mecenatRegulation";
 
 export type MecenatEntry = {
   id: string;
@@ -47,16 +47,40 @@ export function mecenatForPayMonth(
   const lines = entries
     .filter((entry) => entry.payYear === year && entry.payMonth === month)
     .sort((a, b) => `${a.date}-${a.start}-${a.id}`.localeCompare(`${b.date}-${b.start}-${b.id}`));
+  const payments = lines.map(mecenatPayment);
   return {
     lines,
     totalMinutes: lines.reduce(
       (total, entry) => total + entry.dayMinutes + entry.nightMinutes,
       0,
     ),
-    grossAmountCents: lines.reduce(
-      (total, entry) => total + entry.grossAmountCents,
-      0,
-    ),
+    /** Ce que le bulletin doit verser : le barème, moins la majoration de
+     *  22 h à minuit tant qu'elle attend sa régularisation. */
+    grossAmountCents: payments.reduce((total, payment) => total + payment.paidCents, 0),
+    pendingCents: payments.reduce((total, payment) => total + payment.pendingCents, 0),
+    pendingMinutes: payments.reduce((total, payment) => total + payment.pendingMinutes, 0),
+  };
+}
+
+/** Ce que la paie verse pour ce mécénat (voir mecenatPayment). */
+export function mecenatPaidCents(entry: MecenatEntry) {
+  return mecenatPayment(entry).paidCents;
+}
+
+/** La majoration de 22 h à minuit des mécénats déjà faits, que la paie n'a
+ *  pas encore versée : ce que la régularisation devra rattraper. Une fois
+ *  versée, plus rien n'attend. */
+export function pendingNightMajoration(entries: MecenatEntry[], todayKey: string) {
+  const waiting = MECENAT_NIGHT_REGULARISATION.settledPayMonth ? [] : entries
+    .filter((entry) => entry.date <= todayKey)
+    .map((entry) => ({ entry, ...mecenatPayment(entry) }))
+    .filter((item) => item.pendingCents > 0)
+    .sort((a, b) => a.entry.date.localeCompare(b.entry.date));
+  return {
+    count: waiting.length,
+    minutes: waiting.reduce((total, item) => total + item.pendingMinutes, 0),
+    cents: waiting.reduce((total, item) => total + item.pendingCents, 0),
+    firstDate: waiting.length ? waiting[0].entry.date : null as string | null,
   };
 }
 
@@ -81,5 +105,5 @@ export function mecenatsPaidEarly(
   const candidates = entries
     .filter((entry) => entry.payYear === next.year && entry.payMonth === next.month && entry.date.slice(0, 7) <= monthKey)
     .sort((a, b) => `${a.date}-${a.start}-${a.id}`.localeCompare(`${b.date}-${b.start}-${b.id}`));
-  return { surplusCents, ...matchEarlyPayment(candidates, (entry) => entry.grossAmountCents, surplusCents) };
+  return { surplusCents, ...matchEarlyPayment(candidates, mecenatPaidCents, surplusCents) };
 }

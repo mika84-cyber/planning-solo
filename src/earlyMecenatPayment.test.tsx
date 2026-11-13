@@ -5,7 +5,7 @@ import { isMecenatLabel, isOvertimeLabel } from "./payslip";
 import { EarlyMecenatPayment, EarlyPaymentNotice } from "./PayslipVerificationCard";
 
 const entry = (id: string, date: string, grossAmountCents: number): MecenatEntry => ({
-  id, date, start: "19:00", end: "23:00", dayMinutes: 180, nightMinutes: 60,
+  id, date, start: "19:00", end: "22:00", dayMinutes: 180, nightMinutes: 0,
   grossAmountCents, payYear: 2026, payMonth: 10, updatedAt: "",
 });
 
@@ -21,7 +21,7 @@ describe("mécénat payé en avance sur le bulletin", () => {
     const html = renderToStaticMarkup(<EarlyMecenatPayment early={early} nextMonthLabel="Novembre" onConfirm={vi.fn()} />);
     expect(html).toContain("Mécénat payé en avance");
     expect(html).toContain("au mécénat suivant, prévu sur la paie de Novembre");
-    expect(html).toContain("19 h – 23 h");
+    expect(html).toContain("19 h – 22 h");
     expect(html).toContain("Confirmer : déjà payé, retiré de Novembre");
     expect(html).not.toContain("Déjà payé</button>");
   });

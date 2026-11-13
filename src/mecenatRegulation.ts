@@ -82,17 +82,13 @@ function isDayMinute(minute: number, rates: MecenatRates) {
   return clock >= rates.dayStartMinutes && clock < rates.nightStartMinutes;
 }
 
-/** Découpe une vacation entre le taux de base et le taux majoré, selon le
- *  barème du jour où elle commence ; une fin plus tôt que le début passe au
- *  lendemain. */
-export function calculateRegulatoryMecenatVacation(start: string, end: string, date?: string) {
+function splitVacation(start: string, end: string, rates: MecenatRates) {
   const from = clockMinutes(start);
   const rawTo = clockMinutes(end);
   if (from === null || rawTo === null || rawTo === from) return null;
   const to = rawTo <= from ? rawTo + 24 * 60 : rawTo;
   if (to - from > 24 * 60) return null;
 
-  const rates = mecenatRatesFor(date);
   let dayMinutes = 0;
   let nightMinutes = 0;
   for (let minute = from; minute < to; minute++) {
@@ -108,4 +104,51 @@ export function calculateRegulatoryMecenatVacation(start: string, end: string, d
         (nightMinutes / 60) * rates.nightRateCents,
     ),
   };
+}
+
+/** Découpe une vacation entre le taux de base et le taux majoré, selon le
+ *  barème du jour où elle commence ; une fin plus tôt que le début passe au
+ *  lendemain. */
+export function calculateRegulatoryMecenatVacation(start: string, end: string, date?: string) {
+  return splitVacation(start, end, mecenatRatesFor(date));
+}
+
+/** La majoration de 22 h à minuit, due depuis le 1er janvier 2024 (arrêté du
+ *  15 décembre 2023), que la paie verse encore au taux de jour, comme avant
+ *  2024. Réponse de la DRH, novembre 2026 : les états des mécénats
+ *  seront repris à la main début 2027, pour tous les agents concernés depuis
+ *  le 1er janvier 2024 ; la paie de décembre 2026, bouclée plus tôt, ne la
+ *  régularisera pas (un rappel au premier trimestre 2027 paraît raisonnable).
+ *  D'ici là, l'estimation attend ce que la paie verse vraiment et garde la
+ *  différence « à régulariser ».
+ *  Le jour où un bulletin porte la régularisation, `settledPayMonth` prend
+ *  son mois de paie (« AAAA-MM ») : les mécénats payés à partir de ce mois le
+ *  sont au barème, et plus rien n'est en attente. */
+export const MECENAT_NIGHT_REGULARISATION = {
+  from: "2024-01-01",
+  expected: "début 2027",
+  settledPayMonth: null as string | null,
+};
+
+type MecenatPaySlot = { date: string; start: string; end: string; grossAmountCents: number; payYear: number; payMonth: number };
+
+/** Ce que la paie verse pour un mécénat, et la majoration de 22 h à minuit
+ *  qui reste en attente : le barème, moins cette majoration tant qu'elle
+ *  n'est pas régularisée. */
+export function mecenatPayment(entry: MecenatPaySlot) {
+  const { from, settledPayMonth } = MECENAT_NIGHT_REGULARISATION;
+  const payKey = `${entry.payYear}-${String(entry.payMonth + 1).padStart(2, "0")}`;
+  const rates = mecenatRatesFor(entry.date);
+  const waiting = entry.date >= from && rates.nightStartMinutes < 24 * 60 && (settledPayMonth === null || payKey < settledPayMonth);
+  const due = waiting ? splitVacation(entry.start, entry.end, rates) : null;
+  const paid = waiting ? splitVacation(entry.start, entry.end, { ...rates, nightStartMinutes: 24 * 60 }) : null;
+  const pendingMinutes = due && paid ? due.nightMinutes - paid.nightMinutes : 0;
+  const pendingCents = Math.round((pendingMinutes / 60) * (rates.nightRateCents - rates.dayRateCents));
+  return { paidCents: entry.grossAmountCents - pendingCents, pendingCents, pendingMinutes };
+}
+
+/** Ce que devient cette majoration : « à régulariser », puis « rattrapés en
+ *  rappel » une fois la régularisation versée. */
+export function pendingMajorationWord() {
+  return MECENAT_NIGHT_REGULARISATION.settledPayMonth ? "rattrapés en rappel" : "à régulariser";
 }

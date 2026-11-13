@@ -6915,6 +6915,13 @@ test("les titres repas se choisissent mois par mois, depuis Ma paie ou la liste 
   // Un modèle tout prêt : 18 de janvier à octobre, 20 en novembre et décembre.
   await screen.getByRole("radio", { name: /^18 par mois/ }).click();
   await expect(screen.getByRole("radio", { name: /^18 par mois/ })).toHaveAttribute("aria-checked", "true");
+  // « Sur mesure » garde son titre sur une ligne, à côté de sa courbe ou
+  // dessous sur carte étroite, et sa courbe se lit (42 px de haut).
+  const customCard = screen.locator(".meal-vouchers-custom");
+  const titleBox = await customCard.locator(".meal-vouchers-custom-title strong").boundingBox();
+  const iconBox = await customCard.locator(".meal-vouchers-custom-title strong b").boundingBox();
+  expect(titleBox!.height).toBeLessThanOrEqual(iconBox!.height + 12);
+  expect((await customCard.locator(".meal-vouchers-custom-curve").boundingBox())!.height).toBeCloseTo(42, 0);
   // Sur mesure : les douze cases s'ouvrent sur le modèle choisi.
   await screen.getByRole("radio", { name: /^Sur mesure/ }).click();
   await expect(screen.getByRole("radio", { name: /^Sur mesure/ })).toHaveAttribute("aria-checked", "true");
@@ -7518,6 +7525,32 @@ test("un mécénat hors des règles du temps de travail est signalé sans empêc
   await startHour.selectOption("18");
   await endHour.selectOption("21");
   await expect(warning).toBeHidden();
+});
+
+test("un mécénat qui finit après 22 h garde à part la majoration que la paie ne verse pas encore", async ({ page }) => {
+  await prepareDemo(page);
+  await goToSection(page, "leave");
+  await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
+  const card = page.locator(".mecenat-balance-card");
+  await expect(card.locator(".mecenat-regularisation")).toHaveCount(0);
+  await page.locator(".mecenat-action").click();
+  const dialog = page.getByRole("dialog", { name: "Déclarer un mécénat" });
+  await dialog.locator('input[type="date"]').fill(dateKey(addDays(new Date(), -3)));
+  const [startHour, , endHour] = await dialog.getByRole("combobox").all();
+  await startHour.selectOption("19");
+  await endHour.selectOption("23");
+  // 4 h au tarif jour sur la paie suivante ; la majoration de 22 h attend.
+  await expect(dialog.locator(".mecenat-pending-preview")).toContainText(/Sur la paie d(e |’)\p{L}+ : 91,60\s€\. Les 12,10\s€ de majoration de 22 h à minuit attendront la régularisation annoncée pour début 2027\./u);
+  await dialog.getByRole("button", { name: "Enregistrer le mécénat" }).click();
+  await expect(dialog).toHaveCount(0);
+  const note = card.getByRole("region", { name: /de majoration de nuit/ });
+  await expect(note).toContainText("À régulariser · début 2027");
+  await expect(note).toContainText(/12,10\s€ de majoration de nuit/);
+  await expect(note).toContainText("1 h de 22 h à minuit sur 1 mécénat, payée au tarif jour.");
+  // L'historique dit ce que la paie verse, la majoration à part.
+  await card.getByRole("button", { name: "Voir l’historique" }).click();
+  await expect(card.locator(".mecenat-history-value").first()).toHaveText(/91,60\s€/);
+  await expect(card.locator(".mecenat-history-main small").first()).toContainText(/12,10\s€ à régulariser/);
 });
 
 test("l’administrateur indique H ou F dans les groupes, puis les choix disparaissent", async ({ page }) => {

@@ -18,7 +18,7 @@ import { DeductionSources, type DeductionSourceLine } from "./DeductionSources";
 import { ofPayMonth, payMonthKey } from "./deductionPayMonth";
 import type { sickLeaveSummaryForYear } from "./sickLeaveSummary";
 import { isMecenatLabel, isOvertimeLabel, oneOffExtraLines, oneOffExtraTotal, type inspectNetRatioCalibration } from "./payslip";
-import { mecenatRatesFor } from "./mecenat";
+import { MECENAT_NIGHT_REGULARISATION, mecenatRatesFor, pendingNightMajoration } from "./mecenat";
 import type { computePayAllowances } from "./payAllowances";
 import {
   isUnplannedPayslipCarence,
@@ -293,7 +293,9 @@ export function buildPayContent({
       ? {
           key: "mecenat",
           label: `Mécénats (${mecenatForCurrentPayMonth.lines.length})`,
-          detail: `${minutesLabel(mecenatForCurrentPayMonth.totalMinutes)} · tarifs réglementaires fixes`,
+          detail: mecenatForCurrentPayMonth.pendingCents
+            ? `${minutesLabel(mecenatForCurrentPayMonth.totalMinutes)} · majoration de 22 h à minuit en attente (${euros(mecenatForCurrentPayMonth.pendingCents / 100)})`
+            : `${minutesLabel(mecenatForCurrentPayMonth.totalMinutes)} · tarifs réglementaires fixes`,
           amount: mecenatForCurrentPayMonth.grossAmountCents / 100,
         }
       : null,
@@ -581,6 +583,16 @@ export function buildPayContent({
       reference: `article 2 de l’arrêté du 18 mai 2010, modifié par l’${rates.source}, fixe un taux majoré de ${euros(rates.nightRateCents / 100)} par heure effectuée de ${nightFrom} à 7 heures du matin`,
     };
   })();
+  // Plus de mécénats que prévu, sans dépasser la majoration de 22 h à minuit
+  // que les paies d'avant n'ont pas versée : sans doute sa régularisation.
+  const mecenatRegularisation = (() => {
+    if (payslipMecenatPaid === undefined || MECENAT_NIGHT_REGULARISATION.settledPayMonth) return null;
+    const surplus = payslipMecenatPaid - mecenatForCurrentPayMonth.grossAmountCents / 100;
+    const before = mecenatEntries.filter((entry) => entry.payYear * 12 + entry.payMonth < allowances.year * 12 + payslipMonth);
+    const pending = pendingNightMajoration(before, "9999-12-31").cents / 100;
+    if (surplus < 0.1 || surplus > pending + 0.1) return null;
+    return `sans doute la régularisation de la majoration de 22 h à minuit (${euros(pending)} en attente depuis le 1er janvier 2024)`;
+  })();
   // Des taux de cotisations recalés par la lecture du bulletin.
   const ratesRecalibrated = snapshot !== null &&
     (Math.abs(snapshot.netRatioFixed - netRatioFixed) >= 0.01 || Math.abs(snapshot.netRatioVariable - netRatioVariable) >= 0.01);
@@ -601,7 +613,7 @@ export function buildPayContent({
           ...(ratesRecalibrated ? { "contributions-other": "taux de cotisations recalés sur ce bulletin" } : {}),
         },
         details: {
-          ...(mecenatNight ? { mecenat: mecenatNight.detail } : {}),
+          ...(mecenatNight ? { mecenat: mecenatNight.detail } : mecenatRegularisation ? { mecenat: mecenatRegularisation } : {}),
           ...(ratesRecalibrated ? { "contributions-other": "les taux de l’estimation ne suivaient pas encore vos bulletins" } : {}),
         },
         references: mecenatNight ? { mecenat: mecenatNight.reference } : undefined,

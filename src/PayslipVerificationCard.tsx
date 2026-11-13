@@ -4,7 +4,7 @@ import { euros } from "./appModel";
 import { MONTHS, MONTH_OPTIONS, YEAR_OPTIONS, s, sundayCountLabel } from "./planningLogic";
 import { minutesLabel, type OvertimeEntry } from "./overtime";
 import { matchEarlyPayment } from "./earlyPayment";
-import { mecenatForPayMonth, mecenatsPaidEarly, type MecenatEntry } from "./mecenat";
+import { mecenatForPayMonth, mecenatPaidCents, mecenatsPaidEarly, type MecenatEntry } from "./mecenat";
 import { payslipGapChoices, type PayslipGapAction, type PayslipGapChoice } from "./payslipGapChoices";
 import { payslipGapRecord, type PayslipGapLine } from "./payslipGapExplanation";
 import { PayslipDecisionOptions, PayslipGapResult, signedEuros } from "./PayslipGapResult";
@@ -156,7 +156,7 @@ export function EarlyMecenatPayment({
     <EarlyPaymentNotice
       kind="mecenat"
       surplusCents={early.surplusCents}
-      items={early.candidates.map((entry) => ({ id: entry.id, label: mecenatSlotLabel(entry), cents: entry.grossAmountCents }))}
+      items={early.candidates.map((entry) => ({ id: entry.id, label: mecenatSlotLabel(entry), cents: mecenatPaidCents(entry) }))}
       matchedIds={early.matched.map((entry) => entry.id)}
       nextMonthLabel={nextMonthLabel}
       onConfirm={(ids) => onConfirm(early.candidates.filter((entry) => ids.includes(entry.id)))}

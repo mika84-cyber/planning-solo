@@ -3,6 +3,46 @@ import { describe, expect, it, vi } from "vitest";
 import { PayEstimateDetails } from "./PayEstimateDetails";
 
 describe("détail mensuel de la paie", () => {
+  it("détaille ce que la paie verse pour chaque mécénat, la majoration de 22 h à minuit à part", () => {
+    const html = renderToStaticMarkup(
+      <PayEstimateDetails
+        monthIndex={10}
+        year={2026}
+        gross={2600}
+        grossEstimateComplete
+        net={2000}
+        calculation={{
+          grossComposition: [{ key: "base", label: "Traitement indiciaire", detail: "mensuel", amount: 2000 }],
+          grossDeductions: [],
+          grossBeforeDeductions: 2600,
+          variableAdditions: 0,
+          netRatioFixed: 79,
+          netRatioVariable: 86,
+          estimatedContributions: 500,
+          navigo: 0,
+          mealVoucherDeduction: 0,
+          netBeforeTax: 2100,
+          pasRate: 0,
+          incomeTax: 0,
+          totalDeductions: 500,
+        }}
+        overtime={{ totalMinutes: 0, performedMonth: 9, performedYear: 2026, ready: false, amount: 0, hourlyBase: 0, lines: [] }}
+        workQuota="full"
+        mecenat={{
+          grossAmountCents: 9160,
+          pendingCents: 1210,
+          lines: [{ id: "m1", date: "2026-10-12", start: "19:00", end: "23:00", dayMinutes: 180, nightMinutes: 60, grossAmountCents: 10370, payYear: 2026, payMonth: 10 }],
+        }}
+        reliability={{ tone: "exact", label: "Estimation", detail: "" }}
+        onPreviousMonth={vi.fn()}
+        onNextMonth={vi.fn()}
+        onToday={vi.fn()}
+      />,
+    );
+    expect(html).toMatch(/De 22 h à minuit, la paie verse encore le tarif jour : les 12,10\s€ de majoration attendent la régularisation annoncée pour début 2027\./);
+    expect(html).toMatch(/<span>4 h tarif jour \(91,60\s€\) · 12,10\s€ à régulariser<\/span><\/div><strong>91,60\s€<\/strong>/);
+  });
+
   it("affiche le mois, le brut, le net et les commandes de navigation", () => {
     const html = renderToStaticMarkup(
       <PayEstimateDetails

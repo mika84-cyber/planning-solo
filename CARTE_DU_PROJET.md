@@ -746,6 +746,19 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/mecenat.ts` / `src/mecenatRegulation.ts` : calcul des mécénats, au
   barème du jour de la vacation (décret n° 2010-147, arrêté du 18 mai 2010
   modifié ; depuis 2024, 22,90 € de 7 h à 22 h et 35 € de 22 h à 7 h).
+  La paie verse encore les heures de 22 h à minuit au tarif jour : la DRH
+  (novembre 2026) reprendra les états début 2027, depuis le 1er janvier 2024,
+  rien sur la paie de décembre 2026. `MECENAT_NIGHT_REGULARISATION` porte cet
+  état ; `mecenatPayment(entry)` donne ce que la paie verse et la majoration
+  en attente. `mecenatForPayMonth` attend donc sur le bulletin le montant
+  versé (`grossAmountCents`) et garde `pendingCents` / `pendingMinutes` ; le
+  montant enregistré du mécénat reste celui du barème. La carte Mécénats
+  dit le total en attente (`MecenatRegularisationNote`,
+  `pendingNightMajoration`), l'historique, le détail de Ma paie et la
+  déclaration disent ce que la paie verse et ce qui attend ; un bulletin qui
+  paie plus que prévu, dans la limite de la majoration en attente, l'explique
+  par la régularisation. Quand elle sera versée : `settledPayMonth` = mois de
+  paie qui la porte (« AAAA-MM »).
 - Dates d'inscription aux mécénats (`MecenatSignup`, `user/<id>/mecenat-signup/`,
   actions `save-mecenat-signup` / `delete-mecenat-signup`, lues dans
   `mecenat_signups`) : dans la carte Mécénats, « Mes dates d'inscription »

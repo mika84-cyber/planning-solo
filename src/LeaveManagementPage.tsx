@@ -1,10 +1,11 @@
 import { useMemo, useRef, type ReactNode } from "react";
 import { useHelpTarget } from "./helpTargets";
+import { MecenatRegularisationNote } from "./MecenatRegularisationNote";
 import { MecenatSignupList } from "./MecenatSignupList";
 import { euros } from "./appModel";
-import { MECENAT_REGULATORY_RATES, mecenatRateLabels, type MecenatEntry, type MecenatSignup } from "./mecenat";
+import { MECENAT_REGULATORY_RATES, mecenatRateLabels, pendingNightMajoration, type MecenatEntry, type MecenatSignup } from "./mecenat";
 import { minutesLabel, overtimePayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
-import { MONTHS, s } from "./planningLogic";
+import { MONTHS, dateKey, s } from "./planningLogic";
 import { archivedRequestDate, type ArchivedRequest } from "./useRequestArchive";
 import { MecenatHistoryList, WorkTimeHistoryList } from "./WorkTimeHistory";
 
@@ -106,6 +107,8 @@ export function LeaveManagementPage({
   onOpenArchivedRequest,
   onDeleteArchivedRequest,
 }: LeaveManagementPageProps) {
+  const todayKey = dateKey(new Date());
+  const pendingMajoration = useMemo(() => pendingNightMajoration(mecenatEntries, todayKey), [mecenatEntries, todayKey]);
   const historyItems = useMemo(
     () => workTimeHistoryItems(overtimeEntries, holidayRecoveryEarnings, recoveryUses),
     [overtimeEntries, holidayRecoveryEarnings, recoveryUses],
@@ -215,6 +218,7 @@ export function LeaveManagementPage({
               <article><span>{mecenatRateLabels().day}</span><strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong></article>
               <article><span>{mecenatRateLabels().night}</span><strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong></article>
             </div>
+            <MecenatRegularisationNote pending={pendingMajoration} todayKey={todayKey} />
             {/* Les trois actions sur une rangée : déclarer, puis les deux
                 volets qui s'ouvrent dessous — les dates où l'on s'est inscrit
                 (à retenir ou à effacer) et l'historique. Sur téléphone, elles

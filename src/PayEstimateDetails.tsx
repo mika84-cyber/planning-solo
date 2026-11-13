@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { euros } from "./appModel";
 import { type HelpTarget, useHelpTarget } from "./helpTargets";
-import { MECENAT_REGULATORY_RATES } from "./mecenat";
+import { MECENAT_NIGHT_REGULARISATION, MECENAT_REGULATORY_RATES, mecenatPayment, pendingMajorationWord } from "./mecenat";
 import { minutesLabel, type WorkQuota } from "./overtime";
 import { MONTHS, fromKey, longDate } from "./planningLogic";
 import { PayMonthNav } from "./PayMonthNav";
@@ -52,6 +52,8 @@ type OvertimePayDetails = {
 
 type MecenatPayDetails = {
   grossAmountCents: number;
+  /** La majoration de 22 h à minuit que la paie ne verse pas encore. */
+  pendingCents?: number;
   lines: Array<{
     id: string;
     date: string;
@@ -60,6 +62,8 @@ type MecenatPayDetails = {
     dayMinutes: number;
     nightMinutes: number;
     grossAmountCents: number;
+    payYear: number;
+    payMonth: number;
   }>;
 };
 
@@ -180,32 +184,46 @@ export function PayEstimateDetails({
             {euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h de 7 h à 22 h ·{" "}
             {euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h de 22 h à 7 h.
           </p>
+          {mecenat.pendingCents && !MECENAT_NIGHT_REGULARISATION.settledPayMonth ? (
+            <p className="mecenat-pending-note">
+              De 22 h à minuit, la paie verse encore le tarif jour : les{" "}
+              {euros(mecenat.pendingCents / 100)} de majoration attendent la
+              régularisation annoncée pour {MECENAT_NIGHT_REGULARISATION.expected}.
+            </p>
+          ) : null}
           <div className="overtime-pay-lines">
-            {mecenat.lines.map((entry) => (
-              <article key={entry.id}>
-                <div>
-                  <strong>
-                    {longDate(fromKey(entry.date))} · {entry.start} → {entry.end}
-                  </strong>
-                  <span>
-                    {entry.dayMinutes
-                      ? `${minutesLabel(entry.dayMinutes)} tarif jour (${euros(
-                          (entry.dayMinutes / 60) *
-                            (MECENAT_REGULATORY_RATES.dayRateCents / 100),
-                        )})`
-                      : ""}
-                    {entry.dayMinutes && entry.nightMinutes ? " · " : ""}
-                    {entry.nightMinutes
-                      ? `${minutesLabel(entry.nightMinutes)} tarif nuit (${euros(
-                          (entry.nightMinutes / 60) *
-                            (MECENAT_REGULATORY_RATES.nightRateCents / 100),
-                        )})`
-                      : ""}
-                  </span>
-                </div>
-                <strong>{euros(entry.grossAmountCents / 100)}</strong>
-              </article>
-            ))}
+            {mecenat.lines.map((entry) => {
+              // Les minutes de 22 h à minuit encore payées au tarif jour.
+              const payment = mecenatPayment(entry);
+              const dayMinutes = entry.dayMinutes + payment.pendingMinutes;
+              const nightMinutes = entry.nightMinutes - payment.pendingMinutes;
+              return (
+                <article key={entry.id}>
+                  <div>
+                    <strong>
+                      {longDate(fromKey(entry.date))} · {entry.start} → {entry.end}
+                    </strong>
+                    <span>
+                      {dayMinutes
+                        ? `${minutesLabel(dayMinutes)} tarif jour (${euros(
+                            (dayMinutes / 60) *
+                              (MECENAT_REGULATORY_RATES.dayRateCents / 100),
+                          )})`
+                        : ""}
+                      {dayMinutes && nightMinutes ? " · " : ""}
+                      {nightMinutes
+                        ? `${minutesLabel(nightMinutes)} tarif nuit (${euros(
+                            (nightMinutes / 60) *
+                              (MECENAT_REGULATORY_RATES.nightRateCents / 100),
+                          )})`
+                        : ""}
+                      {payment.pendingCents ? ` · ${euros(payment.pendingCents / 100)} ${pendingMajorationWord()}` : ""}
+                    </span>
+                  </div>
+                  <strong>{euros(payment.paidCents / 100)}</strong>
+                </article>
+              );
+            })}
           </div>
         </div>
       ) : null}

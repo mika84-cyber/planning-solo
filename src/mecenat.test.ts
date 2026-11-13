@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   MECENAT_REGULATORY_RATES,
+  MECENAT_NIGHT_REGULARISATION,
   calculateMecenatVacation,
+  mecenatPayment,
   mecenatRateLabels,
+  pendingMajorationWord,
+  pendingNightMajoration,
   mecenatRatesFor,
   mecenatForPayMonth,
   mecenatsPaidEarly,
@@ -91,13 +95,52 @@ describe("rattachement à la paie", () => {
       9,
     );
     expect(result.lines).toHaveLength(1);
-    expect(result.grossAmountCents).toBe(13870);
+    // Le bulletin verse 22 h – minuit au tarif jour : 138,70 € moins 2 × 12,10 €.
+    expect(result.grossAmountCents).toBe(11450);
+    expect(result.pendingCents).toBe(2420);
+    expect(result.pendingMinutes).toBe(120);
+  });
+});
+
+describe("majoration de 22 h à minuit en attente de régularisation", () => {
+  const slot = (date: string, start: string, end: string, payMonth = 10) => {
+    const calculation = calculateMecenatVacation(start, end, "full", date)!;
+    return { id: `${date}-${start}`, date, start, end, ...calculation, payYear: Number(date.slice(0, 4)), payMonth, updatedAt: "" };
+  };
+
+  it("retire du versement attendu les heures de 22 h à minuit au taux majoré, et les garde à part", () => {
+    // 19 h – minuit : 2 h majorées dues, versées au tarif jour.
+    expect(mecenatPayment(slot("2026-10-12", "19:00", "00:00"))).toEqual({ paidCents: 11450, pendingCents: 2420, pendingMinutes: 120 });
+    // Après minuit, la paie verse déjà le taux majoré : seule l'heure de 23 h manque.
+    expect(mecenatPayment(slot("2026-10-12", "23:00", "02:00"))).toEqual({ paidCents: 9290, pendingCents: 1210, pendingMinutes: 60 });
+    // Fini à 22 h : rien en attente.
+    expect(mecenatPayment(slot("2026-10-12", "18:00", "22:00")).pendingCents).toBe(0);
+    // Avant 2024, le taux majoré ne commençait qu'à minuit.
+    expect(mecenatPayment(slot("2023-12-30", "19:00", "00:00", 0)).pendingCents).toBe(0);
+  });
+
+  it("additionne ce que la régularisation devra rattraper sur les mécénats déjà faits", () => {
+    const entries = [slot("2026-10-12", "19:00", "00:00"), slot("2026-11-05", "19:30", "23:00"), slot("2026-12-04", "19:00", "00:00", 11), slot("2026-10-20", "18:00", "22:00")];
+    expect(pendingNightMajoration(entries, "2026-11-13")).toEqual({ count: 2, minutes: 180, cents: 3630, firstDate: "2026-10-12" });
+    expect(pendingMajorationWord()).toBe("à régulariser");
+  });
+
+  it("une fois la régularisation versée, paie au barème et n'attend plus rien", () => {
+    MECENAT_NIGHT_REGULARISATION.settledPayMonth = "2027-02";
+    try {
+      expect(mecenatPayment(slot("2027-02-10", "19:00", "00:00", 2)).pendingCents).toBe(0);
+      expect(mecenatPayment(slot("2026-12-04", "19:00", "00:00", 0)).pendingCents).toBe(2420);
+      expect(pendingNightMajoration([slot("2026-10-12", "19:00", "00:00")], "2027-03-01").cents).toBe(0);
+      expect(pendingMajorationWord()).toBe("rattrapés en rappel");
+    } finally {
+      MECENAT_NIGHT_REGULARISATION.settledPayMonth = null;
+    }
   });
 });
 
 describe("mécénat payé en avance", () => {
   const entry = (id: string, date: string, grossAmountCents: number, payMonth: number) => ({
-    id, date, start: "19:00", end: "23:00", dayMinutes: 180, nightMinutes: 60,
+    id, date, start: "19:00", end: "22:00", dayMinutes: 180, nightMinutes: 0,
     grossAmountCents, payYear: 2026, payMonth, updatedAt: "",
   });
 

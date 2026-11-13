@@ -3,7 +3,7 @@ import type { MecenatEntry } from "./mecenat";
 import { payslipGapChoices, unpaidMecenats, type PayslipGapContext } from "./payslipGapChoices";
 
 const entry = (id: string, date: string, grossAmountCents: number): MecenatEntry => ({
-  id, date, start: "19:00", end: "23:00", dayMinutes: 180, nightMinutes: 60,
+  id, date, start: "19:00", end: "22:00", dayMinutes: 180, nightMinutes: 0,
   grossAmountCents, payYear: 2026, payMonth: 9, updatedAt: "",
 });
 

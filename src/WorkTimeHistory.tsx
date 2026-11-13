@@ -1,5 +1,5 @@
 import { euros } from "./appModel";
-import type { MecenatEntry } from "./mecenat";
+import { mecenatPayment, pendingMajorationWord, type MecenatEntry } from "./mecenat";
 import { minutesLabel, overtimePayPeriod, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import { MONTHS, fromKey } from "./planningLogic";
 import "./workTimeHistory.css";
@@ -238,14 +238,16 @@ function payOf(month: string) {
 }
 
 /** Mécénats : un bloc par mois, une ligne par soirée, séparées d'un trait.
- *  Le mois de paie, commun d'ordinaire, se lit une fois dans l'en-tête. */
+ *  Le mois de paie, commun d'ordinaire, se lit une fois dans l'en-tête. Les
+ *  montants sont ceux que la paie verse ; la majoration de 22 h à minuit qui
+ *  attend sa régularisation se dit à part. */
 export function MecenatHistoryList({ entries, onDelete, today = new Date() }: { entries: MecenatEntry[]; onDelete: (entry: MecenatEntry) => void; today?: Date }) {
   return (
     <>
       {groupByMonth(entries, inDateOrder).map((group) => {
         const payMonths = new Set(group.items.map((entry) => `${entry.payYear}-${entry.payMonth}`));
         const sharedPay = payMonths.size === 1 ? group.items[0] : null;
-        const total = euros(group.items.reduce((sum, entry) => sum + entry.grossAmountCents, 0) / 100);
+        const total = euros(group.items.reduce((sum, entry) => sum + mecenatPayment(entry).paidCents, 0) / 100);
         return (
           <section key={group.key} className="history-month" aria-label={group.label}>
             <h4>
@@ -257,6 +259,7 @@ export function MecenatHistoryList({ entries, onDelete, today = new Date() }: { 
                 const day = fromKey(entry.date);
                 const weekday = day.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "");
                 const past = entry.date < dayKeyOf(today);
+                const payment = mecenatPayment(entry);
                 return (
                   <li key={entry.id} className={`mecenat-history-row${past ? " is-past" : ""}`}>
                     <time className="mecenat-history-date" dateTime={entry.date}>
@@ -271,10 +274,11 @@ export function MecenatHistoryList({ entries, onDelete, today = new Date() }: { 
                       <small>
                         {minutesLabel(entry.dayMinutes + entry.nightMinutes)}
                         {entry.nightMinutes ? ` · dont ${minutesLabel(entry.nightMinutes)} de nuit` : ""}
+                        {payment.pendingCents ? ` · ${euros(payment.pendingCents / 100)} ${pendingMajorationWord()}` : ""}
                         {sharedPay ? "" : ` · ${payOf(MONTHS[entry.payMonth])} ${entry.payYear}`}
                       </small>
                     </span>
-                    <span className="mecenat-history-value">{euros(entry.grossAmountCents / 100)}</span>
+                    <span className="mecenat-history-value">{euros(payment.paidCents / 100)}</span>
                     <button type="button" className="mecenat-history-delete" onClick={() => onDelete(entry)} aria-label={`Supprimer : ${fullDate(entry.date)}`}>
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12M10.5 10.5v6M13.5 10.5v6" /></svg>
                     </button>
