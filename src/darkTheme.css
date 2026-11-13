@@ -101,7 +101,7 @@ html[data-theme="dark"] .top-header :is(.account-button:not(.open), .header-upda
 html[data-theme="dark"] .grand-palais-summary-list strong { color: color-mix(in srgb, var(--venue-accent) 45%, #fff); }
 html[data-theme="dark"] .app-shell .grand-palais-summary-list button:hover { background: color-mix(in srgb, var(--venue-accent) 22%, transparent); }
 /* Mise en route : le reste à faire se voit sous la barre verte. */
-html[data-theme="dark"] .home-setup-progress { background: rgba(255, 255, 255, 0.12); }
+html[data-theme="dark"] .app-shell .home-setup-checklist { --setup-ok: #5fae88; --setup-ok-on: #10211a; --setup-todo: #d08a68; --setup-todo-on: #1d1612; --setup-todo-ink: #e2a383; --setup-todo-soft: #3a2a22; --setup-track: #3a3531; --setup-line: #3a3531; }
 
 /* Échanges : le jour cédé garde le noir des repos, le jour repris le beige
    des jours travaillés ; le filet turquoise reste celui du mode clair. */
@@ -174,9 +174,8 @@ html[data-theme="dark"] .cet-window-reminder { border-left-color: #bcb0a0; }
 html[data-theme="dark"] .cet-window-reminder :is(.step-label, .cet-window-reminder-later) { color: #d6cbbb; }
 html[data-theme="dark"] .cet-window-reminder .step-label.urgent { color: #f0b98a; }
 html[data-theme="dark"] .cet-window-reminder .cet-window-reminder-go { border-color: #bcb0a0; background: #bcb0a0; color: #211c18; }
-html[data-theme="dark"] .cet-ticker { border-color: #7a6f5f; background: #5d5447; }
-html[data-theme="dark"] .cet-ticker-label { background: #bcb0a0; color: #211c18; }
-html[data-theme="dark"] .cet-ticker.urgent .cet-ticker-label { background: #f0b98a; }
+html[data-theme="dark"] .cet-ticker { --base: #bcb0a0; --label: #d6cbbb; --more: #d6cbbb; --sep: #8f8474; }
+html[data-theme="dark"] .cet-ticker.urgent { --ink: #f0b98a; --label: #f0b98a; --fill: #f0b98a; }
 html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #1f3327; --tile-ink: #8fd1a8; }
 html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #1f2a3a; --tile-ink: #9ec0ec; }
 /* Dossiers de formulaires et annuaires : icône, lettre, flèche et nombre de
@@ -259,9 +258,6 @@ html[data-theme="dark"] .contact-theme-row { border-left-color: color-mix(in srg
 html[data-theme="dark"] .contact-theme-number { background: color-mix(in srgb, var(--tone) 18%, #1f1d1b); color: #f3ede6; }
 html[data-theme="dark"] .contact-theme-number > span,
 html[data-theme="dark"] .contact-theme-sms { background: color-mix(in srgb, var(--tone) 65%, #fff); color: #1d1916; }
-html[data-theme="dark"] .payslip-gap-choice { border-color: #4a3a2d; border-left-color: #c9754f; background: #2a241f; }
-html[data-theme="dark"] .payslip-gap-choice p { color: #d8cfc4; }
-html[data-theme="dark"] .payslip-gap-choice p strong, html[data-theme="dark"] .payslip-gap-choices h4 { color: #f0c3ad; }
 /* Congé posé un jour de fermeture : sa nature (CA, RTT…) reste lisible
    par-dessus le tampon CLOSED, en clair détouré de sombre, sans encadré. */
 html[data-theme="dark"] .calendar-grid .day.exceptional-closure-day > .leave-calendar-marker { color: #f3ede6; text-shadow: 0 1px 0 #1d1916, 1px 0 0 #1d1916, -1px 0 0 #1d1916, 0 -1px 0 #1d1916; }

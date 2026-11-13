@@ -74,8 +74,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   posés », ou « Vous avez un CET ? » tant qu’il n’est pas renseigné (avec
   « Je n’ai pas de CET », qui enregistre un compte désactivé). Compte à
   rebours orangé à partir du 24 décembre. Disparaît une fois l’alimentation
-  de l’année enregistrée. « Plus tard » la replie en bandeau taupe dont le
-  texte défile comme un flash info (`.cet-ticker`, `cetTickerParts`), sur
+  de l’année enregistrée. « Plus tard » la replie en bandeau dont le texte
+  défile comme un flash info (`.cet-ticker`, `cetTickerParts`) : le liseré
+  taupe de la carte, « CET » en étiquette, les phrases en italique séparées
+  par des losanges, et un filet en bas qui avance du 15 novembre au
+  31 décembre (`cetWindowElapsed`) ; orangés la dernière semaine. Sur
   l’appareil seulement : elle le reste les jours suivants et ne se redéplie
   d’elle-même que le 24 décembre ; touché, le bandeau la redéplie. Le
   défilement s’arrête sous le doigt, la souris ou le clavier, et pas du tout
@@ -325,6 +328,16 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   deux lignes par colonne jusqu'à quatre blocs, trois au-delà, filet
   vertical entre elles). Les cartes côte à côte ont été retirées le
   4 novembre 2026 : à 160 px, libellés sur trois lignes et note illisible.
+  « Mise en route » (depuis le 13 novembre 2026) : un anneau dit les étapes
+  réglées (faites ou écartées), une frise les montre toutes (rond coché,
+  numéro, tiret si écartée), et une carte met en avant l’étape à faire avec
+  son bouton (`action` : « Choisir », « Renseigner »… ; `short` donne son nom
+  dans la frise, `HomeSectionScreen`). Toucher une étape de la frise la met
+  dans la carte ; « Pas maintenant » l’écarte et passe à la suivante,
+  « Reprendre » la rouvre. Disparaît quand tout est fait ou écarté (mémoire
+  `planning:setup-dismissed-v1:*`). Styles en fin de `homeOverview.css`,
+  sombre dans `darkTheme.css` ; elle garde le cadre et l’en-tête crème
+  communs (`.home-setup-alert`, `productRefinements.css`).
 - « Liste des raccourcis » (anciennement « Que cherchez-vous ? », renommée le
   1er novembre 2026) : une petite pastille crème au même endroit de
   chaque en-tête, en bas à gauche — trois lignes de liste dans un

@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useState, type CSSProperties, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { noteLines, type NoteListItem } from "./appModel";
 import { NotesPanelContent } from "./PlanningView";
 import "./sharedNotes.css";
@@ -45,15 +45,29 @@ function extraWorkHours(item: { start: string; end: string }) {
   return `${clock(item.start)} – ${clock(item.end)}`;
 }
 
-/** Une étape de « Pour bien démarrer » : faite, elle reste cochée dans la
- *  liste ; à faire, toute la ligne mène à l'écran où elle se règle. */
+/** Une étape de « Pour bien démarrer » : faite, elle est cochée dans la
+ *  frise ; à faire, elle passe dans la carte de l'étape suivante, dont le
+ *  bouton mène à l'écran où elle se règle. */
 export type HomeSetupItem = {
   id: string;
   title: string;
   detail: string;
   done: boolean;
   onAction: () => void;
+  /** Son nom dans la frise : « Groupe », « Fériés »… */
+  short?: string;
+  /** Le verbe de son bouton : « Choisir », « Renseigner »… */
+  action?: string;
 };
+
+/** Le pictogramme de chaque étape, dans la carte de l'étape suivante. */
+const SETUP_ICONS: Record<string, ReactNode> = {
+  "planning-group": <path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.5 19c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5M16 5.3a3 3 0 0 1 0 5.4M17.5 14.6c1.6.5 2.6 1.9 3 4.4" />,
+  "pay-profile": <><rect x="5" y="3" width="14" height="18" rx="2.5" /><path d="M8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5v3M8.5 18.5h.01M12 18.5h.01" /></>,
+  "holiday-choice": <path d="m12 3.8 2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8Z" />,
+  "payslip-upload": <><path d="M7 3h7l4 4v14H7Z" /><path d="M14 3v4h4M10 12h5M10 16h5" /></>,
+};
+const SETUP_CHECK = <svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7" /></svg>;
 
 type HomeDashboardProps = {
   now: Date;
@@ -120,12 +134,17 @@ export function HomeDashboard({
       return [];
     }
   });
-  /* Toutes les étapes restent visibles : cochées une fois faites, grisées
-     si on a choisi de ne pas les remplir (« Reprendre » les rouvre). La liste
-     disparaît quand chacune est faite ou écartée. */
+  /* Toutes les étapes restent dans la frise : cochées une fois faites,
+     marquées d'un tiret si on a choisi de ne pas les remplir. La carte montre
+     l'étape suivante, ou celle touchée dans la frise (une étape écartée s'y
+     reprend). La mise en route disparaît quand chacune est faite ou écartée. */
   const skippedSetup = (item: HomeSetupItem) => !item.done && dismissedSetupItems.includes(item.id);
   const setupHandled = setupItems.filter((item) => item.done || skippedSetup(item)).length;
   const setupVisible = setupHandled < setupItems.length;
+  const [selectedSetup, setSelectedSetup] = useState<string | null>(null);
+  const setupCurrent = setupItems.find((item) => item.id === selectedSetup && !item.done)
+    ?? setupItems.find((item) => !item.done && !skippedSetup(item));
+  const setupCurrentSkipped = setupCurrent ? skippedSetup(setupCurrent) : false;
   const setSkipped = (id: string, skipped: boolean) => {
     setDismissedSetupItems((current) => {
       const next = skipped ? [...new Set([...current, id])] : current.filter((item) => item !== id);
@@ -164,61 +183,87 @@ export function HomeDashboard({
 
   return (
     <>
-      {setupVisible ? (
+      {setupVisible && setupCurrent ? (
         <section className="home-setup-alert home-setup-checklist" aria-labelledby="home-setup-title" aria-live="polite">
           <header>
             <div>
               <span className="step-label">Pour bien démarrer</span>
-              <h2 id="home-setup-title">Mise en route : {setupHandled} sur {setupItems.length}</h2>
+              <h2 id="home-setup-title">Mise en route</h2>
+            </div>
+            <div
+              className="home-setup-ring"
+              role="progressbar"
+              aria-label="Étapes terminées"
+              aria-valuemin={0}
+              aria-valuemax={setupItems.length}
+              aria-valuenow={setupHandled}
+              aria-valuetext={`${setupHandled} sur ${setupItems.length}`}
+              style={{ "--done": `${(setupHandled / setupItems.length) * 100}%` } as CSSProperties}
+            >
+              <b>{setupHandled}</b>
+              <small>sur {setupItems.length}</small>
             </div>
           </header>
-          <div
-            className="home-setup-progress"
-            role="progressbar"
-            aria-label="Étapes terminées"
-            aria-valuemin={0}
-            aria-valuemax={setupItems.length}
-            aria-valuenow={setupHandled}
-          >
-            <span style={{ width: `${(setupHandled / setupItems.length) * 100}%` }} />
-          </div>
+          {/* La frise : chaque étape à faire se touche pour passer dans la carte. */}
           <ol className="home-setup-steps">
             {setupItems.map((item, index) => {
               const skipped = skippedSetup(item);
-              /* Toute la ligne mène à l'écran où l'étape se règle ; « Pas
-                 maintenant » se lit dans son explication, sans bouton à part. */
+              const current = item.id === setupCurrent.id;
+              const mark = <span className="home-setup-mark" aria-hidden="true">{item.done ? SETUP_CHECK : skipped ? "–" : index + 1}</span>;
+              const name = <small aria-hidden="true">{item.short || item.title}</small>;
               return (
-                <li key={item.id} className={item.done ? "done" : skipped ? "skipped" : undefined}>
-                  <div className="home-setup-row">
-                    <span className="home-setup-mark" aria-hidden="true">{item.done ? "✓" : skipped ? "–" : index + 1}</span>
-                    <span className="home-setup-text">
-                      {item.done || skipped
-                        ? <strong>{item.title}</strong>
-                        : <button className="home-setup-main" type="button" onClick={item.onAction}><strong>{item.title}</strong></button>}
-                      <small>
-                        {skipped ? "Pas maintenant" : item.detail}
-                        {item.done ? <span className="home-setup-hidden"> · Fait</span> : (
-                          <>
-                            <button
-                              className="home-setup-skip"
-                              type="button"
-                              onClick={() => setSkipped(item.id, !skipped)}
-                              aria-label={skipped ? `Reprendre : ${item.title}` : `Ne pas remplir : ${item.title}`}
-                            >
-                              {skipped ? "Reprendre" : "Pas maintenant"}
-                            </button>
-                          </>
-                        )}
-                      </small>
-                    </span>
-                    {item.done || skipped ? null : <span className="home-setup-chevron" aria-hidden="true">›</span>}
-                  </div>
+                <li key={item.id} className={[item.done ? "done" : "", skipped ? "skipped" : "", current ? "current" : ""].filter(Boolean).join(" ") || undefined}>
+                  {item.done ? (
+                    <>{mark}{name}<span className="home-setup-hidden">{item.title} : {item.detail} · Fait</span></>
+                  ) : (
+                    <button
+                      className="home-setup-step"
+                      type="button"
+                      aria-label={`${item.title} : ${skipped ? "Pas maintenant" : item.detail}`}
+                      aria-current={current ? "step" : undefined}
+                      onClick={() => setSelectedSetup(item.id)}
+                    >
+                      {mark}{name}
+                    </button>
+                  )}
                 </li>
               );
             })}
           </ol>
+          <div className={`home-setup-next${setupCurrentSkipped ? " skipped" : ""}`}>
+            <span className="home-setup-icon" aria-hidden="true"><svg viewBox="0 0 24 24">{SETUP_ICONS[setupCurrent.id] ?? SETUP_ICONS["holiday-choice"]}</svg></span>
+            <span className="home-setup-text">
+              <span className="home-setup-kicker">Étape {setupItems.indexOf(setupCurrent) + 1} · {setupCurrentSkipped ? "pas maintenant" : "à faire"}</span>
+              <strong>{setupCurrent.title}</strong>
+              <small>{setupCurrent.detail}</small>
+            </span>
+            <button
+              className="home-setup-go"
+              type="button"
+              onClick={setupCurrent.onAction}
+              aria-label={`${setupCurrent.action || "Commencer"} : ${setupCurrent.title}`}
+            >
+              {setupCurrent.action || "Commencer"}
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+            </button>
+          </div>
+          {/* Le même bouton écarte l'étape, ou la reprend : le clavier y reste. */}
+          <div className="home-setup-later">
+            <button
+              className="home-setup-skip"
+              type="button"
+              onClick={() => {
+                setSkipped(setupCurrent.id, !setupCurrentSkipped);
+                if (!setupCurrentSkipped) setSelectedSetup(null);
+              }}
+              aria-label={setupCurrentSkipped ? `Reprendre : ${setupCurrent.title}` : `Ne pas remplir : ${setupCurrent.title}`}
+            >
+              {setupCurrentSkipped ? "Reprendre" : "Pas maintenant"}
+            </button>
+          </div>
           {/* Un conseil, pas une étape : rien à cocher. */}
           <p className="home-setup-tip">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3Z" /></svg>
             <span><b>Conseil :</b> enregistrez tous vos congés de l’année, déjà pris comme à venir. L’application en a besoin pour calculer la prime des dimanches et le détail de vos soldes.</span>
           </p>
         </section>

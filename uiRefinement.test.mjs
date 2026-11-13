@@ -205,11 +205,11 @@ describe("finitions d’interface", () => {
   it("présente les repères du jour en blocs, la journée en tête et le prochain férié travaillé", () => {
     const refinements = loadStylesheets([new URL("./src/productRefinements.css", import.meta.url)]);
     const overview = loadStylesheets([new URL("./src/homeOverview.css", import.meta.url)]);
-    const home = readFileSync(new URL("./src/HomeDashboard.tsx", import.meta.url), "utf8");
-    // L'ancienne fiche en grille et la page d'éphéméride ne reviennent pas.
+    // L'ancienne fiche en grille ne revient pas. Les blocs eux-mêmes (leur
+    // ordre, le prochain férié travaillé, pas d'éphéméride) : test de rendu
+    // dans src/HomeDashboard.test.tsx.
     expect(css.anywhere(".today-overview-grid")).toBe(false);
     expect(refinements.mentions(".today-overview-grid")).toBe(false);
-    expect(home).not.toContain("ephemeris");
     // Des lignes empilées sur téléphone et sur le Z Fold ouvert (tactile,
     // jusqu'à 1100 px) ; sur grand écran, les mêmes lignes en deux colonnes
     // lues de haut en bas (la disposition est mesurée par le scénario e2e).
@@ -217,7 +217,6 @@ describe("finitions d’interface", () => {
     expect(overview.hasMedia("(min-width: 1101px), (min-width: 721px) and (pointer: fine)")).toBe(true);
     expect(overview.declaresTogether({ "grid-template-columns": "repeat(2, minmax(0, 1fr))", "grid-auto-flow": "column" })).toBe(true);
     expect(overview.declaresTogether({ "grid-auto-flow": "column", "grid-auto-columns": "minmax(0, 1fr)" })).toBe(false);
-    expect(home).toContain("Prochain férié travaillé");
     // La journée garde le même format que les autres lignes : sa couleur
     // n'est que sur l'icône et le libellé, sans fond coloré ni pastille.
     expect(overview.anyRuleDeclares(".today-status:is(.tone-leave, .tone-recovery)", { "--block-ink": "#9a2c40" })).toBe(true);
@@ -225,9 +224,6 @@ describe("finitions d’interface", () => {
     expect(overview.mentions(".today-status .today-block-label")).toBe(false);
     expect(overview.mentions(".today-status > strong")).toBe(false);
     expect(overview.usesValue("color-mix(in srgb, var(--block-ink) 8%, #fff)")).toBe(false);
-    expect(home).toContain('<span className="today-block-label">Aujourd’hui</span>');
-    expect(home).toContain("Prochain jour travaillé");
-    expect(home).toContain("Congés restants");
   });
 
   it("mène chaque information manquante à l’endroit exact où elle se saisit", () => {

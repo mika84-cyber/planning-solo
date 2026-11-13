@@ -1542,30 +1542,42 @@ test("Aujourd’hui conserve le groupe pendant la demi-journée travaillée", as
   await expect(page.locator(".today-status small")).toHaveText(`Avec le groupe ${colleagueGroup}`);
 });
 
-test("l’accueil montre la liste de départ avec sa progression, et chaque étape se refuse", async ({ page }) => {
+test("l’accueil met en avant l’étape suivante de la mise en route ; la frise en choisit une autre, et chaque étape se refuse ou se reprend", async ({ page }) => {
   await prepareDemo(page);
+  const year = new Date().getFullYear();
   const setup = page.locator(".home-setup-checklist");
   await expect(setup).toHaveCount(1);
-  // Les quatre étapes restent visibles ; chacune à faire mène au bon écran.
+  await expect(setup.getByRole("heading", { name: "Mise en route" })).toBeVisible();
+  const ring = setup.getByRole("progressbar", { name: "Étapes terminées" });
+  await expect(ring).toHaveAttribute("aria-valuetext", /^\d sur 4$/);
+  // La frise garde les quatre étapes, dans l'ordre.
   await expect(setup.locator(".home-setup-steps li")).toHaveCount(4);
-  await expect(setup.locator(".home-setup-steps li").first()).toContainText("Groupe de planning");
-  await expect(setup).toContainText("Profil de calcul");
-  await expect(setup).toContainText(`Jours fériés ${new Date().getFullYear()}`);
-  await expect(setup).toContainText("4 à choisir");
-  await expect(setup).toContainText("Bulletin de paie");
-  await expect(setup.getByRole("heading", { name: /Mise en route : \d sur 4/ })).toBeVisible();
-  await expect(setup.getByRole("progressbar", { name: "Étapes terminées" })).toBeVisible();
+  await expect(setup.locator(".home-setup-steps li").first()).toContainText("Groupe");
+  await expect(setup.locator(".home-setup-steps")).toContainText(/Groupe.*Profil.*Fériés.*Bulletin/);
   // L'alerte ambre disait la même chose à un autre endroit : elle a disparu.
   await expect(page.locator(".important-alert")).toHaveCount(0);
   await expect(setup).toHaveCSS("margin-top", "12px");
-  // Une étape refusée se grise et peut être reprise ; quand toutes sont
-  // faites ou refusées, la liste disparaît.
-  await setup.getByRole("button", { name: "Ne pas remplir : Profil de calcul" }).click();
-  await expect(setup.locator("li.skipped")).toContainText("Pas maintenant");
-  await setup.getByRole("button", { name: "Reprendre : Profil de calcul" }).click();
-  await expect(setup.getByRole("button", { name: "Ne pas remplir : Profil de calcul" })).toBeVisible();
-  for (const title of ["Groupe de planning", "Profil de calcul", `Jours fériés ${new Date().getFullYear()}`, "Bulletin de paie"]) {
-    const decline = setup.getByRole("button", { name: `Ne pas remplir : ${title}` });
+  // La carte montre l'étape à faire ; la frise en met une autre à sa place.
+  const next = setup.locator(".home-setup-next");
+  await setup.getByRole("button", { name: `Jours fériés ${year} : 4 à choisir` }).click();
+  await expect(next).toContainText(`Jours fériés ${year}`);
+  await expect(next).toContainText("4 à choisir");
+  await expect(setup.getByRole("button", { name: `Jours fériés ${year} : 4 à choisir` })).toHaveAttribute("aria-current", "step");
+  // Écartée, l'étape prend un tiret dans la frise et la carte passe à la
+  // suivante ; touchée de nouveau, elle se reprend.
+  await setup.getByRole("button", { name: `Ne pas remplir : Jours fériés ${year}` }).click();
+  await expect(setup.locator(".home-setup-steps li.skipped")).toContainText("Fériés");
+  await expect(next).not.toContainText(`Jours fériés ${year}`);
+  await setup.getByRole("button", { name: `Jours fériés ${year} : Pas maintenant` }).click();
+  await expect(next).toContainText("Étape 3 · pas maintenant");
+  // Au clavier, la main reste sur le bouton, qui redevient « Pas maintenant ».
+  await setup.getByRole("button", { name: `Reprendre : Jours fériés ${year}` }).focus();
+  await page.keyboard.press("Enter");
+  await expect(setup.getByRole("button", { name: `Ne pas remplir : Jours fériés ${year}` })).toBeFocused();
+  await expect(setup.locator(".home-setup-steps li.skipped")).toHaveCount(0);
+  // Toutes écartées l'une après l'autre : la mise en route disparaît.
+  for (let step = 0; step < 4; step += 1) {
+    const decline = setup.getByRole("button", { name: /^Ne pas remplir : / });
     if (await decline.count()) await decline.click();
   }
   await expect(setup).toHaveCount(0);
@@ -1576,7 +1588,9 @@ test("l’accueil montre la liste de départ avec sa progression, et chaque éta
 
 test("« Bulletin de paie » ouvre la vérification repliée de Ma paie", async ({ page }) => {
   await prepareDemo(page);
-  await page.locator(".home-setup-checklist").getByRole("button", { name: "Bulletin de paie", exact: true }).click();
+  const setup = page.locator(".home-setup-checklist");
+  await setup.getByRole("button", { name: /^Bulletin de paie : / }).click();
+  await setup.getByRole("button", { name: "Ajouter : Bulletin de paie" }).click();
   await expect(page.locator(".top-header h1")).toHaveText("Ma paie");
   // La vérification est repliée d'ordinaire : l'invitation l'ouvre et y mène.
   await expect(page.getByRole("button", { name: "Vérifier le bulletin" })).toHaveAttribute("aria-expanded", "true");
@@ -5485,7 +5499,9 @@ test("une formation utilise le bon nombre d’heures et apparaît en REC", async
 
 test("les horaires du profil préremplissent une récupération", async ({ page }) => {
   await prepareDemo(page);
-  await page.locator(".home-setup-checklist").getByRole("button", { name: "Profil de calcul", exact: true }).click();
+  const setup = page.locator(".home-setup-checklist");
+  await setup.getByRole("button", { name: /^Profil de calcul : / }).click();
+  await setup.getByRole("button", { name: "Renseigner : Profil de calcul" }).click();
   const profile = page.locator("#pay-profile-settings");
   await expect(profile).toBeInViewport();
   await expect(profile).toBeFocused();
@@ -7132,7 +7148,9 @@ test("Retour ramène d’un sous-écran de Ma paie à l’écran précédent, pa
   // Venu de l'accueil (les fériés de la mise en route), sans passer par le
   // tableau de bord : la flèche ← le montre tout de même, et Retour rend
   // ensuite l'accueil.
-  await page.getByRole("button", { name: /^Jours fériés \d{4}$/ }).click();
+  const setup = page.locator(".home-setup-checklist");
+  await setup.getByRole("button", { name: /^Jours fériés \d{4} : / }).click();
+  await setup.getByRole("button", { name: /^Choisir : Jours fériés \d{4}$/ }).click();
   await expect(detailTitle).toHaveText("Primes et jours fériés");
   await page.getByRole("button", { name: "Revenir au tableau de bord de paie" }).click();
   await expect(detailTitle).toHaveCount(0);

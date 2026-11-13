@@ -72,9 +72,14 @@ describe("HomeSectionScreen", () => {
         setup={{ missingCalculationProfile: false, missingHolidayChoices: 3, missingPayValues: true }}
       />,
     );
-    expect(partial).toContain("Mise en route : 2 sur 4");
-    expect(partial).toContain("Groupe 2");
-    expect(partial).toContain("Statut et quotité renseignés");
+    expect(partial).toContain('aria-valuetext="2 sur 4"');
+    expect(partial).toContain("Groupe de planning : Groupe 2 · Fait");
+    expect(partial).toContain("Profil de calcul : Statut et quotité renseignés · Fait");
+    // L'étape suivante, les fériés, avec son verbe ; le bulletin attend dans la frise.
+    expect(partial).toContain("<strong>Jours fériés 2026</strong><small>3 à choisir</small>");
+    expect(partial).toContain('aria-label="Choisir : Jours fériés 2026"');
+    expect(partial).toContain('aria-label="Bulletin de paie : Lu tout seul"');
+    expect(partial).toContain('<small aria-hidden="true">Bulletin</small>');
     const complete = await renderSettled(
       <HomeSectionScreen
         {...baseProps}

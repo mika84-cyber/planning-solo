@@ -148,7 +148,11 @@ const budgets = {
   // l'accord de l'administrateur : le rappel de l'alimentation du CET sur
   // l'accueil (carte, bandeau qui défile après « Plus tard ») et le calcul
   // de l'alimentation partagé avec Mon CET (2 123,4 / 703,2 Kio mesurés).
-  totalJavaScript: { raw: 2_125 * KIB, gzip: 704 * KIB },
+  // Relevé le même jour à 2 126 / 705 Kio, avec l'accord de l'administrateur :
+  // la nouvelle « Mise en route » de l'accueil (anneau, frise des étapes,
+  // carte de l'étape à faire) et le filet du bandeau CET (2 125,5 / 704,0 Kio
+  // mesurés).
+  totalJavaScript: { raw: 2_126 * KIB, gzip: 705 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -187,7 +191,13 @@ const budgets = {
   // l'administrateur : la fenêtre de rappel du formulaire de Formulaire SAP,
   // son mode sombre et la couleur des congés posés sur une formation en
   // sombre (103,3 Kio mesurés).
-  totalCss: { raw: 537 * KIB, gzip: 104 * KIB },
+  // Relevé le 13 novembre 2026 à 538 / 105 Kio avec l'accord de
+  // l'administrateur : le bandeau CET en carte à liseré (italique, filet du
+  // délai) et la nouvelle « Mise en route » de l'accueil, après retrait des
+  // anciens styles de la liste et de deux blocs morts (« Que s'est-il
+  // passé ? » du bulletin, introduction des congés) ; 537,6 / 104,5 Kio
+  // mesurés.
+  totalCss: { raw: 538 * KIB, gzip: 105 * KIB },
 };
 
 async function filesUnder(directory) {

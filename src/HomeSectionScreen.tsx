@@ -84,6 +84,8 @@ export function HomeSectionScreen({
             {
               id: "planning-group",
               title: "Groupe de planning",
+              short: "Groupe",
+              action: "Choisir",
               detail: formProfile?.group ? `Groupe ${group}` : "Jours de travail et de repos",
               done: Boolean(formProfile?.group),
               onAction: () => setGroupChooserOpen(true),
@@ -91,6 +93,8 @@ export function HomeSectionScreen({
             {
               id: "pay-profile",
               title: "Profil de calcul",
+              short: "Profil",
+              action: "Renseigner",
               detail: missingCalculationProfile ? "Statut et quotité" : "Statut et quotité renseignés",
               done: !missingCalculationProfile,
               onAction: () => {
@@ -104,6 +108,8 @@ export function HomeSectionScreen({
             {
               id: "holiday-choice",
               title: `Jours fériés ${now.getFullYear()}`,
+              short: "Fériés",
+              action: "Choisir",
               detail: missingHolidayChoices
                 ? `${missingHolidayChoices} à choisir`
                 : "Tous choisis",
@@ -117,6 +123,8 @@ export function HomeSectionScreen({
             {
               id: "payslip-upload",
               title: "Bulletin de paie",
+              short: "Bulletin",
+              action: "Ajouter",
               detail: missingPayValues ? "Lu tout seul" : "Valeurs enregistrées",
               done: !missingPayValues,
               onAction: () => {

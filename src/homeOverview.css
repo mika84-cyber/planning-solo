@@ -73,3 +73,48 @@ button.today-block:hover .today-block-go { color: var(--block-ink); }
 
 /* Formation, fermeture ou demi-journée : une seconde ligne sous la date. */
 .today-block > strong .today-value-detail { display: block; margin-top: 1px; color: var(--block-ink); font-size: 12px; font-weight: 750; letter-spacing: 0; }
+
+/* « Mise en route » (13 novembre 2026) : un anneau dit les étapes réglées, une
+   frise les montre toutes, la carte met en avant celle à faire, avec son
+   bouton. Fond blanc et en-tête crème, comme « Aujourd'hui ». */
+.app-shell .home-setup-checklist { --setup-ok: #2f7d5b; --setup-ok-on: #fff; --setup-todo: #985438; --setup-todo-on: #fff; --setup-todo-ink: #83452c; --setup-todo-soft: #f8e9df; --setup-track: #ece4d9; --setup-line: #efe7de; background: var(--surface); color: var(--text); }
+.home-setup-checklist svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+.home-setup-ring { position: relative; flex: none; display: grid; place-content: center; justify-items: center; width: 3.3rem; height: 3.3rem; line-height: 1; }
+.home-setup-ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--setup-ok) var(--done), var(--setup-track) 0); mask: radial-gradient(closest-side, #0000 76%, #000 78%); }
+.home-setup-ring b { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+.home-setup-ring small { color: var(--muted); font-size: 0.6rem; font-weight: 750; }
+/* La frise : des ronds reliés par un trait, vert jusqu'à la dernière étape faite. */
+.home-setup-steps { display: flex; margin: 2px 0 14px; padding: 0; list-style: none; }
+.home-setup-steps li { position: relative; flex: 1; min-width: 0; }
+.home-setup-steps li + li::before { content: ""; position: absolute; top: 13px; right: calc(50% + 17px); left: calc(-50% + 17px); height: 2px; border-radius: 2px; background: var(--setup-track); }
+.home-setup-steps li.done + li::before { background: var(--setup-ok); }
+.home-setup-steps li.done, .app-shell .home-setup-steps .home-setup-step { display: grid; justify-items: center; gap: 5px; width: 100%; min-height: 0; margin: 0; border: 0; padding: 0; background: none; box-shadow: none; color: inherit; font: inherit; cursor: pointer; }
+.home-setup-steps li.done { cursor: default; }
+.home-setup-mark { display: grid; place-items: center; width: 28px; height: 28px; box-sizing: border-box; border: 2px solid var(--setup-track); border-radius: 50%; background: var(--surface); color: var(--muted); font-size: 0.78rem; font-weight: 800; }
+.home-setup-mark svg { width: 15px; height: 15px; stroke-width: 2.6; }
+.home-setup-steps li.done .home-setup-mark { border-color: var(--setup-ok); background: var(--setup-ok); color: var(--setup-ok-on); }
+.home-setup-steps li.skipped .home-setup-mark { border-style: dashed; }
+.home-setup-steps li.current .home-setup-mark { border-color: var(--setup-todo); color: var(--setup-todo-ink); box-shadow: 0 0 0 4px var(--setup-todo-soft); }
+.home-setup-steps small { overflow: hidden; max-width: 100%; color: var(--muted); font-size: 0.7rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.home-setup-steps li.current small { color: var(--setup-todo-ink); font-weight: 850; }
+.home-setup-step:focus-visible { outline: none; }
+.home-setup-step:focus-visible .home-setup-mark { outline: 2px solid var(--setup-todo); outline-offset: 3px; }
+/* La carte de l'étape à faire : son pictogramme, son état, son bouton, qui
+   passe sous le texte quand la carte est étroite. */
+.home-setup-next { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 11px; padding: 12px; border: 1px solid var(--setup-line); border-left: 4px solid var(--setup-todo); border-radius: 14px; background: var(--surface); }
+.home-setup-next.skipped { border-left-color: var(--muted); }
+.home-setup-icon { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--setup-todo-soft); color: var(--setup-todo-ink); }
+.home-setup-icon svg { width: 18px; height: 18px; stroke-width: 1.8; }
+.home-setup-text { flex: 1 1 130px; display: grid; gap: 1px; min-width: 0; }
+.home-setup-kicker { color: var(--setup-todo-ink); font-size: 10.5px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+.home-setup-next.skipped .home-setup-kicker { color: var(--muted); }
+.home-setup-text strong { font-size: 0.95rem; }
+.home-setup-text small { color: var(--muted); font-size: 0.78rem; }
+.app-shell .home-setup-checklist .home-setup-go { flex: none; display: inline-flex; align-items: center; gap: 2px; min-height: 40px; margin: 0 0 0 auto; border: 0; border-radius: 999px; padding: 0 10px 0 15px; background: var(--setup-todo); color: var(--setup-todo-on); font: inherit; font-size: 0.84rem; font-weight: 800; box-shadow: none; cursor: pointer; }
+.home-setup-go svg { width: 16px; height: 16px; stroke-width: 2.4; }
+.home-setup-later { display: flex; justify-content: flex-end; padding: 8px 2px 2px; }
+.app-shell .home-setup-checklist .home-setup-skip { min-height: 0; margin: 0; border: 0; padding: 0; background: none; box-shadow: none; color: var(--setup-todo-ink); font: inherit; font-size: 0.76rem; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+/* Le conseil, en pied de cadre, d'un bord à l'autre. */
+.home-setup-checklist > .home-setup-tip { display: flex; gap: 8px; align-items: flex-start; margin: 6px calc(-1 * var(--chapter-pad)) calc(-1 * var(--chapter-pad)); border-top: 1px solid var(--setup-line); padding: 10px var(--chapter-pad) 12px; color: var(--muted); font-size: 0.76rem; line-height: 1.45; }
+.home-setup-tip svg { flex: none; width: 16px; height: 16px; margin-top: 1px; color: #b0873b; stroke-width: 1.8; }
+.home-setup-tip b { color: var(--text); }

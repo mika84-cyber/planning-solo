@@ -33,9 +33,6 @@
 /* Déjà hautes de 28 à 30 px : 4 px de plus suffisent. Même poids que la règle
    du dessus, donc c'est l'ordre qui tranche. */
 :is(.school-vacation-zone, .school-vacation-switch, .allowance-note > .text-button, .expo-audioguide-body > a, .colleague-board-mode button, .header-help-button)::after { inset: -4px 0; }
-/* « Pas maintenant » : la zone descend sous le lien, sans remonter sur la
-   ligne du dessus, qui ouvre l'étape. */
-.home-setup-steps .home-setup-skip::after { inset: -2px -8px -16px; }
 /* Du texte saisi : la croix d'effacement du navigateur prend la place de la
    loupe. Décalée à 38 px, la loupe se retrouvait sous la croix. */
 .app-shell input[type="search"]:not(:placeholder-shown){padding-right:12px;background-image:none}

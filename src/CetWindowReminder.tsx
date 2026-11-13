@@ -89,6 +89,13 @@ export function cetTickerParts(state: CetReminderState) {
   return [delay, `Vous pouvez verser jusqu’à ${days(state.total)}`, "Touchez pour préparer votre demande"];
 }
 
+/** Part du délai écoulée, en %, du 15 novembre (2 %) au 31 décembre (100 %). */
+export function cetWindowElapsed(todayKey: string) {
+  const day = Number(todayKey.slice(8));
+  const index = todayKey.slice(5, 7) === "12" ? 16 + day : day - 14;
+  return Math.round((Math.min(Math.max(index, 0), 47) / 47) * 100);
+}
+
 /**
  * « Plus tard » replie la carte en bandeau, sur cet appareil seulement, et elle
  * le reste les jours suivants : elle ne se redéplie d'elle-même qu'une fois,
@@ -150,19 +157,21 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
   if (folded) {
     // Un flash info : le texte défile en boucle (deux copies à la suite), à
     // vitesse de lecture constante quelle que soit sa longueur. Le nom du
-    // bouton reprend les phrases, sans les puces.
+    // bouton reprend les phrases, sans les losanges qui les séparent. Un filet,
+    // en bas, avance du 15 novembre au 31 décembre.
     const parts = cetTickerParts(state);
-    const line = parts.map((part) => <Fragment key={part}>{part}<b aria-hidden="true">•</b></Fragment>);
+    const line = parts.map((part) => <Fragment key={part}>{part}<i /></Fragment>);
     return (
       <button ref={ribbonRef} type="button" className={`cet-ticker${state.daysLeft <= 8 ? " urgent" : ""}`} aria-label={`${parts.join(". ")}.`} onClick={() => { focusNext.current = "card"; setUnfolded(true); }}>
         <span className="cet-ticker-label" aria-hidden="true">CET</span>
         <span className="cet-ticker-window" aria-hidden="true">
-          <span className="cet-ticker-track" style={{ "--ticker-duration": `${Math.round(parts.join(" • ").length * 0.17)}s` } as CSSProperties}>
+          <span className="cet-ticker-track" style={{ "--ticker-duration": `${Math.round(parts.join(" • ").length * 0.2)}s` } as CSSProperties}>
             <span>{line}</span>
             <span>{line}</span>
           </span>
         </span>
         <span className="cet-ticker-more" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg></span>
+        <span className="cet-ticker-gauge" aria-hidden="true" style={{ "--elapsed": `${cetWindowElapsed(todayKey)}%` } as CSSProperties} />
       </button>
     );
   }

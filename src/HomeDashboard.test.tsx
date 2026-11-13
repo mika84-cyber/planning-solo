@@ -16,6 +16,7 @@ const baseProps = {
     detail: "Vos jours de travail et de repos",
     done: false,
     onAction: vi.fn(),
+    action: "Choisir" as string | undefined,
   }, {
     id: "pay-profile",
     title: "Profil de calcul",
@@ -58,22 +59,54 @@ describe("HomeDashboard", () => {
     expect(heading(unset)).toContain('aria-label="Choisir mon groupe">Choisir mon groupe</button>');
   });
 
+  // Ancien contrôle textuel d'uiRefinement.test.mjs, devenu test de rendu.
+  it("présente les repères du jour en blocs, la journée en tête et le prochain férié travaillé", () => {
+    const labels = (html: string) => [...html.matchAll(/class="today-block-label">([^<]*)</g)].map((match) => match[1]);
+    const today = { ...baseProps.today, nextWorkedHoliday: { date: new Date(2026, 10, 11), name: "Armistice" } };
+    const html = renderToStaticMarkup(<HomeDashboard {...baseProps} today={today} />);
+    expect(labels(html)).toEqual(["Aujourd’hui", "Prochain jour travaillé", "Congés restants", "Prochain férié travaillé", "Prochain mécénat"]);
+    // La journée a le format des autres lignes : sa couleur tient à sa classe.
+    expect(html).toContain('<article class="today-block today-status tone-work"><span class="today-block-icon" aria-hidden="true">');
+    expect(html).toContain('<span class="today-block-label">Prochain férié travaillé</span><strong class="is-date">');
+    expect(html).toContain('<small class="today-block-note">Armistice</small>');
+    // Pas de férié travaillé à venir : pas de ligne vide. Ni grille ni éphéméride.
+    const none = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
+    expect(labels(none)).not.toContain("Prochain férié travaillé");
+    expect(none).not.toMatch(/today-overview-grid|ephemeris/);
+  });
+
   it("ne répète pas sur l’accueil les actions déjà accessibles dans la navigation", () => {
     const html = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
     expect(html).not.toContain("Accès rapide");
     expect(html).not.toContain("Trouver un document");
   });
 
-  it("montre toutes les étapes de départ, cochées une fois faites", () => {
+  it("montre toutes les étapes dans la frise et met en avant celle à faire", () => {
     const html = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
     expect(html).toContain("Pour bien démarrer");
-    expect(html).toContain("Mise en route : 1 sur 2");
-    expect(html).toContain("Groupe de planning");
-    expect(html).toContain("Profil de calcul");
-    expect(html).toContain('aria-valuenow="1"');
-    expect(html).toContain("Ne pas remplir");
+    expect(html).toContain('<h2 id="home-setup-title">Mise en route</h2>');
+    // L'anneau : les étapes réglées sur le total.
+    expect(html).toContain('role="progressbar" aria-label="Étapes terminées" aria-valuemin="0" aria-valuemax="2" aria-valuenow="1" aria-valuetext="1 sur 2" style="--done:50%"><b>1</b><small>sur 2</small>');
+    // La frise : l'étape faite est cochée, celle à faire se touche.
+    expect(html).toContain('<li class="done"><span class="home-setup-mark" aria-hidden="true"><svg');
+    expect(html).toContain("Profil de calcul : Statut et quotité renseignés · Fait");
+    expect(html).toContain('<li class="current"><button class="home-setup-step" type="button" aria-label="Groupe de planning : Vos jours de travail et de repos" aria-current="step">');
+    // La carte de l'étape à faire, son bouton, et de quoi l'écarter.
+    expect(html).toContain('<span class="home-setup-kicker">Étape 1 · à faire</span><strong>Groupe de planning</strong><small>Vos jours de travail et de repos</small>');
+    expect(html).toContain('aria-label="Choisir : Groupe de planning">Choisir<svg');
+    expect(html).toContain('aria-label="Ne pas remplir : Groupe de planning">Pas maintenant</button>');
     // Le conseil sur les congés n'est pas une étape à cocher.
     expect(html).toContain("prime des dimanches et le détail de vos soldes");
+  });
+
+  it("donne à chaque étape son nom court dans la frise, ou son titre à défaut", () => {
+    const items = baseProps.setupItems.map((item, index) => ({ ...item, short: index ? "Profil" : undefined }));
+    const html = renderToStaticMarkup(<HomeDashboard {...baseProps} setupItems={items} />);
+    expect(html).toContain('<small aria-hidden="true">Groupe de planning</small>');
+    expect(html).toContain('<small aria-hidden="true">Profil</small>');
+    // Sans verbe, le bouton propose de commencer.
+    const plain = renderToStaticMarkup(<HomeDashboard {...baseProps} setupItems={baseProps.setupItems.map(({ action: _, ...item }) => item)} />);
+    expect(plain).toContain('aria-label="Commencer : Groupe de planning">Commencer<svg');
   });
 
   it("retire la liste lorsque tout est fait", () => {

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { emptyCetAccount } from "./cet";
-import { CetWindowReminder, cetReminderFolded, cetTickerParts, cetWindowReminderState } from "./CetWindowReminder";
+import { CetWindowReminder, cetReminderFolded, cetTickerParts, cetWindowElapsed, cetWindowReminderState } from "./CetWindowReminder";
 
 const remaining = { annual: 9, rtt: 15, fraction: 2 };
 const tracked = () => ({ ...emptyCetAccount(), initialBalance: 5 });
@@ -81,6 +81,14 @@ describe("le rappel de l'alimentation du CET sur l'accueil", () => {
       expect(cetReminderFolded("2025-12-02", "2026-11-20")).toBe(false);
     });
 
+    it("fait avancer le filet du 15 novembre au 31 décembre", () => {
+      expect(cetWindowElapsed("2026-11-15")).toBe(2);
+      expect(cetWindowElapsed("2026-11-20")).toBe(13);
+      expect(cetWindowElapsed("2026-12-01")).toBe(36);
+      expect(cetWindowElapsed("2026-12-27")).toBe(91);
+      expect(cetWindowElapsed("2026-12-31")).toBe(100);
+    });
+
     it("fait défiler le délai, ce qui attend et le geste", () => {
       expect(cetTickerParts(state("2026-11-20")!)).toEqual(["L’alimentation du CET est ouverte jusqu’au 31 décembre", "Vous pouvez verser jusqu’à 20 jours", "Touchez pour préparer votre demande"]);
       expect(cetTickerParts(state("2026-11-20", tracked(), 15)!)[1]).toBe("Il vous manque 3 CA posés pour y verser des jours");
@@ -95,8 +103,11 @@ describe("le rappel de l'alimentation du CET sur l'accueil", () => {
       expect(html).not.toContain("cet-window-reminder");
       expect(html).toContain('<button type="button" class="cet-ticker" aria-label="L’alimentation du CET est ouverte jusqu’au 31 décembre. Vous pouvez verser jusqu’à 20 jours. Touchez pour préparer votre demande."><span class="cet-ticker-label" aria-hidden="true">CET</span><span class="cet-ticker-window" aria-hidden="true">');
       // Deux copies à la suite pour la boucle, à vitesse de lecture constante.
-      expect(html.match(/<span>L’alimentation du CET est ouverte jusqu’au 31 décembre<b aria-hidden="true">•<\/b>/g)).toHaveLength(2);
+      // Les phrases séparées par un losange (un <i> vide, dessiné en CSS).
+      expect(html.match(/<span>L’alimentation du CET est ouverte jusqu’au 31 décembre<i><\/i>Vous pouvez verser jusqu’à 20\sjours<i><\/i>/g)).toHaveLength(2);
       expect(html).toMatch(/style="--ticker-duration:\d+s"/);
+      // Le filet du bas : 6 jours sur 47 écoulés le 20 novembre.
+      expect(html).toContain('<span class="cet-ticker-gauge" aria-hidden="true" style="--elapsed:13%"></span></button>');
       // La dernière semaine : étiquette orangée ; le 24, la carte se redéplie.
       vi.stubGlobal("localStorage", { getItem: () => "2026-12-26", setItem: vi.fn() });
       expect(render("2026-12-27", tracked())).toContain('class="cet-ticker urgent" aria-label="Plus que 5 jours pour alimenter votre CET.');
