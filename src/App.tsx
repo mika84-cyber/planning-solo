@@ -940,7 +940,7 @@ export default function Home() {
         notify={notify}
         showSuccess={confirm}
         help={{ openPlanningPdf: () => setPdfDialogOpen(true), openBlankForm, requestLeave: () => { openRequestChooser("planning"); requestFromHelp.current = true; }, openExchange: () => openWorkExchange() }}
-        actions={{ navigateFromShell, checkForAppUpdate, disconnect }}
+        actions={{ navigateFromShell, checkForAppUpdate, disconnect, saveCetAccount }}
       />
 
       {feedbackMessaging.resolutionNotice ? (

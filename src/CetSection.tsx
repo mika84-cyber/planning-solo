@@ -1,6 +1,7 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import type { PayStatus } from "./appModel";
 import type { CetFormKind } from "./CetFormDialog";
+import { useHelpTarget } from "./helpTargets";
 
 // La saisie des formulaires CET ne sert qu'à l'ouverture d'un formulaire :
 // elle est chargée à ce moment-là, pour alléger l'ouverture de l'application.
@@ -11,7 +12,7 @@ import {
   CET_WORK_RULES,
   cetAvailableWholeDays,
   cetBalance,
-  cetDepositCapacity,
+  cetDepositableDays,
   cetDepositEligibility,
   cetDepositsForYear,
   cetDepositWindow,
@@ -19,6 +20,7 @@ import {
   cetSourceDepositCapacity,
   cetYearEndSummary,
   emptyCetAccount,
+  withPlannedCetLeave,
   type CetAccount,
   type CetDepositSource,
   type CetOperationKind,
@@ -76,15 +78,23 @@ export function CetSection({
   const [disableConfirmOpen, setDisableConfirmOpen] = useState(false);
 
   const active = account?.enabled ? account : undefined;
-  const trackedAccount = active && plannedLeaveDays > 0
-    ? {
-        ...active,
-        operations: [
-          ...active.operations,
-          { id: "planning-cet-leave", date: new Date().toISOString().slice(0, 10), kind: "leave" as const, days: plannedLeaveDays, note: "Congés CET du planning" },
-        ],
-      }
-    : active;
+  // « Préparer ma demande » du rappel de l'accueil : le formulaire
+  // d'alimentation s'ouvre dès que la rubrique est là. Elle peut se monter
+  // avant la page qui la contient : elle ouvre alors elle-même son volet.
+  const sectionRef = useRef<HTMLElement>(null);
+  useHelpTarget((target) => {
+    if (target !== "cet-funding") return false;
+    const disclosure = sectionRef.current?.closest("details");
+    if (disclosure && !disclosure.open) {
+      disclosure.open = true;
+      window.setTimeout(() => disclosure.scrollIntoView({ behavior: "smooth", block: "start" }), 350);
+    }
+    if (active) setFormKind("funding");
+    return true;
+  });
+  const trackedAccount = active
+    ? withPlannedCetLeave(active, plannedLeaveDays, new Date().toISOString().slice(0, 10))
+    : undefined;
   const summary = trackedAccount ? cetYearEndSummary(trackedAccount, status) : null;
   const activeRule = CET_WORK_RULES[(active || draft).workRule];
   const eligible = cetDepositEligibility(
@@ -92,30 +102,10 @@ export function CetSection({
     activeRule.minimumAnnualDaysTaken,
   );
   const wholeDays = cetAvailableWholeDays(remaining);
-  const availableTotal = wholeDays.annual + wholeDays.rtt + wholeDays.fraction;
-  const depositCapacity = trackedAccount ? cetDepositCapacity(cetBalance(trackedAccount)) : 0;
   const simulationYear = new Date().getFullYear();
-  const depositableBySource = trackedAccount
-    ? (Object.keys(wholeDays) as CetDepositSource[]).reduce(
-        (values, source) => ({
-          ...values,
-          [source]: cetSourceDepositCapacity(
-            trackedAccount,
-            source,
-            wholeDays[source],
-            `${simulationYear}-11-15`,
-          ),
-        }),
-        { annual: 0, rtt: 0, fraction: 0 },
-      )
-    : { annual: 0, rtt: 0, fraction: 0 };
-  const maximumDepositable = active
-    ? Math.min(
-        availableTotal,
-        depositCapacity,
-        depositableBySource.annual + depositableBySource.rtt + depositableBySource.fraction,
-      )
-    : 0;
+  const depositable = trackedAccount ? cetDepositableDays(trackedAccount, remaining, simulationYear) : null;
+  const depositableBySource = depositable?.bySource ?? { annual: 0, rtt: 0, fraction: 0 };
+  const maximumDepositable = depositable?.total ?? 0;
   const currentYearDeposits = active
     ? cetDepositsForYear(active, simulationYear)
     : [];
@@ -239,7 +229,7 @@ export function CetSection({
   }
 
   return (
-    <section className="cet-section open cet-section-static" aria-labelledby="cet-title">
+    <section ref={sectionRef} className="cet-section open cet-section-static" aria-labelledby="cet-title">
       <div className="cet-heading cet-heading-static">
         <span className="cet-symbol" aria-hidden="true">CET</span>
         <span>

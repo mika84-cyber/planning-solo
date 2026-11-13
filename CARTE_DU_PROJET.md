@@ -67,6 +67,23 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   compte épargne-temps.
 - `src/CetFormDialog.tsx` : saisie guidée des formulaires officiels d’ouverture,
   d’alimentation et d’indemnisation du CET.
+- `src/CetWindowReminder.tsx` : rappel de l’alimentation du CET sur l’accueil,
+  du 15 novembre au 31 décembre (placé par `AppShellChrome.tsx` sous les
+  messages de l’équipe). « L’alimentation est ouverte » avec ce qui peut être
+  versé (`cetDepositableDays`, partagé avec Mon CET), « Il vous manque N CA
+  posés », ou « Vous avez un CET ? » tant qu’il n’est pas renseigné (avec
+  « Je n’ai pas de CET », qui enregistre un compte désactivé). Compte à
+  rebours orangé à partir du 24 décembre. Disparaît une fois l’alimentation
+  de l’année enregistrée. « Plus tard » la replie en bandeau taupe dont le
+  texte défile comme un flash info (`.cet-ticker`, `cetTickerParts`), sur
+  l’appareil seulement : elle le reste les jours suivants et ne se redéplie
+  d’elle-même que le 24 décembre ; touché, le bandeau la redéplie. Le
+  défilement s’arrête sous le doigt, la souris ou le clavier, et pas du tout
+  avec « réduire les animations ». « Préparer ma demande » ouvre Congés › Mon CET avec le
+  formulaire d’alimentation (cible `cet-funding` de `helpTargets.ts`, servie
+  par `CetSection`, qui ouvre aussi son volet). En démo, `?date-cet=2026-12-26`
+  la montre à une autre date. Styles dans `adminHomeMessage.css`, sombre dans
+  `darkTheme.css`.
 - `src/grandPalaisProposalChanges.ts` : ce qui a changé entre la version
   gardée d'une exposition et celle lue par la veille (titre, précision,
   dates, espace, chaque tarif ajouté, retiré ou modifié) ; une proposition
@@ -993,7 +1010,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 ## Tests à choisir selon la demande
 
 - Planning et groupes : `src/planningLogic.test.ts`.
-- CET : `src/cet.test.ts` et `src/CetSection.test.tsx`.
+- CET : `src/cet.test.ts`, `src/CetSection.test.tsx` et
+  `src/CetWindowReminder.test.tsx` ; scénarios « l’accueil rappelle
+  l’alimentation du CET » et « un CET non renseigné reste rappelé » dans
+  `e2e/app.spec.ts`.
 - Formulaires CET : `src/cetFormsPdf.test.ts`.
 - Paie : `src/payEstimate.test.ts`, `src/payslip.test.ts`,
   `src/payslipReview.test.ts`, `src/payslipGapExplanation.test.ts`,

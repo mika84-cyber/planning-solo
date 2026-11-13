@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cetAvailableWholeDays,
   cetBalance,
+  cetDepositableDays,
   cetDepositCapacity,
   cetDepositEligibility,
   cetDepositsForYear,
@@ -11,6 +12,7 @@ import {
   CET_WORK_RULES,
   cetYearEndSummary,
   emptyCetAccount,
+  withPlannedCetLeave,
 } from "./cet";
 
 describe("CET", () => {
@@ -86,5 +88,16 @@ describe("CET", () => {
       { id: "1", date: "2026-11-20", kind: "deposit", days: 8, source: "annual" },
     ];
     expect(cetSourceDepositCapacity(account, "annual", 20, "2026-11-20")).toBe(3);
+  });
+
+  it("donne ce que la demande annuelle peut verser, par origine puis en tout", () => {
+    const account = emptyCetAccount();
+    account.initialBalance = 5;
+    // Soldes entiers seulement ; 26 jours versables mais 20 admis (5 + 20 = 25).
+    expect(cetDepositableDays(account, { annual: 9.5, rtt: 15, fraction: 2 }, 2026)).toEqual({ bySource: { annual: 9, rtt: 15, fraction: 2 }, total: 20 });
+    // Le congé CET posé dans le planning est retiré du solde avant le calcul.
+    expect(cetBalance(withPlannedCetLeave(account, 3, "2026-11-20"))).toBe(2);
+    expect(withPlannedCetLeave(account, 0, "2026-11-20")).toBe(account);
+    expect(cetDepositableDays(withPlannedCetLeave(account, 3, "2026-11-20"), { annual: 2, rtt: 1, fraction: 0 }, 2026)).toEqual({ bySource: { annual: 2, rtt: 1, fraction: 0 }, total: 3 });
   });
 });

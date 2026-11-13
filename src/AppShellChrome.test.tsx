@@ -56,7 +56,7 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
   notify: noop,
   showSuccess: noop,
   help: { openPlanningPdf: noop, openBlankForm: noop, requestLeave: noop, openExchange: noop },
-  actions: { navigateFromShell: noop, checkForAppUpdate: noop, disconnect: noop },
+  actions: { navigateFromShell: noop, checkForAppUpdate: noop, disconnect: noop, saveCetAccount: vi.fn(async () => true) },
 };
 
 describe("AppShellChrome", () => {

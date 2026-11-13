@@ -747,9 +747,8 @@ describe("finitions d’interface", () => {
   });
 
   it("place le choix du groupe dans Aujourd’hui et la pose de congé avant le mois", () => {
-    expect(app).toContain('className="primary-action add-action group-heading-action"');
-    expect(app).toContain('`Je suis groupe ${group}`');
-    expect(app).not.toContain('className="today-group-card"');
+    // Le choix du groupe dans l'en-tête d'Aujourd'hui : test de rendu dans
+    // src/HomeDashboard.test.tsx.
     expect(app).toContain("primary-action planning-leave-action");
     expect(app).toContain('className="planning-leave-panel"');
     expect(css.hasRule(".planning-leave-panel .planning-leave-action")).toBe(true);

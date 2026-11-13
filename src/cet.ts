@@ -293,6 +293,35 @@ export function cetSourceDepositCapacity(
   );
 }
 
+/** Le congé CET déjà posé dans le planning, retiré du solde suivi. */
+export function withPlannedCetLeave(account: CetAccount, plannedLeaveDays: number, dateKey: string): CetAccount {
+  return plannedLeaveDays > 0
+    ? { ...account, operations: [...account.operations, { id: "planning-cet-leave", date: dateKey, kind: "leave", days: plannedLeaveDays, note: "Congés CET du planning" }] }
+    : account;
+}
+
+/** Ce que la demande annuelle peut verser, par origine puis en tout : les
+ *  soldes en jours entiers, les maxima du cycle, le plafond et la
+ *  progression annuelle. Mon CET et le rappel de l'accueil le partagent. */
+export function cetDepositableDays(
+  account: CetAccount,
+  remaining: { annual: number; rtt: number; fraction: number },
+  year: number,
+) {
+  const whole = cetAvailableWholeDays(remaining);
+  const bySource: Record<CetDepositSource, number> = { annual: 0, rtt: 0, fraction: 0 };
+  for (const source of Object.keys(bySource) as CetDepositSource[])
+    bySource[source] = cetSourceDepositCapacity(account, source, whole[source], `${year}-11-15`);
+  return {
+    bySource,
+    total: Math.min(
+      whole.annual + whole.rtt + whole.fraction,
+      cetDepositCapacity(cetBalance(account)),
+      bySource.annual + bySource.rtt + bySource.fraction,
+    ),
+  };
+}
+
 export function cetOptionCapacity(account: CetAccount) {
   return Math.max(0, cetBalance(account) - CET_OPTION_THRESHOLD);
 }

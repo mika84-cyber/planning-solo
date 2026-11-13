@@ -144,7 +144,11 @@ const budgets = {
   // Docs seulement ; le chargement initial ne bouge pas (167,3 / 181 Kio).
   // La marge reste mince : un allègement est à prévoir plutôt qu'un
   // relèvement à chaque nouveauté (2 116,9 / 701,1 Kio mesurés).
-  totalJavaScript: { raw: 2_120 * KIB, gzip: 702 * KIB },
+  // Relevé le 13 novembre 2026 à 2 125 Kio bruts et 704 Kio compressés, avec
+  // l'accord de l'administrateur : le rappel de l'alimentation du CET sur
+  // l'accueil (carte, bandeau qui défile après « Plus tard ») et le calcul
+  // de l'alimentation partagé avec Mon CET (2 123,4 / 703,2 Kio mesurés).
+  totalJavaScript: { raw: 2_125 * KIB, gzip: 704 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

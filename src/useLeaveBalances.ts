@@ -53,6 +53,20 @@ export function remainingLeaveForYear(
   ])) as LeaveRemainingByYear[string];
 }
 
+/** Jours de congé CET posés dans le planning, toutes années confondues
+ *  (jours travaillés seulement), déjà retirés du solde CET suivi. */
+export function plannedCetLeaveDays(periods: LeavePeriod[], group: number) {
+  const dates = new Set<string>();
+  for (const period of periods) {
+    if (period.leaveType !== "cet") continue;
+    for (let date = fromKey(period.from); dateKey(date) <= period.to; date = addDays(date, 1)) {
+      const info = getDayInfo(date, period.group || group);
+      if (!info.holiday && info.kind !== "off") dates.add(dateKey(date));
+    }
+  }
+  return dates.size;
+}
+
 /**
  * Les soldes de congés de l'année affichée et ce qui en découle : reste de
  * CA reporté jusqu'au 30 avril, soldes par type et par année pour la demande
@@ -133,17 +147,7 @@ export function useLeaveBalances({
   );
   const cetAnnualDaysTaken =
     leaveStats.balances.find((balance) => balance.type === "annual")?.used || 0;
-  const cetPlannedLeaveDays = useMemo(() => {
-    const dates = new Set<string>();
-    for (const period of periods) {
-      if (period.leaveType !== "cet") continue;
-      for (let date = fromKey(period.from); dateKey(date) <= period.to; date = addDays(date, 1)) {
-        const info = getDayInfo(date, period.group || group);
-        if (!info.holiday && info.kind !== "off") dates.add(dateKey(date));
-      }
-    }
-    return dates.size;
-  }, [periods, group]);
+  const cetPlannedLeaveDays = useMemo(() => plannedCetLeaveDays(periods, group), [periods, group]);
   const balanceDetail = useMemo(() => {
     if (!balanceDetailType) return null;
     if (balanceDetailType !== "annual" && balanceDetailType !== "rtt" &&

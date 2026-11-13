@@ -7543,7 +7543,8 @@ test("une mise à jour ignorée laisse un bouton « Faire la mise à jour » dan
   // Tant que la fenêtre de mise à jour est ouverte, le bouton attend.
   await expect(page.getByRole("heading", { name: "Une mise à jour est disponible" })).toBeVisible();
   await expect(call).toHaveCount(0);
-  await page.getByRole("button", { name: "Plus tard" }).click();
+  // Le « Plus tard » de la fenêtre, pas celui du rappel du CET sur l'accueil.
+  await page.getByRole("alertdialog").getByRole("button", { name: "Plus tard" }).click();
   await expect(call).toBeVisible();
   // Il prend la place de « Liste des raccourcis », qui ne le recouvre pas.
   await expect(page.locator("header.top-header > .header-help-button")).toHaveCount(0);
@@ -7992,4 +7993,66 @@ test("un férié travaillé propose prime seule, prime + récup ou un échange a
   // La paie : le férié cédé disparaît, le férié repris apparaît.
   await expect(holidayCard.locator("tr").filter({ hasText: returnedName })).toHaveCount(1);
   await expect(holidayCard.locator("tr").filter({ hasText: givenName })).toHaveCount(0);
+});
+
+/** Le profil d'un agent qui suit son CET (solde de 5 jours) et a posé 20 CA en 2026. */
+function seedCetProfile(page: Page) {
+  return page.addInitScript(() => {
+    localStorage.setItem("planning:e2e-pay-profile", JSON.stringify({
+      fullName: "",
+      group: "2",
+      signature: "",
+      manualAdjustments: { "2026": { annualUsed: 20, rttUsed: 0, fractionUsed: 0, sundayLeaveJanJun: 0, sundayLeaveJulSep: 0, sundayLeaveOctNov: 0, sundayLeaveDec: 0 } },
+      cetAccount: { enabled: true, employer: "public-establishment", employerName: "Centre Pompidou", category: "C", workRule: "visitor_service", hasOneYearService: true, isTrainee: false, openedOn: "", initialBalance: 5, legacyCap70: false, operations: [] },
+    }));
+  });
+}
+
+test("du 15 novembre au 31 décembre, l’accueil rappelle l’alimentation du CET et ouvre son formulaire", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-20T10:00:00"));
+  await seedCetProfile(page);
+  await prepareDemo(page);
+  const reminder = page.getByRole("complementary", { name: "L’alimentation est ouverte" });
+  await expect(reminder).toContainText("CET · jusqu’au 31 décembre");
+  await expect(reminder).toContainText(/jusqu’à 20\sjours sur votre CET, à prendre parmi 9\sCA, 15\sRTT et 2\sjours de fractionnement/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  // « Préparer ma demande » : Congés, Mon CET ouvert, son formulaire d'alimentation par-dessus.
+  await reminder.getByRole("button", { name: "Préparer ma demande" }).click();
+  const form = page.getByRole("dialog", { name: "Alimenter ou indemniser mon CET" });
+  await expect(form).toBeVisible();
+  await expect(page.locator("details.cet-disclosure")).toHaveJSProperty("open", true);
+  await form.getByRole("button", { name: "Fermer" }).click();
+  // « Plus tard » replie la carte en bandeau qui défile, qui reste après un
+  // rechargement ; touché, le bandeau redéplie la carte et lui passe la main.
+  await goToSection(page, "home");
+  await reminder.getByRole("button", { name: "Plus tard" }).click();
+  await expect(reminder).toHaveCount(0);
+  const ribbon = page.getByRole("button", { name: /^L’alimentation du CET est ouverte jusqu’au 31 décembre\. Vous pouvez verser jusqu’à 20\sjours\./ });
+  await expect(ribbon).toBeFocused();
+  await expect(ribbon.locator(".cet-ticker-track")).toHaveCSS("animation-name", "cet-ticker");
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+  await expect(reminder).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  // « Réduire les animations » : le texte ne défile plus.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(ribbon.locator(".cet-ticker-track")).toHaveCSS("animation-name", "none");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await ribbon.click();
+  await expect(reminder.getByRole("button", { name: "Préparer ma demande" })).toBeFocused();
+  await expect(ribbon).toHaveCount(0);
+});
+
+test("en fin d’année, un CET non renseigné reste rappelé jusqu’à « Je n’ai pas de CET »", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-12-27T10:00:00"));
+  await prepareDemo(page);
+  const reminder = page.getByRole("complementary", { name: "Vous avez un CET ?" });
+  await expect(reminder.locator(".step-label.urgent")).toHaveText("CET · plus que 5 jours");
+  await reminder.getByRole("button", { name: "Je n’ai pas de CET" }).click();
+  await expect(reminder).toHaveCount(0);
+  await expect(page.getByText("C’est noté : plus de rappel du CET.", { exact: false })).toBeVisible();
+  // Mon CET reste à configurer si un compte s'ouvre plus tard.
+  await goToSection(page, "leave");
+  await page.locator("details.cet-disclosure > summary").click();
+  await expect(page.getByRole("button", { name: "Mes droits sont déjà ouverts" })).toBeVisible();
 });

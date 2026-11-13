@@ -2,6 +2,8 @@ import { type Dispatch, lazy, type SetStateAction, Suspense, useState } from "re
 import { AdaptiveNavigation, AppHeader } from "./AppNavigation";
 import { AppleInstallNotice } from "./AppleInstallNotice";
 import { PAY_STATUS_OPTIONS } from "./appModel";
+import { emptyCetAccount } from "./cet";
+import { CetWindowReminder } from "./CetWindowReminder";
 import { readColleagueBoardCache } from "./colleagueBoardCache";
 import { clearColleagueGroupsCache } from "./colleagueSharingApi";
 import { HomeAdminMessage } from "./HomeAdminMessage";
@@ -15,6 +17,7 @@ import { scrollWhenReady } from "./scrollWhenReady";
 import { currentResolvedTheme, setThemePreference } from "./theme";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { useAuthenticationActions } from "./useAuthenticationActions";
+import type { useProfileAdjustmentActions } from "./useProfileAdjustmentActions";
 import type { useCalendarDataState } from "./useCalendarDataState";
 import type { useFeedbackMessaging } from "./useFeedbackMessaging";
 import type { useInstallPrompt } from "./useInstallPrompt";
@@ -71,13 +74,14 @@ type Props = {
   help: { openPlanningPdf: () => void; openBlankForm: () => void; requestLeave: () => void; openExchange: () => void };
   actions: Pick<ReturnType<typeof useSectionNavigation>, "navigateFromShell">
     & Pick<ReturnType<typeof useShellEffects>, "checkForAppUpdate">
-    & Pick<ReturnType<typeof useAuthenticationActions>, "disconnect">;
+    & Pick<ReturnType<typeof useAuthenticationActions>, "disconnect">
+    & Pick<ReturnType<typeof useProfileAdjustmentActions>, "saveCetAccount">;
 };
 
 /**
  * La coque de l'application : en-tête et menu du compte, navigation,
  * propositions d'installation, aperçu invité et outils de
- * l'administrateur, rappel des jours fériés. Les états et les actions restent
+ * l'administrateur, rappels des jours fériés et du CET. Les états et les actions restent
  * dans App.tsx ; ce composant les relie aux éléments communs à tous les écrans.
  */
 export function AppShellChrome({
@@ -208,6 +212,16 @@ export function AppShellChrome({
       }
     }
   };
+  // Rappel du CET : Congés › Mon CET, avec ou sans le formulaire
+  // d'alimentation. En démo, « ?date-cet=2026-12-26 » le montre à une autre
+  // date que celle du jour.
+  const openCet = (target: HelpTarget) => {
+    navigateFromShell("leave");
+    window.scrollTo({ top: 0, behavior: "auto" });
+    requestHelpTarget(target);
+  };
+  const demoCetDay = demoMode && typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("date-cet") : null;
+  const cetReminderDay = demoCetDay && /^\d{4}-\d{2}-\d{2}$/.test(demoCetDay) ? demoCetDay : dateKey(now);
   return (
     <>
       <AppHeader
@@ -304,6 +318,18 @@ export function AppShellChrome({
           setPayScreen("allowances");
           scrollWhenReady("holiday-choices");
         }}
+      />}
+      {homeSection === "home" && <CetWindowReminder
+        todayKey={cetReminderDay}
+        account={formProfile?.cetAccount}
+        periods={periods}
+        group={group}
+        manualAdjustments={formProfile?.manualAdjustments}
+        onPrepare={() => openCet("cet-funding")}
+        onOpenCet={() => openCet("cet")}
+        onNoCet={() => void actions.saveCetAccount({ ...emptyCetAccount(), enabled: false }).then((saved) => {
+          if (saved) showSuccess("C’est noté : plus de rappel du CET. Si vous en ouvrez un, indiquez-le dans Congés › Mon CET.");
+        })}
       />}
     </>
   );

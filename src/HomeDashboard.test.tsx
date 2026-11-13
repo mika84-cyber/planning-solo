@@ -48,6 +48,16 @@ describe("HomeDashboard", () => {
     expect(next).toContain('<small class="today-block-note">en 2027</small>');
   });
 
+  // Ancien contrôle textuel d'uiRefinement.test.mjs, devenu test de rendu.
+  it("place le choix du groupe dans l’en-tête d’Aujourd’hui, sans carte à part", () => {
+    const heading = (html: string) => html.slice(html.indexOf('<div class="today-overview-heading">'), html.indexOf('<div class="today-blocks">'));
+    const chosen = renderToStaticMarkup(<HomeDashboard {...baseProps} hasConfiguredGroup />);
+    expect(heading(chosen)).toContain('<button class="primary-action add-action group-heading-action" type="button" aria-label="Je suis groupe 2. Modifier mon groupe">Je suis groupe 2</button>');
+    expect(chosen).not.toContain("today-group-card");
+    const unset = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
+    expect(heading(unset)).toContain('aria-label="Choisir mon groupe">Choisir mon groupe</button>');
+  });
+
   it("ne répète pas sur l’accueil les actions déjà accessibles dans la navigation", () => {
     const html = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
     expect(html).not.toContain("Accès rapide");

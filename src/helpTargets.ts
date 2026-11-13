@@ -20,6 +20,8 @@ export type HelpTarget =
   | "program-interexpo"
   | "overtime-mecenat"
   | "cet"
+  /** Mon CET, formulaire d'alimentation ouvert (rappel de l'accueil). */
+  | "cet-funding"
   | "colleague-share"
   | "colleague-groups"
   | "colleague-settings"
