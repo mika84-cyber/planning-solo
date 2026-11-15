@@ -123,18 +123,19 @@ export function LeaveManagementPage({
     : 0;
   const nextPaidEstimate = nextPaidPeriod ? paidOvertimeEstimate?.(nextPaidPeriod.year, nextPaidPeriod.month) : undefined;
   // La fenêtre d'aide amène aux heures et mécénats, ou ouvre le CET ; le
-  // rappel de l'accueil l'ouvre avec son formulaire d'alimentation, que la
-  // rubrique Mon CET ouvre elle-même (la demande lui est laissée).
+  // rappel de l'accueil l'ouvre avec son formulaire d'alimentation ou sa
+  // demande d'ouverture, que la rubrique Mon CET ouvre elle-même (la demande
+  // lui est laissée, même si elle se monte après la page).
   const toolsRef = useRef<HTMLElement>(null);
   const cetRef = useRef<HTMLDetailsElement>(null);
   useHelpTarget((target) => {
-    const element = target === "cet" || target === "cet-funding" ? cetRef.current : target === "overtime-mecenat" ? toolsRef.current : null;
+    const element = target === "cet" || target === "cet-funding" || target === "cet-opening" ? cetRef.current : target === "overtime-mecenat" ? toolsRef.current : null;
     if (!element) return false;
     if (element instanceof HTMLDetailsElement) element.open = true;
     // Les soldes au-dessus se chargent à part : on attend qu'ils aient pris
     // leur place avant de descendre.
     window.setTimeout(() => element.scrollIntoView({ behavior: "smooth", block: "start" }), 350);
-    return target !== "cet-funding";
+    return target !== "cet-funding" && target !== "cet-opening";
   });
   return (
     <>

@@ -8,8 +8,9 @@ const tracked = () => ({ ...emptyCetAccount(), initialBalance: 5 });
 const state = (todayKey: string, account = tracked(), annualDaysTaken = 20) =>
   cetWindowReminderState({ todayKey, account, annualDaysTaken, remaining, plannedLeaveDays: 0 });
 const used = (annualUsed: number) => ({ "2026": { annualUsed, rttUsed: 0, fractionUsed: 0, sundayLeaveJanJun: 0, sundayLeaveJulSep: 0, sundayLeaveOctNov: 0, sundayLeaveDec: 0 } });
+const handlers = { onPrepare: vi.fn(), onOpenCet: vi.fn(), onRequestOpening: vi.fn(), onRequestLeave: vi.fn(), onSaveBalance: vi.fn(async () => true), onNoCet: vi.fn() };
 const render = (todayKey: string, account: ReturnType<typeof tracked> | undefined, annualUsed = 20) => renderToStaticMarkup(
-  <CetWindowReminder todayKey={todayKey} account={account} periods={[]} group={2} manualAdjustments={used(annualUsed)} onPrepare={vi.fn()} onOpenCet={vi.fn()} onNoCet={vi.fn()} />,
+  <CetWindowReminder todayKey={todayKey} account={account} periods={[]} group={2} manualAdjustments={used(annualUsed)} {...handlers} />,
 );
 
 describe("le rappel de l'alimentation du CET sur l'accueil", () => {
@@ -37,34 +38,50 @@ describe("le rappel de l'alimentation du CET sur l'accueil", () => {
     expect(state("2026-11-20", tracked(), 15.5)).toMatchObject({ kind: "missing", missingDays: 2.5, minimum: 18, taken: 15.5 });
   });
 
-  it("dit ce qui peut être versé et mène au formulaire d'alimentation", () => {
+  it("guide en trois étapes : la frise, puis ce qui peut être versé et le formulaire d'alimentation", () => {
     const html = render("2026-11-20", tracked());
-    expect(html).toContain('<aside class="cet-window-reminder" aria-labelledby="cet-window-reminder-title">');
-    expect(html).toContain('<span class="step-label">CET · jusqu’au 31 décembre</span><h2 id="cet-window-reminder-title">L’alimentation est ouverte</h2>');
+    expect(html).toContain('<aside class="cet-window-reminder open" aria-labelledby="cet-window-reminder-title"><div class="cet-window-reminder-top"><span class="step-label">CET · jusqu’au 31 décembre</span><button type="button" class="cet-window-reminder-later">Plus tard</button></div>');
+    // La frise : le CET et son solde sont faits, la demande est l'étape en cours.
+    expect(html).toContain('<ol class="cet-journey" aria-label="Étapes"><li class="done"><span class="cet-journey-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span><small>Votre CET<span class="visually-hidden"> : fait</span></small></li>');
+    expect(html).toContain('<li class="current" aria-current="step"><span class="cet-journey-mark" aria-hidden="true">3</span><small>Demande</small></li></ol>');
+    expect(html).toContain('<h2 id="cet-window-reminder-title">Vous pouvez verser jusqu’à 20 jours</h2>');
+    // La barre : chaque origine à sa part (9 CA, 15 RTT, 2 jours).
+    expect(html).toContain('<span class="cet-window-reminder-bar" aria-hidden="true"><i class="annual" style="flex-grow:9"></i><i class="rtt" style="flex-grow:15"></i><i class="fraction" style="flex-grow:2"></i></span>');
     // Plus de jours versables (26) que la demande n'en admet (20) : on choisit.
-    expect(html).toContain("vous pouvez verser jusqu’à <strong>20 jours</strong> sur votre CET, à prendre parmi 9 CA, 15 RTT et 2 jours de fractionnement.");
-    expect(html).toContain("Ce rappel disparaît dès qu’elle est enregistrée dans Mon CET.");
-    expect(html).toContain('<button type="button" class="cet-window-reminder-go">Préparer ma demande</button>');
-    expect(html).toContain(">Plus tard</button>");
-    expect(html).not.toContain("Je n’ai pas de CET");
+    expect(html).toContain('<p class="cet-window-reminder-sources"><span>à prendre parmi</span><span class="annual"><strong>9</strong> CA</span><span class="rtt"><strong>15</strong> RTT</span><span class="fraction"><strong>2</strong> jours de fractionnement</span></p>');
+    expect(html).toContain('<button type="button" class="cet-window-reminder-go">Préparer ma demande</button><small>D’après vos soldes. Ce rappel disparaît dès que l’alimentation est enregistrée dans Mon CET.</small></aside>');
+    expect(html).not.toContain("Non, je n’ai pas de CET");
+    expect(html).not.toContain("cet-symbol");
+    // Pas plus de jours versables que la demande n'en admet : « soit ».
+    const fewRtt = { "2026": { ...used(20)["2026"], rttUsed: 14 } };
+    const exact = renderToStaticMarkup(<CetWindowReminder todayKey="2026-11-20" account={tracked()} periods={[]} group={2} manualAdjustments={fewRtt} {...handlers} />);
+    expect(exact).toContain('<p class="cet-window-reminder-sources"><span>soit</span>');
   });
 
   it("devient pressant la dernière semaine", () => {
     const html = render("2026-12-27", tracked());
     expect(html).toContain('<span class="step-label urgent">CET · plus que 5 jours</span>');
-    expect(html).toContain("La demande est à envoyer au plus tard le 31 décembre.");
+    expect(html).toContain("<small>D’après vos soldes. La demande est à envoyer au plus tard le 31 décembre.</small>");
     expect(render("2026-12-31", tracked())).toContain("CET · dernier jour");
   });
 
-  it("propose d'indiquer son solde, ou de dire qu'on n'a pas de CET", () => {
+  it("commence par la question du CET, avec Oui, Non et la demande d'ouverture", () => {
     const html = render("2026-11-20", undefined);
-    expect(html).toContain("Vous avez un CET ?");
-    expect(html).toContain(">Indiquer mon solde</button>");
-    expect(html).toContain(">Je n’ai pas de CET</button>");
+    expect(html).toContain('<aside class="cet-window-reminder setup"');
+    expect(html).toContain('<li class="current" aria-current="step"><span class="cet-journey-mark" aria-hidden="true">1</span><small>Votre CET</small></li><li><span class="cet-journey-mark" aria-hidden="true">2</span><small>Son solde</small></li>');
+    expect(html).toContain('<h2 id="cet-window-reminder-title">Avez-vous un CET ?</h2><p>Vos CA, RTT et jours de fractionnement non pris peuvent y être versés, en une seule demande par an.</p>');
+    expect(html).toContain('<div class="cet-window-reminder-answers"><button type="button" class="cet-window-reminder-go">Oui</button><button type="button" class="cet-window-reminder-no" aria-label="Non, je n’ai pas de CET">Non</button></div>');
+    expect(html).toContain('<button type="button" class="cet-window-reminder-link">Pas encore : demander son ouverture</button></aside>');
+  });
+
+  it("dit les CA qui manquent et mène au choix des congés", () => {
     const missing = render("2026-11-20", tracked(), 15);
-    expect(missing).toContain("Il vous manque 3 CA posés");
-    expect(missing).toContain("il faut avoir posé <strong>18 jours de CA</strong> dans l’année. Vous en avez posé 15.");
-    expect(missing).toContain(">Voir mon CET</button>");
+    expect(missing).toContain('<aside class="cet-window-reminder missing"');
+    expect(missing).toContain('<h2 id="cet-window-reminder-title">Encore 3 CA à poser</h2>');
+    // La barre : 15 CA posés sur les 18 demandés.
+    expect(missing).toContain('<span class="cet-window-reminder-bar" aria-hidden="true"><i class="taken" style="flex-grow:15"></i><i class="missing" style="flex-grow:3"></i></span>');
+    expect(missing).toContain("<p>15 CA posés sur les 18 nécessaires pour verser des jours cette année.</p>");
+    expect(missing).toContain('<button type="button" class="cet-window-reminder-go">Poser des congés</button>');
   });
 
   describe("« Plus tard » : la carte repliée en bandeau qui défile", () => {
@@ -112,7 +129,7 @@ describe("le rappel de l'alimentation du CET sur l'accueil", () => {
       vi.stubGlobal("localStorage", { getItem: () => "2026-12-26", setItem: vi.fn() });
       expect(render("2026-12-27", tracked())).toContain('class="cet-ticker urgent" aria-label="Plus que 5 jours pour alimenter votre CET.');
       vi.stubGlobal("localStorage", { getItem: () => "2026-11-18", setItem: vi.fn() });
-      expect(render("2026-12-27", tracked())).toContain("L’alimentation est ouverte</h2>");
+      expect(render("2026-12-27", tracked())).toContain("Vous pouvez verser jusqu’à 20 jours</h2>");
     });
   });
 });

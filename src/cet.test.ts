@@ -11,7 +11,9 @@ import {
   cetSourceDepositCapacity,
   CET_WORK_RULES,
   cetYearEndSummary,
+  cetBalanceError,
   emptyCetAccount,
+  openedCetAccount,
   withPlannedCetLeave,
 } from "./cet";
 
@@ -99,5 +101,18 @@ describe("CET", () => {
     expect(cetBalance(withPlannedCetLeave(account, 3, "2026-11-20"))).toBe(2);
     expect(withPlannedCetLeave(account, 0, "2026-11-20")).toBe(account);
     expect(cetDepositableDays(withPlannedCetLeave(account, 3, "2026-11-20"), { annual: 2, rtt: 1, fraction: 0 }, 2026)).toEqual({ bySource: { annual: 2, rtt: 1, fraction: 0 }, total: 3 });
+  });
+});
+
+describe("le solde du relevé RH, depuis Mon CET ou le rappel de l'accueil", () => {
+  it("demande des jours entiers, de 0 à 200", () => {
+    expect(cetBalanceError(0)).toBe("");
+    expect(cetBalanceError(200)).toBe("");
+    for (const value of [-1, 201, 2.5, Number.NaN]) expect(cetBalanceError(value)).toBe("Indiquez un solde officiel en jours entiers, entre 0 et 200.");
+  });
+
+  it("ouvre le suivi du compte avec les règles de l'accueil et de la surveillance", () => {
+    const disabled = { ...emptyCetAccount(), enabled: false, category: "A" as const, initialBalance: 12, legacyCap70: true };
+    expect(openedCetAccount(disabled)).toEqual({ ...disabled, enabled: true, employer: "public-establishment", employerName: "Centre Pompidou", category: "C", workRule: "visitor_service" });
   });
 });

@@ -140,8 +140,9 @@ describe("finitions d’interface", () => {
   it("hiérarchise les actions CET et met en valeur les heures de récupération", () => {
     expect(css.mentions(".cet-toolbar .secondary-button")).toBe(true);
     expect(css.declares("background", "var(--surface)")).toBe(true);
-    expect(workTimeDialogs).toContain("Heures à poser");
-    expect(app).toContain("Heures à poser pour chaque date");
+    // « Heures à poser » (une date) et « Heures à poser pour chaque date »
+    // (plusieurs) : tests de rendu dans src/WorkTimeDialogs.test.tsx et
+    // src/PlanningCommandCenter.test.tsx.
     expect(css.mentions(".recovery-duration-field .recovery-duration-choice button.active")).toBe(true);
   });
 

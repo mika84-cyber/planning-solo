@@ -30,6 +30,7 @@ import {
 } from "./rememberedSession";
 import type { useAuthUiState } from "./useAuthUiState";
 import type { useCalendarDataState } from "./useCalendarDataState";
+import { useDayChange } from "./useDayChange";
 import { readDemoExchanges } from "./useWorkExchangeActions";
 import { exchangeEntryFields } from "./workExchange";
 
@@ -371,6 +372,8 @@ export function useApplicationStartup({
       document.removeEventListener("visibilitychange", refreshSharedData);
     };
   }, [authStatus, demoMode]);
+  // L'application restée ouverte d'un jour à l'autre suit le jour.
+  useDayChange(setNow);
 
   return { loadCalendar, clearCalendarData };
 }

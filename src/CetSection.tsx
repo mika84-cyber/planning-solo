@@ -12,6 +12,7 @@ import {
   CET_WORK_RULES,
   cetAvailableWholeDays,
   cetBalance,
+  cetBalanceError,
   cetDepositableDays,
   cetDepositEligibility,
   cetDepositsForYear,
@@ -20,6 +21,7 @@ import {
   cetSourceDepositCapacity,
   cetYearEndSummary,
   emptyCetAccount,
+  openedCetAccount,
   withPlannedCetLeave,
   type CetAccount,
   type CetDepositSource,
@@ -79,17 +81,19 @@ export function CetSection({
 
   const active = account?.enabled ? account : undefined;
   // « Préparer ma demande » du rappel de l'accueil : le formulaire
-  // d'alimentation s'ouvre dès que la rubrique est là. Elle peut se monter
+  // d'alimentation s'ouvre dès que la rubrique est là ; « Pas encore :
+  // demander son ouverture », la demande d'ouverture. Elle peut se monter
   // avant la page qui la contient : elle ouvre alors elle-même son volet.
   const sectionRef = useRef<HTMLElement>(null);
   useHelpTarget((target) => {
-    if (target !== "cet-funding") return false;
+    if (target !== "cet-funding" && target !== "cet-opening") return false;
     const disclosure = sectionRef.current?.closest("details");
     if (disclosure && !disclosure.open) {
       disclosure.open = true;
       window.setTimeout(() => disclosure.scrollIntoView({ behavior: "smooth", block: "start" }), 350);
     }
-    if (active) setFormKind("funding");
+    if (target === "cet-opening") setFormKind("opening");
+    else if (active) setFormKind("funding");
     return true;
   });
   const trackedAccount = active
@@ -115,18 +119,12 @@ export function CetSection({
   );
 
   async function saveSettings() {
-    if (!Number.isInteger(draft.initialBalance) || draft.initialBalance < 0 || draft.initialBalance > 200) {
-      setError("Indiquez un solde officiel en jours entiers, entre 0 et 200.");
+    const problem = cetBalanceError(draft.initialBalance);
+    if (problem) {
+      setError(problem);
       return;
     }
-    const saved = await onSave({
-      ...draft,
-      enabled: true,
-      employer: "public-establishment",
-      employerName: "Centre Pompidou",
-      category: "C",
-      workRule: "visitor_service",
-    });
+    const saved = await onSave(openedCetAccount(draft));
     if (saved) setError("");
   }
 

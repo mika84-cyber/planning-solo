@@ -137,6 +137,29 @@ export function emptyCetAccount(): CetAccount {
   };
 }
 
+/** Le solde officiel d'un CET, tel qu'il figure sur le relevé RH : des jours
+ *  entiers, de 0 à 200. Message à afficher, ou "" s'il convient. */
+export function cetBalanceError(initialBalance: number) {
+  return Number.isInteger(initialBalance) && initialBalance >= 0 && initialBalance <= 200
+    ? ""
+    : "Indiquez un solde officiel en jours entiers, entre 0 et 200.";
+}
+
+/** Le compte d'un CET dont les droits sont déjà ouverts, suivi à partir du
+ *  solde du relevé RH : agent d'accueil et de surveillance du Centre
+ *  Pompidou, catégorie C. Mon CET et le rappel de l'accueil l'enregistrent
+ *  de la même façon. */
+export function openedCetAccount(account: CetAccount): CetAccount {
+  return {
+    ...account,
+    enabled: true,
+    employer: "public-establishment",
+    employerName: "Centre Pompidou",
+    category: "C",
+    workRule: "visitor_service",
+  };
+}
+
 export function cetAccountFromApi(value: unknown): CetAccount | undefined {
   if (!value || typeof value !== "object") return undefined;
   const raw = value as CetStoredAccount;

@@ -2,7 +2,7 @@ import { type Dispatch, lazy, type SetStateAction, Suspense, useState } from "re
 import { AdaptiveNavigation, AppHeader } from "./AppNavigation";
 import { AppleInstallNotice } from "./AppleInstallNotice";
 import { PAY_STATUS_OPTIONS } from "./appModel";
-import { emptyCetAccount } from "./cet";
+import { emptyCetAccount, openedCetAccount } from "./cet";
 import { CetWindowReminder } from "./CetWindowReminder";
 import { readColleagueBoardCache } from "./colleagueBoardCache";
 import { clearColleagueGroupsCache } from "./colleagueSharingApi";
@@ -327,6 +327,9 @@ export function AppShellChrome({
         manualAdjustments={formProfile?.manualAdjustments}
         onPrepare={() => openCet("cet-funding")}
         onOpenCet={() => openCet("cet")}
+        onRequestOpening={() => openCet("cet-opening")}
+        onRequestLeave={() => help.requestLeave()}
+        onSaveBalance={(initialBalance, legacyCap70) => actions.saveCetAccount(openedCetAccount({ ...emptyCetAccount(), initialBalance, legacyCap70 }))}
         onNoCet={() => void actions.saveCetAccount({ ...emptyCetAccount(), enabled: false }).then((saved) => {
           if (saved) showSuccess("C’est noté : plus de rappel du CET. Si vous en ouvrez un, indiquez-le dans Congés › Mon CET.");
         })}

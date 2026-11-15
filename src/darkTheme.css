@@ -170,10 +170,11 @@ html[data-theme="dark"] .useful-form-download-list > .useful-form-download-card 
    bleu du dossier, la vignette passe en bleu nuit. */
 html[data-theme="dark"] .absence-form-reminder-actions > a { border-color: #5368a8; background: #5368a8; color: #fff; }
 html[data-theme="dark"] .absence-form-reminder-icon { background: #2b3045; color: #c9d1f2; }
-html[data-theme="dark"] .cet-window-reminder { border-left-color: #bcb0a0; }
-html[data-theme="dark"] .cet-window-reminder :is(.step-label, .cet-window-reminder-later) { color: #d6cbbb; }
+/* Rappel du CET : les teintes de la carte (variables de adminHomeMessage.css). */
+html[data-theme="dark"] .cet-window-reminder { --ink: #bcb0a0; --edge: #bcb0a0; --on-ink: #211c18; --label: #d6cbbb; --strong: #e6dccd; --soft: #a89d8e; --line: #4f483f; --ring: #3a342d; --track: #3a342d; --field: #8f8474; --rtt: #a39785; --fraction: #6f6556; }
+html[data-theme="dark"] .cet-window-reminder .step-label { color: var(--label); }
 html[data-theme="dark"] .cet-window-reminder .step-label.urgent { color: #f0b98a; }
-html[data-theme="dark"] .cet-window-reminder .cet-window-reminder-go { border-color: #bcb0a0; background: #bcb0a0; color: #211c18; }
+html[data-theme="dark"] .cet-window-reminder p.cet-window-reminder-error { color: #f0a08f; }
 html[data-theme="dark"] .cet-ticker { --base: #bcb0a0; --label: #d6cbbb; --more: #d6cbbb; --sep: #8f8474; }
 html[data-theme="dark"] .cet-ticker.urgent { --ink: #f0b98a; --label: #f0b98a; --fill: #f0b98a; }
 html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #1f3327; --tile-ink: #8fd1a8; }

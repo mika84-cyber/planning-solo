@@ -153,8 +153,12 @@ const budgets = {
   // carte de l'étape à faire) et le filet du bandeau CET (2 125,5 / 704,0 Kio
   // mesurés). Relevé le 13 novembre 2026 à 2 130 / 706 Kio, avec l'accord de
   // l'administrateur : la majoration de 22 h à minuit des mécénats, attendue
-  // à part jusqu'à sa régularisation (2 128,8 / 705,2 Kio mesurés).
-  totalJavaScript: { raw: 2_130 * KIB, gzip: 706 * KIB },
+  // à part jusqu'à sa régularisation (2 128,8 / 705,2 Kio mesurés). Relevé
+  // le 15 novembre 2026 à 2 134 / 707 Kio, avec l'accord de l'administrateur :
+  // le rappel du CET en parcours guidé (frise, solde saisi sur l'accueil) et
+  // la date relue quand l'application reste ouverte (2 133,1 / 706,5 Kio
+  // mesurés).
+  totalJavaScript: { raw: 2_134 * KIB, gzip: 707 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -200,8 +204,10 @@ const budgets = {
   // passé ? » du bulletin, introduction des congés) ; 537,6 / 104,5 Kio
   // mesurés. Relevé le 13 novembre 2026 à 540 Kio brut, avec l'accord de
   // l'administrateur : l'encadré « À régulariser » des mécénats et ses notes
-  // (538,6 / 104,7 Kio mesurés).
-  totalCss: { raw: 540 * KIB, gzip: 105 * KIB },
+  // (538,6 / 104,7 Kio mesurés). Relevé le 15 novembre 2026 à 543 / 106 Kio,
+  // avec l'accord de l'administrateur : le rappel du CET en parcours guidé,
+  // ses teintes regroupées en variables (542,3 / 105,4 Kio mesurés).
+  totalCss: { raw: 543 * KIB, gzip: 106 * KIB },
 };
 
 async function filesUnder(directory) {

@@ -116,4 +116,12 @@ describe("PlanningCommandCenter", () => {
     expect(render("past", 2025, 205.5)).toContain('<li class="worked-days-year"><b>205,5</b><small>jours travaillés en 2025</small></li>');
     expect(render("past", 2025, 1)).toContain("<small>jour travaillé en 2025</small>");
   });
+
+  it("pendant le choix des dates d’une récupération, demande les heures à poser pour chaque date", () => {
+    const html = renderToStaticMarkup(<PlanningCommandCenter {...baseProps} recoveryRangeSelecting recoveryRangeDates={["2026-09-01", "2026-09-02"]} />);
+    expect(html).toContain('<section class="range-selection-panel recovery" id="recovery-range-selection-panel">');
+    expect(html).toContain("Choix des dates · Récupération en heures");
+    expect(html).toContain("<h2>2 dates sélectionnées</h2>");
+    expect(html).toContain('<fieldset class="overtime-choice-field recovery-range-duration recovery-duration-field"><legend>Heures à poser pour chaque date</legend>');
+  });
 });

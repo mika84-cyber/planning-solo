@@ -22,6 +22,8 @@ export type HelpTarget =
   | "cet"
   /** Mon CET, formulaire d'alimentation ouvert (rappel de l'accueil). */
   | "cet-funding"
+  /** Mon CET, demande d'ouverture ouverte (rappel de l'accueil). */
+  | "cet-opening"
   | "colleague-share"
   | "colleague-groups"
   | "colleague-settings"
