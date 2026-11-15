@@ -80,6 +80,10 @@ export function CetSection({
   const [disableConfirmOpen, setDisableConfirmOpen] = useState(false);
 
   const active = account?.enabled ? account : undefined;
+  // « Je n'ai pas de CET » (la carte de l'accueil ou le bouton ci-dessous) :
+  // le rappel de l'accueil se tait ; la rubrique le dit et montre comment le
+  // retrouver, au lieu de ressembler à un CET jamais renseigné.
+  const declined = account !== undefined && !account.enabled;
   // « Préparer ma demande » du rappel de l'accueil : le formulaire
   // d'alimentation s'ouvre dès que la rubrique est là ; « Pas encore :
   // demander son ouverture », la demande d'ouverture. Elle peut se monter
@@ -233,13 +237,14 @@ export function CetSection({
         <span>
           <span className="step-label">Compte épargne-temps</span>
           <strong id="cet-title">Mon CET</strong>
-          <small>{active ? `Solde suivi : ${numberLabel(summary!.balance)} jour${summary!.balance > 1 ? "s" : ""} · alimentation du 15 novembre au 31 décembre` : "Configurez votre compte à partir de votre relevé RH"}</small>
+          <small>{active ? `Solde suivi : ${numberLabel(summary!.balance)} jour${summary!.balance > 1 ? "s" : ""} · alimentation du 15 novembre au 31 décembre` : declined ? "Vous avez répondu « Je n’ai pas de CET »" : "Configurez votre compte à partir de votre relevé RH"}</small>
         </span>
       </div>
 
       <div className="cet-content">
           {!active ? (
             <div className="cet-settings">
+              {declined ? <p className="cet-declined">Le rappel de l’accueil est coupé. Si vous avez un CET, indiquez son solde ci-dessous : il reviendra avec ce que vous pouvez verser.</p> : null}
               <div className="cet-callout">
                 <p>Indiquez simplement le solde qui y figure. Vous pourrez ensuite suivre vos jours et préparer vos demandes depuis cette rubrique.</p>
               </div>

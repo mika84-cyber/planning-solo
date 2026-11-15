@@ -74,7 +74,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   carte, avec un seul geste. « Avez-vous un CET ? » tant qu’il n’est pas
   renseigné : « Oui » fait saisir le solde du relevé RH sur place
   (`cetBalanceError` et `openedCetAccount`, partagés avec Mon CET), « Non »
-  enregistre un compte désactivé, « Pas encore » ouvre la demande
+  demande confirmation puis enregistre un compte désactivé (Mon CET le dit
+  alors, avec le solde à indiquer pour retrouver le rappel), « Pas encore » ouvre la demande
   d’ouverture (cible `cet-opening`). Puis « Vous pouvez verser jusqu’à N
   jours » avec la barre par origine (`cetDepositableDays`, partagé avec
   Mon CET) et « Préparer ma demande », ou « Encore N CA à poser » et

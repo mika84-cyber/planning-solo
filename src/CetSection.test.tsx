@@ -12,6 +12,16 @@ describe("CetSection", () => {
     expect(html).toContain("Configurez votre compte à partir de votre relevé RH");
     expect(html).toContain("Indiquez simplement le solde qui y figure");
     expect(html).not.toContain("Votre relevé RH reste la référence");
+    expect(html).not.toContain("cet-declined");
+  });
+
+  it("dit que le rappel de l'accueil est coupé après « Je n'ai pas de CET », et comment le retrouver", () => {
+    const html = renderToStaticMarkup(
+      <CetSection account={{ ...emptyCetAccount(), enabled: false }} status="contractuel" fullName="" signature="" annualDaysTaken={20} plannedLeaveDays={0} remaining={{ annual: 9, rtt: 4, fraction: 2 }} saving={false} onSave={vi.fn()} onRequestLeave={vi.fn()} />,
+    );
+    expect(html).toContain("<small>Vous avez répondu « Je n’ai pas de CET »</small>");
+    expect(html).toContain('<div class="cet-settings"><p class="cet-declined">Le rappel de l’accueil est coupé. Si vous avez un CET, indiquez son solde ci-dessous : il reviendra avec ce que vous pouvez verser.</p><div class="cet-callout">');
+    expect(html).toContain(">Mes droits sont déjà ouverts</button>");
   });
 
   it("affiche le solde suivi sans le présenter comme un solde officiel", () => {

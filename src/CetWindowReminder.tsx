@@ -159,6 +159,8 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
   // Le bandeau touché redéplie la carte pour la visite, sans oublier le repli.
   const [unfolded, setUnfolded] = useState(false);
   const [askBalance, setAskBalance] = useState(false);
+  // « Non » : la carte demande confirmation avant de couper le rappel.
+  const [confirmNo, setConfirmNo] = useState(false);
   const [balanceInput, setBalanceInput] = useState("");
   const [legacyCap70, setLegacyCap70] = useState(false);
   const [balanceError, setBalanceError] = useState("");
@@ -213,7 +215,8 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
     );
   }
   const { urgent, label } = cetReminderLabel(state?.daysLeft ?? cetDaysLeft(todayKey));
-  const kind = !state ? "nothing" : state.kind === "setup" && askBalance ? "balance" : state.kind;
+  const sources = state?.kind === "open" ? cetReminderSources(state.bySource) : [];
+  const kind = !state ? "nothing" : state.kind === "setup" && askBalance ? "balance" : state.kind === "setup" && confirmNo ? "decline" : state.kind;
   const fold = () => {
     try { localStorage.setItem(FOLDED_KEY, todayKey); } catch { /* Replié pour cette visite seulement. */ }
     focusNext.current = "ribbon";
@@ -246,16 +249,25 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
           ? <button type="button" className="cet-window-reminder-later" onClick={fold}>Plus tard</button>
           : <button type="button" className="cet-window-reminder-later" onClick={() => setSavedHere(false)}>Fermer</button>}
       </div>
-      <CetJourney step={kind === "setup" ? 1 : kind === "balance" ? 2 : 3} />
+      <CetJourney step={kind === "setup" || kind === "decline" ? 1 : kind === "balance" ? 2 : 3} />
       {kind === "setup" ? (
         <>
           <h2 id="cet-window-reminder-title">Avez-vous un CET ?</h2>
           <p>Vos CA, RTT et jours de fractionnement non pris peuvent y être versés, en une seule demande par an.</p>
           <div className="cet-window-reminder-answers">
             <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={() => { focusNext.current = "balance"; setAskBalance(true); }}>Oui</button>
-            <button type="button" className="cet-window-reminder-no" aria-label="Non, je n’ai pas de CET" onClick={onNoCet}>Non</button>
+            <button type="button" className="cet-window-reminder-no" aria-label="Non, je n’ai pas de CET" onClick={() => { focusNext.current = "card"; setConfirmNo(true); }}>Non</button>
           </div>
           <button type="button" className="cet-window-reminder-link" onClick={onRequestOpening}>Pas encore : demander son ouverture</button>
+        </>
+      ) : kind === "decline" ? (
+        <>
+          <h2 id="cet-window-reminder-title">Pas de CET ?</h2>
+          <p>Le rappel ne reviendra plus. Si vous en ouvrez un, indiquez son solde dans Congés › Mon CET.</p>
+          <div className="cet-window-reminder-answers">
+            <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={onNoCet}>Confirmer</button>
+            <button type="button" className="cet-window-reminder-no" onClick={() => { focusNext.current = "card"; setConfirmNo(false); }}>Annuler</button>
+          </div>
         </>
       ) : kind === "balance" ? (
         <>
@@ -294,12 +306,12 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
         <>
           <h2 id="cet-window-reminder-title">Vous pouvez verser jusqu’à {days(state.total)}</h2>
           <span className="cet-window-reminder-bar" aria-hidden="true">
-            {cetReminderSources(state.bySource).map(([key, value]) => <i key={key} className={key} style={{ flexGrow: value }} />)}
+            {sources.map(([key, value]) => <i key={key} className={key} style={{ flexGrow: value }} />)}
           </span>
           {/* Plus de jours versables que la demande n'en admet : on choisit parmi eux. */}
           <p className="cet-window-reminder-sources">
-            <span>{Object.values(state.bySource).reduce((sum, value) => sum + value, 0) > state.total ? "à prendre parmi" : "soit"}</span>
-            {cetReminderSources(state.bySource).map(([key, value, unit]) => <span key={key} className={key}><strong>{number(value)}</strong> {unit}</span>)}
+            <span>{sources.reduce((sum, [, value]) => sum + value, 0) > state.total ? "à prendre parmi" : "soit"}</span>
+            {sources.map(([key, value, unit]) => <span key={key} className={key}><strong>{number(value)}</strong> {unit}</span>)}
           </p>
           <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={onPrepare}>Préparer ma demande</button>
           <small>D’après vos soldes. {urgent ? "La demande est à envoyer au plus tard le 31 décembre." : "Ce rappel disparaît dès que l’alimentation est enregistrée dans Mon CET."}</small>

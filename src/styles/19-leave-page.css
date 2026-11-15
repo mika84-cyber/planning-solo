@@ -1225,3 +1225,7 @@
   .leave-info-sections > .leave-info-fraction { grid-area: fraction; }
   .leave-info-sections > .leave-info-exceptional { grid-area: exceptional; }
 }
+
+/* Mon CET : « Je n'ai pas de CET » a été répondu ; le rappel de l'accueil est
+   coupé, et l'avis dit comment le retrouver. */
+.cet-declined { margin: 0; padding: 10px 12px; border-left: 4px solid #7a6f5f; border-radius: 4px 10px 10px 4px; background: var(--surface-high); color: var(--text); line-height: 1.45; }

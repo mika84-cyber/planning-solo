@@ -5324,7 +5324,9 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   const disableConfirmation = page.locator(".cet-disable-confirm");
   await expect(disableConfirmation).toContainText("Désactiver le suivi CET ?");
   await disableConfirmation.getByRole("button", { name: "Confirmer : je n’ai pas de CET" }).click();
-  await expect(page.locator(".cet-heading")).toContainText("Configurez votre compte à partir de votre relevé RH");
+  // La réponse se voit, avec le chemin du retour : le solde à indiquer.
+  await expect(page.locator(".cet-heading")).toContainText("Vous avez répondu « Je n’ai pas de CET »");
+  await expect(page.locator(".cet-declined")).toContainText("Le rappel de l’accueil est coupé.");
   await expect(page.locator(".cet-summary-grid")).toHaveCount(0);
 });
 
@@ -8159,11 +8161,22 @@ test("en fin d’année, un CET non renseigné reste rappelé jusqu’à « Non 
   await expect(opening).toBeVisible();
   await opening.getByRole("button", { name: "Fermer" }).click();
   await goToSection(page, "home");
+  // « Non » demande confirmation ; « Annuler » ramène à la question.
   await reminder.getByRole("button", { name: "Non, je n’ai pas de CET" }).click();
+  const decline = page.getByRole("complementary", { name: "Pas de CET ?" });
+  await expect(decline.getByRole("button", { name: "Confirmer" })).toBeFocused();
+  await decline.getByRole("button", { name: "Annuler" }).click();
+  await expect(reminder.getByRole("button", { name: "Oui", exact: true })).toBeFocused();
+  await reminder.getByRole("button", { name: "Non, je n’ai pas de CET" }).click();
+  await decline.getByRole("button", { name: "Confirmer" }).click();
+  await expect(decline).toHaveCount(0);
   await expect(reminder).toHaveCount(0);
   await expect(page.getByText("C’est noté : plus de rappel du CET.", { exact: false })).toBeVisible();
-  // Mon CET reste à configurer si un compte s'ouvre plus tard.
+  // Mon CET dit que le rappel est coupé et reste à configurer si un compte
+  // s'ouvre plus tard.
   await goToSection(page, "leave");
   await page.locator("details.cet-disclosure > summary").click();
+  await expect(page.locator(".cet-heading")).toContainText("Vous avez répondu « Je n’ai pas de CET »");
+  await expect(page.locator(".cet-declined")).toContainText("Si vous avez un CET, indiquez son solde ci-dessous");
   await expect(page.getByRole("button", { name: "Mes droits sont déjà ouverts" })).toBeVisible();
 });
