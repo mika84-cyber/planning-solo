@@ -234,14 +234,21 @@
   border-radius: 12px;
   background: var(--surface-high);
 }
-.cet-callout p,
-.cet-deposit-preview p,
-.cet-history > p,
+/* Les deux grilles de saisie. Jusqu'au 17 novembre 2026, trois phrases
+   figuraient par erreur dans cette liste (l'encart d'introduction, « Jusqu'à
+   N jours peuvent être conservés… » ou « Il manque N jours de CA… », et
+   l'historique vide) : rangées sur deux colonnes, elles s'affichaient en
+   morceaux ou sur une moitié de la largeur. */
 .cet-form-grid,
 .cet-operation-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 11px;
+  margin-top: 13px;
+}
+/* Les deux autres phrases n'en gardent que la marge du haut. */
+.cet-deposit-preview p,
+.cet-history > p {
   margin-top: 13px;
 }
 .cet-form-grid label.wide { grid-column: 1 / -1; max-width: 340px; }

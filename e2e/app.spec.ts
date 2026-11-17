@@ -5307,6 +5307,16 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
 
   await expect(page.locator(".cet-balance-main")).toContainText("18");
   await expect(page.locator(".cet-summary-grid")).toContainText("249 €");
+  // Les phrases de la simulation et de l'historique vide occupent toute la
+  // largeur de leur encart. Jusqu'au 17 novembre 2026, une règle de grille à
+  // deux colonnes les affichait en morceaux, ou sur une moitié de la largeur.
+  for (const sentence of [page.locator(".cet-deposit-preview > p"), page.locator(".cet-history > p")]) {
+    await expect(sentence).toHaveCSS("display", "block");
+    expect(await sentence.evaluate((node) => {
+      const box = getComputedStyle(node.parentElement!);
+      return node.getBoundingClientRect().width / (node.parentElement!.clientWidth - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight));
+    })).toBeGreaterThan(0.99);
+  }
   const management = page.locator(".cet-management-panel");
   const leaveAction = management.getByRole("button", { name: "Poser un congé CET" });
   const operationAction = management.getByRole("button", { name: "Ajouter une opération" });
