@@ -25,7 +25,19 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm audit --audit-level=high
+      # Bloquant dès « high » : ce qui est livré, l'application et les
+      # fonctions Netlify (dependencies de package.json).
+      - name: Audit des dépendances livrées
+        run: npm audit --omit=dev --audit-level=high
+      # Outils de construction et de test : bloquant à « critical » seulement.
+      # Un avis « high » y devient un avertissement affiché sur l'exécution,
+      # pour qu'une faille sans correctif d'un outil n'arrête plus le lint,
+      # les tests, le build et les parcours.
+      - name: Audit des outils de développement
+        run: |
+          npm audit --audit-level=high && exit 0
+          echo "::warning title=Audit des outils de développement::Un avis de sécurité « high » touche un outil de construction ou de test (détail dans le journal de cette étape)."
+          npm audit --audit-level=critical > /dev/null
       - run: npm run check:ci
       - name: Conserver le rapport de couverture
         if: always()

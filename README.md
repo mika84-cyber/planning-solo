@@ -70,8 +70,13 @@ Autres commandes :
 
 Le workflow GitHub Actions `.github/workflows/quality.yml` exécute ces
 vérifications à chaque demande de fusion et à chaque envoi sur la branche
-principale. Dependabot propose chaque semaine les mises à jour npm et chaque
-mois celles des actions GitHub. Une publication Netlify reste une action
+principale. Il commence par l’audit npm : une faille « high » dans ce qui est
+livré (`dependencies`, l’application et les fonctions Netlify) arrête tout ;
+dans les outils de construction et de test, seule une faille « critical »
+arrête, une « high » s’affiche en avertissement sur l’exécution (depuis le
+17 novembre 2026 : une faille sans correctif de picomatch, tiré par Vite et
+Vitest, bloquait tous les contrôles). Dependabot propose chaque semaine les
+mises à jour npm et chaque mois celles des actions GitHub. Une publication Netlify reste une action
 séparée : la CI ne publie pas automatiquement l’application.
 
 ## Données, confidentialité et sauvegardes
