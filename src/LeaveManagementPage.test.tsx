@@ -107,6 +107,26 @@ describe("demandes archivées", () => {
     expect(html).toContain('<section class="leave-request-archive" aria-labelledby="leave-request-archive-title">');
     expect(html).toContain('<strong id="leave-request-archive-title">Demandes archivées</strong>');
   });
+
+  it("se replie sous un bouton qui porte l’icône du dossier et le nombre de PDF", () => {
+    // Avant : un contrôle textuel de la feuille de styles (uiRefinement.test.mjs).
+    const html = renderToStaticMarkup(<LeaveManagementPage {...props} isProgramAdmin />);
+    expect(html).toContain('<button class="request-archive-toggle" type="button" aria-expanded="false"><span class="request-archive-icon" aria-hidden="true"><svg viewBox="0 0 24 24">');
+    expect(html).toContain('<span class="request-archive-summary"><small>0 PDF</small><span class="request-archive-caret" aria-hidden="true">⌄</span></span></button></section>');
+    expect(html).not.toContain("request-archive-list");
+  });
+
+  it("ouverte, liste chaque PDF avec sa suppression, ou dit qu’il n’y en a aucun", () => {
+    const empty = renderToStaticMarkup(<LeaveManagementPage {...props} isProgramAdmin archiveOpen />);
+    expect(empty).toContain('class="request-archive-toggle" type="button" aria-expanded="true"');
+    expect(empty).toContain('<div class="request-archive-list"><p class="request-archive-empty">Aucune demande archivée sur cet appareil.</p></div>');
+    const archivedRequests = [{ id: "a1", name: "conge-juillet.pdf", updatedAt: "2026-07-03T09:00:00.000Z" }] as unknown as typeof props.archivedRequests;
+    const html = renderToStaticMarkup(<LeaveManagementPage {...props} isProgramAdmin archiveOpen archivedRequests={archivedRequests} />);
+    expect(html).toContain("<small>1 PDF</small>");
+    expect(html).toContain('<article class="archived-request"><button class="archived-request-open" type="button"><span class="archived-request-pdf">PDF</span><span><strong>conge-juillet.pdf</strong>');
+    expect(html).toContain('<button class="archived-request-delete" type="button" aria-label="Supprimer conge-juillet.pdf">×</button>');
+    expect(html).not.toContain("request-archive-empty");
+  });
 });
 
 describe("alerte des crédits de férié à confirmer", () => {

@@ -153,7 +153,8 @@ describe("finitions d’interface", () => {
     // src/LeaveManagementPage.test.tsx.
     // La rubrique ouverte, la période d'alimentation et le solde vide à
     // saisir : test de rendu dans src/CetSection.test.tsx.
-    expect(css.mentions(".leave-request-archive .request-archive-icon")).toBe(true);
+    // Les demandes archivées (icône du dossier, nombre de PDF, liste repliée
+    // ou vide) : tests de rendu dans src/LeaveManagementPage.test.tsx.
   });
 
   it("conserve le profil et la période de paie repliables", () => {
