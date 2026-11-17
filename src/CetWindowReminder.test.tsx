@@ -22,8 +22,7 @@ describe("le rappel de l'alimentation du CET sur l'accueil", () => {
     expect(state("2026-12-31")?.daysLeft).toBe(1);
   });
 
-  it("se tait pour qui n'a pas de CET, une fois l'alimentation enregistrée ou sans rien à verser", () => {
-    expect(state("2026-11-20", { ...tracked(), enabled: false })).toBeNull();
+  it("se tait une fois l'alimentation enregistrée ou sans rien à verser", () => {
     const deposited = tracked();
     deposited.operations = [{ id: "1", date: "2026-11-18", kind: "deposit", days: 4, source: "rtt" }];
     expect(state("2026-11-20", deposited)).toBeNull();
@@ -31,6 +30,22 @@ describe("le rappel de l'alimentation du CET sur l'accueil", () => {
     deposited.operations[0].date = "2025-12-10";
     expect(state("2026-11-20", deposited)).toMatchObject({ kind: "open" });
     expect(cetWindowReminderState({ todayKey: "2026-11-20", account: tracked(), annualDaysTaken: 20, remaining: { annual: 0, rtt: 0, fraction: 0 }, plannedLeaveDays: 0 })).toBeNull();
+  });
+
+  it("pose la question à qui n'a pas de CET, jusqu'à « Non », qui la fait taire pour l'année", () => {
+    const none = { ...tracked(), enabled: false };
+    const ask = (todayKey: string, account: typeof none | undefined, declinedYear?: number) =>
+      cetWindowReminderState({ todayKey, account, annualDaysTaken: 0, remaining, plannedLeaveDays: 0, declinedYear });
+    // « Je n'ai pas de CET » ne coupe plus le rappel pour de bon : la question
+    // revient, pour demander l'ouverture ou indiquer un solde.
+    expect(ask("2026-11-20", none)).toMatchObject({ kind: "setup" });
+    expect(ask("2026-11-20", undefined)).toMatchObject({ kind: "setup" });
+    // « Non » répondu cette année : silence jusqu'à la période suivante.
+    expect(ask("2026-11-20", none, 2026)).toBeNull();
+    expect(ask("2026-12-31", undefined, 2026)).toBeNull();
+    expect(ask("2027-11-20", none, 2026)).toMatchObject({ kind: "setup" });
+    // Un CET suivi n'est pas concerné par ce « Non ».
+    expect(cetWindowReminderState({ todayKey: "2026-11-20", account: tracked(), annualDaysTaken: 20, remaining, plannedLeaveDays: 0, declinedYear: 2026 })).toMatchObject({ kind: "open" });
   });
 
   it("demande le solde d'un CET non renseigné, ou dit les CA qui manquent", () => {
@@ -72,6 +87,9 @@ describe("le rappel de l'alimentation du CET sur l'accueil", () => {
     expect(html).toContain('<h2 id="cet-window-reminder-title">Avez-vous un CET ?</h2><p>Vos CA, RTT et jours de fractionnement non pris peuvent y être versés, en une seule demande par an.</p>');
     expect(html).toContain('<div class="cet-window-reminder-answers"><button type="button" class="cet-window-reminder-go">Oui</button><button type="button" class="cet-window-reminder-no" aria-label="Non, je n’ai pas de CET">Non</button></div>');
     expect(html).toContain('<button type="button" class="cet-window-reminder-link">Pas encore : demander son ouverture</button></aside>');
+    // La même carte, avec les mêmes choix, pour qui a répondu « Je n'ai pas
+    // de CET » : avant, plus rien ne lui proposait d'en ouvrir un.
+    expect(render("2026-11-20", { ...tracked(), enabled: false })).toBe(html);
   });
 
   it("dit les CA qui manquent et mène au choix des congés", () => {

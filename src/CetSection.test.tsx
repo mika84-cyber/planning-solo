@@ -15,12 +15,13 @@ describe("CetSection", () => {
     expect(html).not.toContain("cet-declined");
   });
 
-  it("dit que le rappel de l'accueil est coupé après « Je n'ai pas de CET », et comment le retrouver", () => {
+  it("propose, après « Je n'ai pas de CET », de demander l'ouverture ou d'indiquer son solde", () => {
     const html = renderToStaticMarkup(
       <CetSection account={{ ...emptyCetAccount(), enabled: false }} status="contractuel" fullName="" signature="" annualDaysTaken={20} plannedLeaveDays={0} remaining={{ annual: 9, rtt: 4, fraction: 2 }} saving={false} onSave={vi.fn()} onRequestLeave={vi.fn()} />,
     );
     expect(html).toContain("<small>Vous avez répondu « Je n’ai pas de CET »</small>");
-    expect(html).toContain('<div class="cet-settings"><p class="cet-declined">Le rappel de l’accueil est coupé. Si vous avez un CET, indiquez son solde ci-dessous : il reviendra avec ce que vous pouvez verser.</p><div class="cet-callout">');
+    expect(html).toContain('<div class="cet-settings"><p class="cet-declined">Pour ouvrir un CET, faites la demande d’ouverture ci-dessous. Si vous en avez déjà un, indiquez le solde de votre relevé RH : l’accueil vous dira ce que vous pouvez y verser.</p><div class="cet-callout">');
+    expect(html).toContain(">Faire une demande d’ouverture</button>");
     expect(html).toContain(">Mes droits sont déjà ouverts</button>");
   });
 

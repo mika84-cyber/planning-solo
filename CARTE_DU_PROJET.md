@@ -78,12 +78,17 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   du 15 novembre au 31 décembre (placé par `AppShellChrome.tsx` sous les
   messages de l’équipe). Un parcours guidé : une frise de trois étapes
   (« Votre CET », « Son solde », « Demande ») et l’étape en cours dans la
-  carte, avec un seul geste. « Avez-vous un CET ? » tant qu’il n’est pas
-  renseigné : « Oui » fait saisir le solde du relevé RH sur place
-  (`cetBalanceError` et `openedCetAccount`, partagés avec Mon CET), « Non »
-  demande confirmation puis enregistre un compte désactivé (Mon CET le dit
-  alors, avec le solde à indiquer pour retrouver le rappel), « Pas encore » ouvre la demande
-  d’ouverture (cible `cet-opening`). Puis « Vous pouvez verser jusqu’à N
+  carte, avec un seul geste. « Avez-vous un CET ? » sans CET suivi, qu’il
+  n’ait jamais été renseigné ou qu’on ait répondu « Je n’ai pas de CET »
+  (le but est aussi de pouvoir en ouvrir un) : « Oui » fait saisir le solde
+  du relevé RH sur place (`cetBalanceError` et `openedCetAccount`, partagés
+  avec Mon CET), « Non » demande confirmation, enregistre un compte désactivé
+  et fait taire le rappel jusqu’à l’année suivante (l’année est retenue sur
+  l’appareil seulement, `cetDeclinedYear` et `rememberCetDeclined` de
+  `cet.ts` ; Mon CET rappelle la réponse et propose la demande d’ouverture
+  ou le solde à indiquer), « Pas encore » ouvre la demande d’ouverture
+  (cible `cet-opening`). Jusqu’au 17 novembre 2026, « Non » coupait le
+  rappel pour de bon. Puis « Vous pouvez verser jusqu’à N
   jours » avec la barre par origine (`cetDepositableDays`, partagé avec
   Mon CET) et « Préparer ma demande », ou « Encore N CA à poser » et
   « Poser des congés ». Compte à rebours orangé à partir du 24 décembre. Disparaît une fois l’alimentation
@@ -1053,8 +1058,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - CET : `src/cet.test.ts`, `src/CetSection.test.tsx` et
   `src/CetWindowReminder.test.tsx` ; scénarios « l’accueil rappelle
   l’alimentation du CET », « le rappel du CET guide de la question au
-  solde », « un CET non renseigné reste rappelé » et « l’application restée
-  ouverte depuis la veille » dans `e2e/app.spec.ts`.
+  solde », « un CET non renseigné reste rappelé », « sans CET, l’accueil
+  repose la question chaque année » et « l’application restée ouverte depuis
+  la veille » dans `e2e/app.spec.ts`.
 - Rubriques de Congés en fenêtre : `src/LeaveManagementPage.test.tsx` ;
   scénario « les rubriques de congés forment un menu de trois tuiles et
   s’ouvrent en fenêtre » (« Retour », Échap, bouton Retour du téléphone).

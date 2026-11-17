@@ -5352,7 +5352,7 @@ test("le CET se configure et conserve un historique cohérent", async ({ page })
   await disableConfirmation.getByRole("button", { name: "Confirmer : je n’ai pas de CET" }).click();
   // La réponse se voit, avec le chemin du retour : le solde à indiquer.
   await expect(page.locator(".cet-heading")).toContainText("Vous avez répondu « Je n’ai pas de CET »");
-  await expect(page.locator(".cet-declined")).toContainText("Le rappel de l’accueil est coupé.");
+  await expect(page.locator(".cet-declined")).toContainText("Pour ouvrir un CET, faites la demande d’ouverture ci-dessous.");
   await expect(page.locator(".cet-summary-grid")).toHaveCount(0);
 });
 
@@ -8083,15 +8083,16 @@ test("un férié travaillé propose prime seule, prime + récup ou un échange a
 });
 
 /** Le profil d'un agent qui a posé 20 CA en 2026 et suit son CET (solde de
- *  5 jours), ou ne l'a pas encore renseigné (`withAccount` à faux). */
-function seedCetProfile(page: Page, withAccount = true) {
+ *  5 jours), ne l'a pas encore renseigné (`withAccount` à faux), ou a répondu
+ *  « Je n'ai pas de CET » ("declined"). */
+function seedCetProfile(page: Page, withAccount: boolean | "declined" = true) {
   return page.addInitScript((account) => {
     localStorage.setItem("planning:e2e-pay-profile", JSON.stringify({
       fullName: "",
       group: "2",
       signature: "",
       manualAdjustments: { "2026": { annualUsed: 20, rttUsed: 0, fractionUsed: 0, sundayLeaveJanJun: 0, sundayLeaveJulSep: 0, sundayLeaveOctNov: 0, sundayLeaveDec: 0 } },
-      ...(account ? { cetAccount: { enabled: true, employer: "public-establishment", employerName: "Centre Pompidou", category: "C", workRule: "visitor_service", hasOneYearService: true, isTrainee: false, openedOn: "", initialBalance: 5, legacyCap70: false, operations: [] } } : {}),
+      ...(account ? { cetAccount: { enabled: account === true, employer: "public-establishment", employerName: "Centre Pompidou", category: "C", workRule: "visitor_service", hasOneYearService: true, isTrainee: false, openedOn: "", initialBalance: 5, legacyCap70: false, operations: [] } } : {}),
     }));
   }, withAccount);
 }
@@ -8189,7 +8190,7 @@ test("le rappel du CET guide de la question au solde puis à la demande, sans qu
   await expect(page.locator(".cet-balance-main")).toContainText("12");
 });
 
-test("en fin d’année, un CET non renseigné reste rappelé jusqu’à « Non »", async ({ page }) => {
+test("en fin d’année, un CET non renseigné reste rappelé jusqu’à « Non », qui le fait taire pour l’année", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-12-27T10:00:00"));
   await prepareDemo(page);
   const reminder = page.getByRole("complementary", { name: "Avez-vous un CET ?" });
@@ -8203,6 +8204,7 @@ test("en fin d’année, un CET non renseigné reste rappelé jusqu’à « Non 
   // « Non » demande confirmation ; « Annuler » ramène à la question.
   await reminder.getByRole("button", { name: "Non, je n’ai pas de CET" }).click();
   const decline = page.getByRole("complementary", { name: "Pas de CET ?" });
+  await expect(decline).toContainText("Le rappel se tait jusqu’à l’an prochain. Pour en ouvrir un d’ici là, la demande est dans Congés › Mon CET.");
   await expect(decline.getByRole("button", { name: "Confirmer" })).toBeFocused();
   await decline.getByRole("button", { name: "Annuler" }).click();
   await expect(reminder.getByRole("button", { name: "Oui", exact: true })).toBeFocused();
@@ -8210,12 +8212,45 @@ test("en fin d’année, un CET non renseigné reste rappelé jusqu’à « Non 
   await decline.getByRole("button", { name: "Confirmer" }).click();
   await expect(decline).toHaveCount(0);
   await expect(reminder).toHaveCount(0);
-  await expect(page.getByText("C’est noté : plus de rappel du CET.", { exact: false })).toBeVisible();
-  // Mon CET dit que le rappel est coupé et reste à configurer si un compte
-  // s'ouvre plus tard.
+  await expect(page.getByText("C’est noté : plus de rappel du CET cette année.", { exact: false })).toBeVisible();
+  // L'année du « Non » est retenue sur l'appareil : le rappel revient l'an prochain.
+  expect(await page.evaluate(() => localStorage.getItem("planning:cet-reminder-no"))).toBe("2026");
+  // Mon CET rappelle la réponse et montre les deux suites : demander
+  // l'ouverture, ou indiquer le solde d'un CET déjà ouvert.
   await goToSection(page, "leave");
   await openLeaveTool(page, "Mon CET");
   await expect(page.locator(".cet-heading")).toContainText("Vous avez répondu « Je n’ai pas de CET »");
-  await expect(page.locator(".cet-declined")).toContainText("Si vous avez un CET, indiquez son solde ci-dessous");
+  await expect(page.locator(".cet-declined")).toContainText("Pour ouvrir un CET, faites la demande d’ouverture ci-dessous. Si vous en avez déjà un, indiquez le solde de votre relevé RH");
+  await expect(page.getByRole("button", { name: "Faire une demande d’ouverture" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mes droits sont déjà ouverts" })).toBeVisible();
+});
+
+test("sans CET, l’accueil repose la question chaque année et mène à la demande d’ouverture", async ({ page }) => {
+  // Un compte qui a répondu « Je n'ai pas de CET » : avant, plus rien ne lui
+  // proposait d'en ouvrir un.
+  await page.clock.setFixedTime(new Date("2026-11-20T10:00:00"));
+  await seedCetProfile(page, "declined");
+  await prepareDemo(page);
+  const reminder = page.getByRole("complementary", { name: "Avez-vous un CET ?" });
+  await expect(reminder.getByRole("button", { name: "Oui", exact: true })).toBeVisible();
+  await expect(reminder.getByRole("button", { name: "Non, je n’ai pas de CET" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  // « Pas encore » : Congés, Mon CET dans sa fenêtre, la demande d'ouverture par-dessus.
+  await reminder.getByRole("button", { name: "Pas encore : demander son ouverture" }).click();
+  const opening = page.getByRole("dialog", { name: "Ouvrir mon compte épargne-temps" });
+  await expect(opening).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Mon CET", exact: true })).toHaveCount(1);
+  await opening.getByRole("button", { name: "Fermer" }).click();
+  await goToSection(page, "home");
+  // « Non », confirmé : le rappel se tait, et le reste après un rechargement.
+  await reminder.getByRole("button", { name: "Non, je n’ai pas de CET" }).click();
+  await page.getByRole("complementary", { name: "Pas de CET ?" }).getByRole("button", { name: "Confirmer" }).click();
+  await expect(reminder).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+  await expect(page.locator(".cet-window-reminder, .cet-ticker")).toHaveCount(0);
+  // L'année suivante, la question revient.
+  await page.clock.setFixedTime(new Date("2027-11-20T10:00:00"));
+  await page.reload();
+  await expect(reminder.getByRole("button", { name: "Pas encore : demander son ouverture" })).toBeVisible();
 });

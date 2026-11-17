@@ -121,6 +121,17 @@ const kinds = new Set<CetOperationKind>([
 ]);
 const sources = new Set<CetDepositSource>(["annual", "rtt", "fraction"]);
 
+/** « Non, je n’ai pas de CET » : le rappel de l’accueil se tait jusqu’à
+ *  l’année suivante. L’année est retenue sur cet appareil seulement ; la
+ *  réponse, elle, est enregistrée sur le compte. */
+const CET_DECLINED_KEY = "planning:cet-reminder-no";
+export function cetDeclinedYear() {
+  try { return Number(localStorage.getItem(CET_DECLINED_KEY)) || 0; } catch { return 0; }
+}
+export function rememberCetDeclined(year: number) {
+  try { localStorage.setItem(CET_DECLINED_KEY, String(year)); } catch { /* Tu pour cette visite seulement. */ }
+}
+
 export function emptyCetAccount(): CetAccount {
   return {
     enabled: true,

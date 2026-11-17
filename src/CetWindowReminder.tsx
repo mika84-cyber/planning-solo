@@ -3,10 +3,12 @@ import type { LeavePeriod, ManualYearAdjustments } from "./appModel";
 import {
   CET_WORK_RULES,
   cetBalanceError,
+  cetDeclinedYear,
   cetDepositableDays,
   cetDepositEligibility,
   cetDepositsForYear,
   cetDepositWindow,
+  rememberCetDeclined,
   withPlannedCetLeave,
   type CetAccount,
   type CetDepositSource,
@@ -32,24 +34,28 @@ export type CetReminderState = { daysLeft: number } & (
 );
 
 /**
- * Le rappel de l'alimentation du CET, du 15 novembre au 31 décembre : rien
- * pour qui a répondu « Je n'ai pas de CET » ni une fois l'alimentation de
- * l'année enregistrée ; « Vous avez un CET ? » tant qu'il n'est pas
- * renseigné ; sinon les CA qui manquent, ou ce qui peut être versé (rien à
+ * Le rappel de l'alimentation du CET, du 15 novembre au 31 décembre. Sans CET
+ * suivi (jamais renseigné, ou « Je n'ai pas de CET ») : « Avez-vous un CET ? »,
+ * pour indiquer son solde ou demander son ouverture, sauf si « Non » a déjà
+ * été répondu cette année (`declinedYear`) : la question revient l'an
+ * prochain. Avec un CET : rien une fois l'alimentation de l'année
+ * enregistrée ; sinon les CA qui manquent, ou ce qui peut être versé (rien à
  * verser : pas de rappel).
  */
-export function cetWindowReminderState({ todayKey, account, annualDaysTaken, remaining, plannedLeaveDays }: {
+export function cetWindowReminderState({ todayKey, account, annualDaysTaken, remaining, plannedLeaveDays, declinedYear }: {
   todayKey: string;
   account: CetAccount | undefined;
   annualDaysTaken: number;
   remaining: Remaining;
   plannedLeaveDays: number;
+  /** L'année où « Non » a été répondu sur cet appareil. */
+  declinedYear?: number;
 }): CetReminderState | null {
   const window = cetDepositWindow(todayKey);
   if (!window.open) return null;
   const daysLeft = cetDaysLeft(todayKey);
-  if (!account) return { kind: "setup", daysLeft };
-  if (!account.enabled || cetDepositsForYear(account, window.year).length) return null;
+  if (!account?.enabled) return declinedYear === window.year ? null : { kind: "setup", daysLeft };
+  if (cetDepositsForYear(account, window.year).length) return null;
   const minimum = CET_WORK_RULES[account.workRule].minimumAnnualDaysTaken;
   const eligibility = cetDepositEligibility(annualDaysTaken, minimum);
   if (!eligibility.eligible) return { kind: "missing", missingDays: eligibility.missingDays, minimum, taken: annualDaysTaken, daysLeft };
@@ -159,8 +165,9 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
   // Le bandeau touché redéplie la carte pour la visite, sans oublier le repli.
   const [unfolded, setUnfolded] = useState(false);
   const [askBalance, setAskBalance] = useState(false);
-  // « Non » : la carte demande confirmation avant de couper le rappel.
+  // « Non » : la carte demande confirmation avant de se taire pour l'année.
   const [confirmNo, setConfirmNo] = useState(false);
+  const [declinedYear, setDeclinedYear] = useState(cetDeclinedYear);
   const [balanceInput, setBalanceInput] = useState("");
   const [legacyCap70, setLegacyCap70] = useState(false);
   const [balanceError, setBalanceError] = useState("");
@@ -182,7 +189,8 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
   });
   const state = useMemo(() => {
     // Les soldes de l'année ne se calculent que si la carte peut s'afficher.
-    if (!cetDepositWindow(todayKey).open || (account && (!account.enabled || cetDepositsForYear(account, Number(todayKey.slice(0, 4))).length))) return null;
+    const year = Number(todayKey.slice(0, 4));
+    if (!cetDepositWindow(todayKey).open || (account?.enabled ? cetDepositsForYear(account, year).length : declinedYear === year)) return null;
     const stats = computeLeaveStats({ year: Number(todayKey.slice(0, 4)), today: fromKey(todayKey), periods, group, manualAdjustments });
     const balance = (type: CetDepositSource) => stats.balances.find((item) => item.type === type);
     return cetWindowReminderState({
@@ -190,8 +198,9 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
       annualDaysTaken: balance("annual")?.used || 0,
       remaining: { annual: balance("annual")?.remaining || 0, rtt: balance("rtt")?.remaining || 0, fraction: balance("fraction")?.remaining || 0 },
       plannedLeaveDays: plannedCetLeaveDays(periods, group),
+      declinedYear,
     });
-  }, [todayKey, account, periods, group, manualAdjustments]);
+  }, [todayKey, account, periods, group, manualAdjustments, declinedYear]);
   if (!state && !savedHere) return null;
   if (state && folded) {
     // Un flash info : le texte défile en boucle (deux copies à la suite), à
@@ -222,6 +231,13 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
     focusNext.current = "ribbon";
     setFoldedOn(todayKey);
     setUnfolded(false);
+  };
+  const declineForYear = () => {
+    const year = Number(todayKey.slice(0, 4));
+    rememberCetDeclined(year);
+    setDeclinedYear(year);
+    setConfirmNo(false);
+    onNoCet();
   };
   const saveBalance = async (event: FormEvent) => {
     event.preventDefault();
@@ -263,9 +279,9 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
       ) : kind === "decline" ? (
         <>
           <h2 id="cet-window-reminder-title">Pas de CET ?</h2>
-          <p>Le rappel ne reviendra plus. Si vous en ouvrez un, indiquez son solde dans Congés › Mon CET.</p>
+          <p>Le rappel se tait jusqu’à l’an prochain. Pour en ouvrir un d’ici là, la demande est dans Congés › Mon CET.</p>
           <div className="cet-window-reminder-answers">
-            <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={onNoCet}>Confirmer</button>
+            <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={declineForYear}>Confirmer</button>
             <button type="button" className="cet-window-reminder-no" onClick={() => { focusNext.current = "card"; setConfirmNo(false); }}>Annuler</button>
           </div>
         </>

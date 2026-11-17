@@ -22,6 +22,7 @@ import {
   cetYearEndSummary,
   emptyCetAccount,
   openedCetAccount,
+  rememberCetDeclined,
   withPlannedCetLeave,
   type CetAccount,
   type CetDepositSource,
@@ -81,8 +82,9 @@ export function CetSection({
 
   const active = account?.enabled ? account : undefined;
   // « Je n'ai pas de CET » (la carte de l'accueil ou le bouton ci-dessous) :
-  // le rappel de l'accueil se tait ; la rubrique le dit et montre comment le
-  // retrouver, au lieu de ressembler à un CET jamais renseigné.
+  // la rubrique le dit et montre les deux suites possibles, demander
+  // l'ouverture ou indiquer son solde, au lieu de ressembler à un CET jamais
+  // renseigné. Le rappel de l'accueil se tait jusqu'à l'année suivante.
   const declined = account !== undefined && !account.enabled;
   // « Préparer ma demande » du rappel de l'accueil : le formulaire
   // d'alimentation s'ouvre dès que la rubrique est là ; « Pas encore :
@@ -129,6 +131,7 @@ export function CetSection({
   async function disableAccount() {
     const saved = await onSave({ ...emptyCetAccount(), enabled: false });
     if (!saved) return;
+    rememberCetDeclined(new Date().getFullYear());
     setDraft(emptyCetAccount());
     setInitialBalanceInput("");
     setDisableConfirmOpen(false);
@@ -238,7 +241,7 @@ export function CetSection({
       <div className="cet-content">
           {!active ? (
             <div className="cet-settings">
-              {declined ? <p className="cet-declined">Le rappel de l’accueil est coupé. Si vous avez un CET, indiquez son solde ci-dessous : il reviendra avec ce que vous pouvez verser.</p> : null}
+              {declined ? <p className="cet-declined">Pour ouvrir un CET, faites la demande d’ouverture ci-dessous. Si vous en avez déjà un, indiquez le solde de votre relevé RH : l’accueil vous dira ce que vous pouvez y verser.</p> : null}
               <div className="cet-callout">
                 <p>Indiquez simplement le solde qui y figure. Vous pourrez ensuite suivre vos jours et préparer vos demandes depuis cette rubrique.</p>
               </div>
