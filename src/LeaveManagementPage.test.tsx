@@ -47,11 +47,42 @@ function mecenatActionsRow(html: string) {
   return { row: html.slice(start, end), end };
 }
 
+describe("les trois rubriques et leur fenêtre", () => {
+  it("présente un menu de trois tuiles, chacune avec son chiffre, sans rubrique dépliée", () => {
+    const html = renderToStaticMarkup(<LeaveManagementPage {...props} />);
+    const tiles = html.match(/<button type="button" class="leave-tool-tile[^"]*" aria-haspopup="dialog">/g);
+    expect(tiles).toHaveLength(3);
+    expect(html).toContain('<span class="leave-tool-copy"><strong>Heures supp et récupérations</strong></span><b>8 h</b></button>');
+    expect(html).toContain('<span class="leave-tool-copy"><strong>Mécénats</strong></span><b>0 enregistré</b></button>');
+    expect(html).toContain('<span class="leave-tool-copy"><strong>Mon CET</strong></span><b>Consulter et gérer</b></button>');
+    // Rien ne se déplie sous les tuiles : les rubriques s'ouvrent en fenêtre.
+    expect(html).not.toContain("<details");
+    expect(html).not.toContain('role="dialog"');
+    expect(html).not.toContain("overtime-balance-card");
+  });
+
+  it("ouvre la rubrique dans une fenêtre nommée par son titre, avec « Retour » en tête", () => {
+    const html = renderToStaticMarkup(<LeaveManagementPage {...props} initialTool="overtime" />);
+    expect(html).toContain('<section class="modal-card leave-tool-window" role="dialog" aria-modal="true" aria-labelledby="overtime-balance-title"><div class="leave-tool-window-bar"><button type="button" class="leave-tool-back" data-modal-close="true">');
+    expect(html).toContain("</svg>Retour</button></div>");
+    expect(html).toContain('<h3 id="overtime-balance-title">Heures supplémentaires et récupérations</h3>');
+    // Le menu reste dessous, pour y revenir.
+    expect(html.match(/class="leave-tool-tile/g)).toHaveLength(3);
+    expect(renderToStaticMarkup(<LeaveManagementPage {...props} initialTool="mecenat" />)).toContain('aria-labelledby="mecenat-history-title"');
+  });
+
+  it("place Mon CET dans la même fenêtre", () => {
+    const html = renderToStaticMarkup(<LeaveManagementPage {...props} initialTool="cet" cetContent={<p id="cet-title">Mon CET</p>} />);
+    expect(html).toContain('aria-labelledby="cet-title"');
+    expect(html).toContain('<p id="cet-title">Mon CET</p></section></div>');
+  });
+});
+
 describe("carte Mécénats", () => {
   it("réunit les trois actions sur une rangée, les volets s’ouvrant dessous", () => {
     // Avant, « Mes dates d’inscription » et « Voir l’historique » s'empilaient
     // sous « Déclarer un mécénat » : sur Z Fold ouvert, un grand vide à droite.
-    const html = renderToStaticMarkup(<LeaveManagementPage {...props} mecenatSignupsOpen />);
+    const html = renderToStaticMarkup(<LeaveManagementPage {...props} initialTool="mecenat" mecenatSignupsOpen />);
     const { row, end } = mecenatActionsRow(html);
     expect(row.match(/<button/g)).toHaveLength(3);
     expect(row).toContain('class="primary-action mecenat-action"');
@@ -63,7 +94,7 @@ describe("carte Mécénats", () => {
 
   it("compte les dates d’inscription sur le bouton fermé", () => {
     const signups = Array.from({ length: 2 }, () => ({})) as unknown as typeof props.mecenatSignups;
-    const { row } = mecenatActionsRow(renderToStaticMarkup(<LeaveManagementPage {...props} mecenatSignups={signups} />));
+    const { row } = mecenatActionsRow(renderToStaticMarkup(<LeaveManagementPage {...props} initialTool="mecenat" mecenatSignups={signups} />));
     expect(row).toContain("Mes dates d’inscription (2)");
     expect(row).not.toContain("Masquer");
   });
@@ -80,7 +111,7 @@ describe("demandes archivées", () => {
 
 describe("alerte des crédits de férié à confirmer", () => {
   it("ne s’affiche pas quand tout est confirmé", () => {
-    const html = renderToStaticMarkup(<LeaveManagementPage {...props} />);
+    const html = renderToStaticMarkup(<LeaveManagementPage {...props} initialTool="overtime" />);
     expect(html).not.toContain("alert-fix-action");
   });
 
@@ -88,7 +119,7 @@ describe("alerte des crédits de férié à confirmer", () => {
     // Avant, l'alerte nommait « Ma paie > Primes et jours fériés » et laissait
     // chercher : elle conduit désormais directement à cet écran.
     const html = renderToStaticMarkup(
-      <LeaveManagementPage {...props} unresolvedHolidayRecoveryCount={4} />,
+      <LeaveManagementPage {...props} initialTool="overtime" unresolvedHolidayRecoveryCount={4} />,
     );
     expect(html).toContain('class="allowance-note warn alert-fix-action"');
     expect(html).toContain("4 anciens crédits de férié restent à confirmer");
@@ -97,7 +128,7 @@ describe("alerte des crédits de férié à confirmer", () => {
 
   it("accorde le libellé au singulier", () => {
     const html = renderToStaticMarkup(
-      <LeaveManagementPage {...props} unresolvedHolidayRecoveryCount={1} />,
+      <LeaveManagementPage {...props} initialTool="overtime" unresolvedHolidayRecoveryCount={1} />,
     );
     expect(html).toContain("1 ancien crédit de férié reste à confirmer");
   });

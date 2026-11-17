@@ -371,6 +371,9 @@
   font-size: 0.82rem;
   line-height: 1.4;
   background: var(--surface-high);
+  /* L'adresse de la RH, d'un seul tenant : en police agrandie sur un petit
+     téléphone, elle élargissait toute la rubrique, coupée à droite. */
+  overflow-wrap: anywhere;
 }
 .cet-operation-form > button { grid-column: 1 / -1; justify-self: end; }
 .cet-history { display: grid; gap: 7px; }

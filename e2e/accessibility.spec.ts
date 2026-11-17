@@ -71,6 +71,13 @@ test("les parcours essentiels ne présentent pas de violation d’accessibilité
   await choisir(/^Congés$/);
   await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
   await expectNoSeriousAccessibilityViolation(page, "sur les congés et récupérations");
+  // Une rubrique dans sa fenêtre : Mon CET, puis « Retour » au menu.
+  await page.locator(".leave-tool-tile").filter({ hasText: "Mon CET" }).click();
+  const cet = page.getByRole("dialog", { name: "Mon CET" });
+  await expect(cet.getByRole("button", { name: "Retour" })).toBeVisible();
+  await expectNoSeriousAccessibilityViolation(page, "dans la fenêtre de Mon CET");
+  await cet.getByRole("button", { name: "Retour" }).click();
+  await expect(cet).toHaveCount(0);
   for (const name of [/^Ma paie$/, /^(Docs|Documents)$/, /^(Expos|Programme)$/, /^Collègues$/]) {
     await choisir(name);
     await expectNoSeriousAccessibilityViolation(page, `dans ${name.source}`);

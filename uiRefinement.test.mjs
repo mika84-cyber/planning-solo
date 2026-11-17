@@ -148,7 +148,9 @@ describe("finitions d’interface", () => {
 
   it("affiche le CET en rubrique ouverte et distingue la rubrique Autre", () => {
     expect(css.hasRule(".cet-section-static .cet-heading-static")).toBe(true);
-    expect(css.hasRuleWithSelectors([".leave-tool-disclosure > .overtime-balance-card", ".leave-tool-disclosure > .cet-section"])).toBe(true);
+    expect(css.hasRuleWithSelectors([".leave-tool-window > .overtime-balance-card", ".leave-tool-window > .cet-section"])).toBe(true);
+    // Les trois tuiles et leur fenêtre : tests de rendu dans
+    // src/LeaveManagementPage.test.tsx.
     // La rubrique ouverte, la période d'alimentation et le solde vide à
     // saisir : test de rendu dans src/CetSection.test.tsx.
     expect(css.mentions(".leave-request-archive .request-archive-icon")).toBe(true);

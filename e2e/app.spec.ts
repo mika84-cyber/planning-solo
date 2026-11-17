@@ -117,9 +117,20 @@ async function workedDaysOnHome(page: Page) {
   return Number(resume.match(/[\d,.]+/)![0].replace(",", "."));
 }
 
+/** Ouvre la fenêtre d'une rubrique de Congés (heures, mécénats, Mon CET), si
+ *  elle ne l'est pas déjà. */
 async function openLeaveTool(page: Page, label: string) {
-  const disclosure = page.locator("details.leave-tool-disclosure").filter({ hasText: label });
-  if ((await disclosure.getAttribute("open")) === null) await disclosure.locator("summary").click();
+  const toolWindow = page.locator(".leave-tool-window");
+  if (await toolWindow.count()) return;
+  await page.locator(".leave-tool-tile").filter({ hasText: label.startsWith("Heures") ? "Heures supp" : label }).click();
+  await expect(toolWindow).toBeVisible();
+}
+
+/** Referme la fenêtre de rubrique par « Retour », jusqu'au menu des tuiles. */
+async function closeLeaveTool(page: Page) {
+  const toolWindow = page.locator(".leave-tool-window");
+  await toolWindow.locator(".leave-tool-back").click();
+  await expect(toolWindow).toHaveCount(0);
 }
 
 async function setClockTime(scope: Locator, label: string, value: string) {
@@ -316,6 +327,12 @@ async function pickWorkDay(page: Page, index = 0) {
 
 /** Ouvre une rubrique par le dock, seul chemin vers les pages. */
 async function goToSection(page: Page, section: keyof typeof SECTION_BUTTONS) {
+  // La barre du bas est sous la fenêtre d'une rubrique de Congés : « Retour »
+  // d'abord, comme du doigt.
+  while (await page.locator(".leave-tool-window").count()) {
+    await page.locator(".leave-tool-window .leave-tool-back").click();
+    await page.waitForTimeout(150);
+  }
   const tabs = await sectionDock(page);
   await tabs.getByRole("button", { name: SECTION_BUTTONS[section] }).click();
 }
@@ -702,7 +719,7 @@ test("changer d’année dans le calendrier change le compte de l’année et le
   await expect(leave.locator("strong")).toHaveText(thisYear!);
 });
 
-test("les outils de congés sont repliés par défaut sur tous les écrans", async ({ page }) => {
+test("les rubriques de congés forment un menu de trois tuiles et s’ouvrent en fenêtre sur tous les écrans", async ({ page }) => {
   await prepareDemo(page);
   if (page.viewportSize()!.width <= 720 || page.viewportSize()!.width >= 1280) {
     await expect(page.getByRole("button", { name: "Compte" })).toBeVisible();
@@ -733,9 +750,10 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   }).toBeLessThanOrEqual(24);
   await page.evaluate(() => window.scrollTo(0, 0));
   await goToSection(page, "leave");
-  await expect(page.locator("details.leave-tool-disclosure")).toHaveCount(3);
-  await expect(page.locator("details.leave-tool-disclosure[open]")).toHaveCount(0);
-  await expect(page.locator("details.leave-tool-disclosure summary i")).toHaveCount(0);
+  const tools = page.locator("button.leave-tool-tile");
+  await expect(tools).toHaveCount(3);
+  await expect(page.locator(".leave-tool-window")).toHaveCount(0);
+  await expect(page.locator(".leave-tool-tile i")).toHaveCount(0);
   const toolIllustrations = page.locator(".leave-tool-illustration img");
   await expect(toolIllustrations).toHaveCount(3);
   await expect.poll(() => toolIllustrations.evaluateAll((images) => images.every((image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
@@ -756,7 +774,7 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
   }))).toBe(true);
   expect(await page.locator(".leave-tool-copy").evaluateAll((copies) => copies.every((copy) => getComputedStyle(copy).textAlign === "center"))).toBe(true);
   expect(await page.locator(".leave-tool-illustration").evaluateAll((frames) => frames.every((frame) => {
-    const summary = frame.closest("summary")!.getBoundingClientRect();
+    const summary = frame.closest(".leave-tool-tile")!.getBoundingClientRect();
     return frame.getBoundingClientRect().height >= summary.height * 0.36;
   }))).toBe(true);
   expect(await page.locator(".leave-tool-copy").evaluateAll((copies) => copies.every((copy) => {
@@ -773,29 +791,43 @@ test("les outils de congés sont repliés par défaut sur tous les écrans", asy
     return box.top + box.height / 2;
   }));
   expect(Math.max(...titleCenters) - Math.min(...titleCenters)).toBeLessThan(2);
-  const boxes = await page.locator("details.leave-tool-disclosure").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
+  const boxes = await tools.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(new Set(boxes.map((box) => Math.round(box.y))).size).toBe(1);
   expect(Math.max(...boxes.map((box) => box.width)) - Math.min(...boxes.map((box) => box.width))).toBeLessThan(2);
-  const tools = page.locator("details.leave-tool-disclosure");
-  await tools.first().locator("summary").click();
-  await expect(tools.first()).toHaveAttribute("open", "");
-  // Les deux autres restent au-dessus, en petit, pour passer de l'une à
-  // l'autre (jusqu'au 12 novembre 2026, elles disparaissaient).
-  await expect(tools.nth(1).locator("summary")).toBeVisible();
-  await expect(tools.nth(2).locator("summary")).toBeVisible();
-  const [openedBox, secondBox, thirdBox] = await Promise.all([tools.first().boundingBox(), tools.nth(1).boundingBox(), tools.nth(2).boundingBox()]);
-  expect(openedBox?.width).toBeGreaterThan(boxes[0].width * 2.8);
-  expect(secondBox!.y + secondBox!.height).toBeLessThanOrEqual(openedBox!.y + 1);
-  expect(Math.abs(secondBox!.y - thirdBox!.y)).toBeLessThan(2);
-  expect(secondBox!.height).toBeLessThan(90);
-  // Une seule tuile ouverte : toucher la deuxième referme la première.
-  await tools.nth(1).locator("summary").click();
-  await expect(tools.nth(1)).toHaveAttribute("open", "");
-  await expect(tools.first()).not.toHaveAttribute("open", "");
-  await expect(tools.first().locator("summary")).toBeVisible();
-  // L'en-tête de la tuile ouverte la replie : les trois grandes tuiles reviennent.
-  await tools.nth(1).locator("summary").click();
-  await expect(page.locator("details.leave-tool-disclosure[open]")).toHaveCount(0);
+  // Une tuile ouvre sa rubrique dans une fenêtre, la main sur « Retour » ;
+  // « Retour » ramène au menu, la main sur la tuile touchée.
+  await tools.first().click();
+  const overtime = page.getByRole("dialog", { name: "Heures supplémentaires et récupérations" });
+  await expect(overtime).toBeVisible();
+  await expect(overtime.getByRole("button", { name: "Retour" })).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  // Une fenêtre ouverte depuis la rubrique passe par-dessus ; Échap ne referme
+  // qu'elle, et la main revient au bouton qui l'a ouverte, pas à « Retour ».
+  const declare = overtime.getByRole("button", { name: "Déclarer des heures sup" });
+  await declare.click();
+  const declaration = page.getByRole("dialog", { name: "Déclarer des heures supplémentaires" });
+  await expect(declaration).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(declaration).toHaveCount(0);
+  await expect(overtime).toBeVisible();
+  await expect(declare).toBeFocused();
+  await overtime.getByRole("button", { name: "Retour" }).click();
+  await expect(overtime).toHaveCount(0);
+  await expect(tools.first()).toBeFocused();
+  // Échap referme aussi la fenêtre.
+  await tools.nth(1).click();
+  const mecenat = page.getByRole("dialog", { name: "Mécénats" });
+  await expect(mecenat).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(mecenat).toHaveCount(0);
+  // Le bouton Retour du téléphone la referme, sans quitter Congés.
+  await tools.nth(2).click();
+  const cet = page.getByRole("dialog", { name: "Mon CET" });
+  await expect(cet).toBeVisible();
+  await page.goBack();
+  await expect(cet).toHaveCount(0);
+  await expect(page.locator(".top-header h1")).toHaveText("Congés et récupérations");
+  await expect(tools).toHaveCount(3);
   const closedAgain = await tools.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(new Set(closedAgain.map((box) => Math.round(box.y))).size).toBe(1);
 });
@@ -2061,29 +2093,23 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   expect(balancesBox!.y - primaryActionBox!.y - primaryActionBox!.height).toBeGreaterThanOrEqual(13);
   await expectHeaderWidth(leaveTools);
   await expect(leaveTools).toHaveCSS("border-top-width", accentSpine(page));
-  const secondaryDisclosures = leaveTools.locator(".leave-secondary-grid > .leave-tool-disclosure");
-  await expect(secondaryDisclosures).toHaveCount(3);
-  const overtimeCard = secondaryDisclosures.nth(0).locator(".overtime-balance-card");
-  const mecenatCard = secondaryDisclosures.nth(1).locator(".mecenat-balance-card");
-  const cetCard = secondaryDisclosures.nth(2).locator(".cet-section-static");
-  // Une tuile ouverte : les deux autres restent visibles, repliées ; en ouvrir
-  // une autre referme la première, sans passer par un état fermé.
-  await secondaryDisclosures.nth(0).locator("summary").click();
-  await expect(secondaryDisclosures.nth(1).locator("summary")).toBeVisible();
-  await expect(mecenatCard).toBeHidden();
-  await expect(overtimeCard).toBeVisible();
-  await expect(overtimeCard).toHaveCSS("border-top-width", "0px");
-  await secondaryDisclosures.nth(1).locator("summary").click();
-  await expect(secondaryDisclosures.nth(0).locator("summary")).toBeVisible();
-  await expect(overtimeCard).toBeHidden();
-  await expect(mecenatCard).toBeVisible();
-  await expect(mecenatCard).toHaveCSS("border-top-width", "0px");
-  await secondaryDisclosures.nth(2).locator("summary").click();
-  await expect(mecenatCard).toBeHidden();
-  await expect(cetCard).toBeVisible();
-  await expect(secondaryDisclosures.nth(0)).toHaveCSS("border-left-width", "1px");
-  await expect(secondaryDisclosures.nth(1)).toHaveCSS("border-left-width", "1px");
-  await expect(leaveTools.locator(".cet-disclosure")).toHaveCSS("border-left-width", "1px");
+  const toolTiles = leaveTools.locator(".leave-secondary-grid > .leave-tool-tile");
+  await expect(toolTiles).toHaveCount(3);
+  for (const index of [0, 1, 2]) await expect(toolTiles.nth(index)).toHaveCSS("border-left-width", "1px");
+  // Chaque tuile ouvre sa rubrique dans une fenêtre, où elle n'a pas de cadre
+  // propre ; « Retour » ramène au menu.
+  const toolWindow = page.locator(".leave-tool-window");
+  await toolTiles.nth(0).click();
+  await expect(toolWindow.locator(".overtime-balance-card")).toBeVisible();
+  await expect(toolWindow.locator(".overtime-balance-card")).toHaveCSS("border-top-width", "0px");
+  await closeLeaveTool(page);
+  await toolTiles.nth(1).click();
+  await expect(toolWindow.locator(".mecenat-balance-card")).toBeVisible();
+  await expect(toolWindow.locator(".mecenat-balance-card")).toHaveCSS("border-top-width", "0px");
+  await closeLeaveTool(page);
+  await toolTiles.nth(2).click();
+  await expect(toolWindow.locator(".cet-section-static")).toBeVisible();
+  await closeLeaveTool(page);
 
   await goToSection(page, "pay");
   const payScreen = page.getByRole("region", { name: "Ma paie", exact: true });
@@ -6523,8 +6549,9 @@ test("les détails des soldes séparent les congés pris et à venir", async ({ 
   await expect(page.locator(".manual-adjustments-trigger")).toContainText(
     "Ajouter un historique sans renseigner chaque date",
   );
+  // Les archives restent sous le menu des trois tuiles.
   const [mecenatBox, archiveBox] = await Promise.all([
-    page.locator(".mecenat-balance-card").boundingBox(),
+    page.locator(".leave-tool-tile").filter({ hasText: "Mécénats" }).boundingBox(),
     page.locator(".leave-request-archive").boundingBox(),
   ]);
   expect(mecenatBox).not.toBeNull();
@@ -7458,7 +7485,7 @@ test("l’ajout manuel reprend un solde déjà calculé, majoration comprise, te
 test("une date d’inscription à un mécénat se retient en déclaration, ou s’efface", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
-  await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
+  await openLeaveTool(page, "Mécénats");
   const card = page.locator(".mecenat-balance-card");
   await card.getByRole("button", { name: "Mes dates d’inscription" }).click();
   const signups = page.getByRole("region", { name: "Mes dates d’inscription" });
@@ -7506,7 +7533,7 @@ test("un mécénat hors des règles du temps de travail est signalé sans empêc
 
   await prepareDemo(page);
   await goToSection(page, "leave");
-  await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
+  await openLeaveTool(page, "Mécénats");
   await page.locator(".mecenat-action").click();
   const dialog = page.getByRole("dialog", { name: "Déclarer un mécénat" });
   // La fenêtre s'ouvre vide : ni date ni horaires, donc ni avertissement ni calcul.
@@ -7538,7 +7565,7 @@ test("un mécénat hors des règles du temps de travail est signalé sans empêc
 test("un mécénat qui finit après 22 h garde à part la majoration que la paie ne verse pas encore", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
-  await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
+  await openLeaveTool(page, "Mécénats");
   const card = page.locator(".mecenat-balance-card");
   await expect(card.locator(".mecenat-regularisation")).toHaveCount(0);
   await page.locator(".mecenat-action").click();
@@ -7665,7 +7692,7 @@ test("Z Fold ouvert : les trois actions des mécénats tiennent sur une rangée 
   test.skip(testInfo.project.name !== "z-fold", "Scénario réservé au viewport Z Fold ouvert");
   await prepareDemo(page);
   await goToSection(page, "leave");
-  await page.locator(".leave-tool-disclosure").filter({ has: page.locator(".mecenat-balance-card") }).locator("summary").click();
+  await openLeaveTool(page, "Mécénats");
   const card = page.locator(".mecenat-balance-card");
   const actions = card.locator(".mecenat-actions > button");
   await expect(actions).toHaveText([/^Déclarer un mécénat$/, /^Mes dates d’inscription/, /^Voir l’historique$/]);
@@ -7954,7 +7981,8 @@ test("« Liste des raccourcis » ouvre, de n’importe quelle page, la page ou l
   // Un volet de Congés : le CET s'ouvre.
   await help.click();
   await sheet.getByRole("button", { name: /Ouvrir ou alimenter mon CET/ }).click();
-  await expect(page.locator("details.cet-disclosure")).toHaveAttribute("open", "");
+  await expect(page.getByRole("dialog", { name: "Mon CET" })).toBeVisible();
+  await closeLeaveTool(page);
   // Les dates d'une exposition : l'onglet « Par espace ».
   await help.click();
   await sheet.getByRole("button", { name: /Les dates d’une exposition/ }).click();
@@ -8089,12 +8117,23 @@ test("du 15 novembre au 31 décembre, l’accueil rappelle l’alimentation du C
   await expect(reminder.locator(".cet-journey [aria-current=step]")).toContainText("Demande");
   await expect(reminder.locator(".cet-window-reminder-sources")).toHaveText(/^à prendre parmi\s*9\s*CA\s*15\s*RTT\s*2\s*jours de fractionnement$/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  // « Préparer ma demande » : Congés, Mon CET ouvert, son formulaire d'alimentation par-dessus.
+  // « Préparer ma demande » : Congés, Mon CET dans sa fenêtre, son formulaire
+  // d'alimentation par-dessus. Échap ne referme que le formulaire, puis la
+  // fenêtre ; le menu des trois tuiles revient.
   await reminder.getByRole("button", { name: "Préparer ma demande" }).click();
   const form = page.getByRole("dialog", { name: "Alimenter ou indemniser mon CET" });
   await expect(form).toBeVisible();
-  await expect(page.locator("details.cet-disclosure")).toHaveJSProperty("open", true);
-  await form.getByRole("button", { name: "Fermer" }).click();
+  // « Mon CET » exact : le titre du formulaire se termine par les mêmes mots.
+  const cetWindow = page.getByRole("dialog", { name: "Mon CET", exact: true });
+  await expect(cetWindow).toHaveCount(1);
+  await expect(form.getByRole("button", { name: "Fermer" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(form).toHaveCount(0);
+  await expect(cetWindow).toBeVisible();
+  await expect(cetWindow.getByRole("button", { name: "Retour" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(cetWindow).toHaveCount(0);
+  await expect(page.locator("button.leave-tool-tile")).toHaveCount(3);
   // « Plus tard » replie la carte en bandeau qui défile, qui reste après un
   // rechargement ; touché, le bandeau redéplie la carte et lui passe la main.
   await goToSection(page, "home");
@@ -8146,7 +8185,7 @@ test("le rappel du CET guide de la question au solde puis à la demande, sans qu
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   // Mon CET suit le même solde.
   await goToSection(page, "leave");
-  await page.locator("details.cet-disclosure > summary").click();
+  await openLeaveTool(page, "Mon CET");
   await expect(page.locator(".cet-balance-main")).toContainText("12");
 });
 
@@ -8175,7 +8214,7 @@ test("en fin d’année, un CET non renseigné reste rappelé jusqu’à « Non 
   // Mon CET dit que le rappel est coupé et reste à configurer si un compte
   // s'ouvre plus tard.
   await goToSection(page, "leave");
-  await page.locator("details.cet-disclosure > summary").click();
+  await openLeaveTool(page, "Mon CET");
   await expect(page.locator(".cet-heading")).toContainText("Vous avez répondu « Je n’ai pas de CET »");
   await expect(page.locator(".cet-declined")).toContainText("Si vous avez un CET, indiquez son solde ci-dessous");
   await expect(page.getByRole("button", { name: "Mes droits sont déjà ouverts" })).toBeVisible();

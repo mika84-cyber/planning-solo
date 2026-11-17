@@ -73,7 +73,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .app-shell :is(.primary-action, .validate-button, .save-button):not(:disabled):not(.update-now-button):not(.danger):not(.warning-button):hover { background: var(--accent-strong); }
 }
 @media (max-width: 520px) {
-  .leave-tool-disclosure > summary > b { font-size: .65rem; }
+  .leave-tool-tile > b { font-size: .65rem; }
   .leave-tool-copy { min-height: 68px; }
 }
 
@@ -93,7 +93,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .pay-profile-settings,
   .pdf-download-screen,
   .cet-callout,
-  .leave-tool-disclosure
+  .leave-tool-tile
 ) {
   border-width: 1px;
   background: #fff;
@@ -242,7 +242,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
    blanc et délimité par le filet sombre des encadrés. */
 /* Outils de congés (heures supp, mécénats, CET) : cartes entièrement blanches,
    détachées du cadre par un filet léger. */
-.app-shell.app-shell .leave-tool-disclosure { border-color: var(--border-soft); background: #fff; box-shadow: none; }
+.app-shell.app-shell .leave-tool-tile { border-color: var(--border-soft); background: #fff; box-shadow: none; }
 /* « Comment ça marche » et « Être trouvé par mes collègues » : sous leur
    en-tête teinté, le contenu est sur blanc, dans un cadre au filet léger. */
 .app-shell.app-shell .colleague-sharing-page :is(.colleague-how-it-works, .colleague-profile-card) {
@@ -325,7 +325,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 /* Lisibilité : aucun texte à lire sous 11 px. Les repères décoratifs (petites
    capitales des en-têtes, numéros du calendrier, pastilles) restent compacts.
    `:root` place ces règles au-dessus des réglages mobiles plus anciens. */
-:root .leave-balance-grid > button :is(span, small, em), :root :is(.manual-adjustments-copy small, .manual-adjustments-summary, .request-archive-summary small), :root :is(.pay-profile-summary-copy small), :root .has-active-resource .useful-resource-tab-copy small, :root :is(.overtime-balance-summary, .mecenat-rate-summary) article > :is(small, span), :root :is(.leave-tool-disclosure > summary b, .leave-year-tools label > span), :root :is(.payslip-guide-step small) { font-size: 11px; }
+:root .leave-balance-grid > button :is(span, small, em), :root :is(.manual-adjustments-copy small, .manual-adjustments-summary, .request-archive-summary small), :root :is(.pay-profile-summary-copy small), :root .has-active-resource .useful-resource-tab-copy small, :root :is(.overtime-balance-summary, .mecenat-rate-summary) article > :is(small, span), :root :is(.leave-tool-tile b, .leave-year-tools label > span), :root :is(.payslip-guide-step small) { font-size: 11px; }
 :root .leave-balance-grid > button > span:first-child { font-size: 11.5px; }
 
 /* Moins de cadres emboîtés : les soldes de congés se posent directement

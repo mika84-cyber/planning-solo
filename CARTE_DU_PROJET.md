@@ -64,9 +64,16 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   sans volet « Autres congés ». Chaque solde à stock pose `--used` (part
   consommée, de 0 à 100 %) sur sa carte, pour la jauge sous le chiffre.
 - `src/CetSection.tsx` : configuration, simulation, opérations et historique du
-  compte épargne-temps.
+  compte épargne-temps, dans sa fenêtre de la page Congés.
 - `src/CetFormDialog.tsx` : saisie guidée des formulaires officiels d’ouverture,
-  d’alimentation et d’indemnisation du CET.
+  d’alimentation et d’indemnisation du CET ; s’ouvre par-dessus la fenêtre de
+  Mon CET (Échap ne referme que le formulaire).
+- `src/LeaveToolWindow.tsx` : la fenêtre où s’ouvre chaque rubrique de la page
+  Congés (heures, mécénats, Mon CET), avec sa barre « Retour » qui reste en
+  haut. Le piège de focus, Échap et le retour de la main viennent de
+  `src/useModalAccessibility.ts` : une fenêtre ouverte depuis une autre
+  (déclaration d’heures, formulaire du CET) se referme sur le bouton qui
+  l’avait ouverte.
 - `src/CetWindowReminder.tsx` : rappel de l’alimentation du CET sur l’accueil,
   du 15 novembre au 31 décembre (placé par `AppShellChrome.tsx` sous les
   messages de l’équipe). Un parcours guidé : une frise de trois étapes
@@ -89,8 +96,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   d’elle-même que le 24 décembre ; touché, le bandeau la redéplie. Le
   défilement s’arrête sous le doigt, la souris ou le clavier, et pas du tout
   avec « réduire les animations ». « Préparer ma demande » ouvre Congés › Mon CET avec le
-  formulaire d’alimentation (cible `cet-funding` de `helpTargets.ts`, servie
-  par `CetSection`, qui ouvre aussi son volet). En démo, `?date-cet=2026-12-26`
+  formulaire d’alimentation (cible `cet-funding` de `helpTargets.ts` :
+  `LeaveManagementPage` ouvre la fenêtre, `CetSection` le formulaire). En démo, `?date-cet=2026-12-26`
   la montre à une autre date. Styles dans `adminHomeMessage.css`, sombre dans
   `darkTheme.css`.
 - `src/grandPalaisProposalChanges.ts` : ce qui a changé entre la version
@@ -442,11 +449,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `src/ColleagueRequestNotice.tsx`) est contrôlé à l’acceptation avec les mêmes
   règles (`validateWorkExchange`, groupe du profil du destinataire).
 - `src/LeaveManagementPage.tsx` : composition de la page congés et
-  récupérations. Les trois tuiles (heures, mécénats, CET) sont des
-  `<details name="leave-tools">` : une seule ouverte à la fois, les deux
-  autres restent au-dessus d'elle, en petit (vignette et titre sur une
-  ligne, `19-leave-page.css`), et l'en-tête de la tuile ouverte la replie.
-  Jusqu'au 12 novembre 2026, ouvrir une tuile faisait disparaître les autres.
+  récupérations. Les trois tuiles (heures, mécénats, CET) forment un menu :
+  chacune ouvre sa rubrique dans une fenêtre (`LeaveToolWindow.tsx`), où
+  « Retour » ramène au menu. La fenêtre est une entrée de l'historique
+  (`leaveTool` dans `history.state`) : le bouton Retour du téléphone la
+  referme aussi ; la page s'ouvre toujours sur le menu. Jusqu'au 17 novembre
+  2026, la rubrique se dépliait sous sa tuile.
 - `src/PayPage.tsx`, `src/PayDashboard.tsx` (Ma paie : le mois et le net,
   les lignes de la paie — sous chaque montant, en toutes lettres, où la ligne
   mène (`go`, `pay-bulletin-line-value em`) : le fixe « Voir le profil »
@@ -1047,6 +1055,9 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   l’alimentation du CET », « le rappel du CET guide de la question au
   solde », « un CET non renseigné reste rappelé » et « l’application restée
   ouverte depuis la veille » dans `e2e/app.spec.ts`.
+- Rubriques de Congés en fenêtre : `src/LeaveManagementPage.test.tsx` ;
+  scénario « les rubriques de congés forment un menu de trois tuiles et
+  s’ouvrent en fenêtre » (« Retour », Échap, bouton Retour du téléphone).
 - Formulaires CET : `src/cetFormsPdf.test.ts`.
 - Paie : `src/payEstimate.test.ts`, `src/payslip.test.ts`,
   `src/payslipReview.test.ts`, `src/payslipGapExplanation.test.ts`,

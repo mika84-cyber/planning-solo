@@ -20,9 +20,18 @@ export function useModalAccessibility() {
     // donc le dernier élément focalisable touché hors d'une fenêtre, pour y
     // revenir à la fermeture, comme sur les autres navigateurs.
     let lastPointerTarget: HTMLElement | null = null;
+    // Une fenêtre ouverte depuis une autre (un formulaire depuis une rubrique
+    // de Congés) : à sa fermeture, la main revient au bouton qui l'avait
+    // ouverte, et non au premier bouton de la fenêtre du dessous. Le bouton
+    // touché dans une fenêtre est retenu à part, tant qu'aucune touche du
+    // clavier n'a suivi.
+    const openers = new WeakMap<HTMLElement, HTMLElement>();
+    let lastInnerPointerTarget: HTMLElement | null = null;
     const pointerdown = (event: PointerEvent) => {
       const target = event.target instanceof Element ? event.target.closest<HTMLElement>(FOCUSABLE) : null;
-      if (target && !target.closest('[aria-modal="true"]')) lastPointerTarget = target;
+      if (!target) return;
+      if (target.closest('[aria-modal="true"]')) lastInnerPointerTarget = target;
+      else lastPointerTarget = target;
     };
 
     const activate = () => {
@@ -36,22 +45,34 @@ export function useModalAccessibility() {
         previousFocus = null;
         return;
       }
+      const active = document.activeElement as HTMLElement | null;
       if (!activeDialog) {
-        const active = document.activeElement as HTMLElement | null;
         previousFocus = active && active !== document.body ? active : lastPointerTarget;
         previousOverflow = document.body.style.overflow;
+      } else if (activeDialog.isConnected) {
+        const opener = lastInnerPointerTarget && activeDialog.contains(lastInnerPointerTarget) ? lastInnerPointerTarget : active;
+        if (opener && activeDialog.contains(opener)) openers.set(activeDialog, opener);
       }
+      lastInnerPointerTarget = null;
       activeDialog = next;
       document.body.style.overflow = "hidden";
       requestAnimationFrame(() => {
-        const preferred = activeDialog?.querySelector<HTMLElement>(
+        if (!activeDialog) return;
+        const opener = openers.get(activeDialog);
+        openers.delete(activeDialog);
+        if (opener?.isConnected) {
+          opener.focus();
+          if (document.activeElement === opener) return;
+        }
+        const preferred = activeDialog.querySelector<HTMLElement>(
           "[autofocus], input:not([disabled]), button:not([disabled])",
         );
-        (preferred || activeDialog)?.focus();
+        (preferred || activeDialog).focus();
       });
     };
 
     const keydown = (event: KeyboardEvent) => {
+      lastInnerPointerTarget = null;
       if (!activeDialog) return;
       if (event.key === "Escape") {
         const close = activeDialog.querySelector<HTMLElement>(

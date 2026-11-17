@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import type { PayStatus } from "./appModel";
 import type { CetFormKind } from "./CetFormDialog";
 import { useHelpTarget } from "./helpTargets";
@@ -86,16 +86,10 @@ export function CetSection({
   const declined = account !== undefined && !account.enabled;
   // « Préparer ma demande » du rappel de l'accueil : le formulaire
   // d'alimentation s'ouvre dès que la rubrique est là ; « Pas encore :
-  // demander son ouverture », la demande d'ouverture. Elle peut se monter
-  // avant la page qui la contient : elle ouvre alors elle-même son volet.
-  const sectionRef = useRef<HTMLElement>(null);
+  // demander son ouverture », la demande d'ouverture. La page Congés ouvre
+  // la fenêtre de la rubrique, qui sert la demande en se montant.
   useHelpTarget((target) => {
     if (target !== "cet-funding" && target !== "cet-opening") return false;
-    const disclosure = sectionRef.current?.closest("details");
-    if (disclosure && !disclosure.open) {
-      disclosure.open = true;
-      window.setTimeout(() => disclosure.scrollIntoView({ behavior: "smooth", block: "start" }), 350);
-    }
     if (target === "cet-opening") setFormKind("opening");
     else if (active) setFormKind("funding");
     return true;
@@ -231,7 +225,7 @@ export function CetSection({
   }
 
   return (
-    <section ref={sectionRef} className="cet-section open cet-section-static" aria-labelledby="cet-title">
+    <section className="cet-section open cet-section-static" aria-labelledby="cet-title">
       <div className="cet-heading cet-heading-static">
         <span className="cet-symbol" aria-hidden="true">CET</span>
         <span>

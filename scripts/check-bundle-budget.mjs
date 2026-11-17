@@ -157,8 +157,12 @@ const budgets = {
   // le 15 novembre 2026 à 2 134 / 707 Kio, avec l'accord de l'administrateur :
   // le rappel du CET en parcours guidé (frise, solde saisi sur l'accueil) et
   // la date relue quand l'application reste ouverte (2 133,1 / 706,5 Kio
-  // mesurés).
-  totalJavaScript: { raw: 2_134 * KIB, gzip: 707 * KIB },
+  // mesurés). Relevé le 17 novembre 2026 à 2 136 / 708 Kio : les trois
+  // rubriques de Congés ouvertes en fenêtre avec « Retour » (2 135,3 /
+  // 707,1 Kio mesurés). L'administrateur avait accepté ce jour-là jusqu'à
+  // 2 140 / 710 Kio, pour ces fenêtres et un parcours guidé du CET qu'il a
+  // ensuite laissé de côté.
+  totalJavaScript: { raw: 2_136 * KIB, gzip: 708 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
