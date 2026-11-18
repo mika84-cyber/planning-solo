@@ -6412,7 +6412,7 @@ test("nettoyage et gestion d’un congé utilisent des actions directes", async 
 
   await page.locator('.month-card .day[aria-current="date"]').click();
   const dayDialog = page.getByRole("dialog", { name: /.+/ });
-  await expect(dayDialog.getByText("Périodes concernant cette date")).toBeVisible();
+  await expect(dayDialog.getByText("Déjà posé ce jour")).toBeVisible();
   await expect(dayDialog.getByRole("button", { name: "Modifier" })).toBeVisible();
   await expect(dayDialog.getByRole("button", { name: "Annuler le congé" })).toBeVisible();
   await expect(dayDialog.getByText("Repasser en souhaité")).toHaveCount(0);
@@ -6424,7 +6424,7 @@ test("nettoyage et gestion d’un congé utilisent des actions directes", async 
   await expect(undo).toContainText("L’absence a été supprimée");
   await undo.getByRole("button", { name: "Annuler", exact: true }).click();
   await page.locator('.month-card .day[aria-current="date"]').click();
-  await expect(page.getByRole("dialog", { name: /.+/ }).getByText("Périodes concernant cette date")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: /.+/ }).getByText("Déjà posé ce jour")).toBeVisible();
 });
 
 test("les parcours congé, récupération et maladie s’ouvrent correctement", async ({ page }) => {

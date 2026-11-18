@@ -605,10 +605,8 @@ describe("finitions d’interface", () => {
   });
 
   it("rend les actions d’un congé visibles sans menu intermédiaire", () => {
-    expect(app).toContain('className="period-direct-actions"');
-    expect(app).toContain('className="period-edit-button"');
-    expect(app).toContain('className="period-delete-button"');
-    expect(app).toContain("Annuler le congé");
+    // Les actions d'une absence (« Modifier », la corbeille) : test de rendu
+    // dans src/DayLeavePeriods.test.tsx.
     expect(app).not.toContain("Repasser en souhaité");
     expect(app).not.toContain("period-menu-trigger");
     expect(css.mentions(".period-direct-actions")).toBe(true);

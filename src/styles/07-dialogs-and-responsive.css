@@ -111,10 +111,6 @@
   font-weight: 800;
   cursor: pointer;
 }
-.day-stored-periods article button.period-delete {
-  border-color: #efd1d5;
-  color: #b43f4d;
-}
 .delete-confirm-button {
   min-height: 42px;
   border: 0;

@@ -51,6 +51,62 @@
   color: #ae3043;
 }
 
+/* Absences déjà posées (DayLeavePeriods) : une ligne compacte, la pastille à
+   la couleur du type, puis « Modifier » et la corbeille. Jusqu'au 18 novembre
+   2026 : la date répétée, un trait bleu pour tous les types, et deux grands
+   boutons empilés. */
+.day-leave-periods article {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  padding: 8px 8px 8px 12px;
+  background: var(--surface);
+  box-shadow: none;
+}
+.day-leave-periods article > i {
+  width: 10px;
+  height: 10px;
+  min-height: 0;
+  flex: none;
+  border-radius: 50%;
+  background: var(--period-color, var(--leave-annual));
+}
+/* Le texte garde au moins 8,5 em : sinon (petit téléphone, police agrandie),
+   les deux boutons passent dessous, à droite, plutôt que de couper les mots. */
+.day-leave-periods article > span {
+  flex: 1 1 8.5em;
+  font-size: 14px;
+  font-weight: 800;
+}
+.day-leave-periods article small {
+  font-size: 12px;
+}
+.day-leave-periods .period-direct-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.day-leave-periods article .period-direct-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 12px;
+}
+.day-leave-periods article .period-direct-actions .period-delete-button {
+  width: 44px;
+  padding: 0;
+}
+.day-leave-periods svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* Contrôle final lisible avant l'enregistrement ou l'ouverture du formulaire. */
 .request-validation-summary {
   display: grid;

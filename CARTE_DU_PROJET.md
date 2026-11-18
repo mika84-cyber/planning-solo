@@ -322,7 +322,12 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   seul.
   `src/PlanningDialogLayer.tsx` : les fenêtres du planning (échange, choix
   d’une demande, souhaits, groupe, fiche du jour, détail d’un solde), rendues
-  avant `AppDialogLayer`. `src/scrollWhenReady.ts` amène à une ancre d’un
+  avant `AppDialogLayer`. Dans la fiche du jour (`src/DayDetailDialog.tsx`),
+  « Déjà posé ce jour » vient de `src/DayLeavePeriods.tsx` : une ligne par
+  absence, pastille à la couleur du type (`TYPE_COLORS`), type, puis
+  « Journée entière », « Matin » ou « Après-midi », ou les dates d’une absence
+  de plusieurs jours ; « Modifier » et la corbeille à droite, qui passent sous
+  le texte quand la place manque (test de rendu `DayLeavePeriods.test.tsx`). `src/scrollWhenReady.ts` amène à une ancre d’un
   écran chargé à la demande. Les contrôles textuels d’`uiRefinement.test.mjs`
   et `formSecurity.test.mjs` lisent ces fichiers avec `App.tsx` ;
   `AppShellChrome`, `HomeSectionScreen` et `DocumentsSectionScreen` ont un

@@ -17,6 +17,7 @@ import type {
 } from "./appModel";
 import { HOLIDAY_PAY_OPTIONS, WORK_POSTS, euros, noteDateLabel } from "./appModel";
 import { NoteText } from "./NoteText";
+import { DayLeavePeriods } from "./DayLeavePeriods";
 import { minutesLabel, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import {
   HALF_MOMENT_OPTIONS,
@@ -24,9 +25,7 @@ import {
   dateTimeLabel,
   fromKey,
   holidayAllowance,
-  periodTypeLabel,
   longDate,
-  periodLabel,
   type LeaveType,
 } from "./planningLogic";
 
@@ -509,41 +508,14 @@ export function DayDetailDialog({
                 </button>
               </div>
             )}
-            {dayStoredPeriods.length > 0 && (
-              <div className="day-stored-periods">
-                <strong>Périodes concernant cette date</strong>
-                {dayStoredPeriods.map((period) => (
-                  <article key={period.id}>
-                    <i className="leave" />
-                    <span>
-                      {periodLabel(period.from, period.to)}
-                      <small>{periodTypeLabel(period)}</small>
-                    </span>
-                    <div className="period-direct-actions" role="group" aria-label={`Gérer ${periodLabel(period.from, period.to)}`}>
-                      <button
-                        className="period-edit-button"
-                        type="button"
-                        onClick={() => editDayLeavePeriod(period)}
-                      >
-                        Modifier
-                      </button>
-                      <button
-                        className="period-delete-button"
-                        type="button"
-                        onClick={() => {
-                          setDayDate(null);
-                          setDeletingPeriod(period);
-                        }}
-                      >
-                        {period.leaveType === "strike"
-                          ? "Supprimer la grève"
-                          : "Annuler le congé"}
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
+            <DayLeavePeriods
+              periods={dayStoredPeriods}
+              onEdit={editDayLeavePeriod}
+              onDelete={(period) => {
+                setDayDate(null);
+                setDeletingPeriod(period);
+              }}
+            />
             {([
               ["Heures supp enregistrées ce jour", dayOvertime.map((entry) => [entry.id, "Heures supp", `${minutesLabel(entry.minutes)} mises en récupération`, "Effacer les heures supp", () => deleteOvertimeEntry(entry)])],
               ["Récupérations prises ce jour", dayRecoveryUses.map((entry) => [entry.id, entry.kind === "training" ? "Formation" : "Récupération", `${minutesLabel(entry.minutes)} prises sur votre solde`, "Effacer la récupération", () => deleteRecoveryUse(entry)])],
