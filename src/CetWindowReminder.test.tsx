@@ -86,7 +86,9 @@ describe("le rappel de l'alimentation du CET sur l'accueil", () => {
     expect(html).toContain('<li class="current" aria-current="step"><span class="cet-journey-mark" aria-hidden="true">1</span><small>Votre CET</small></li><li><span class="cet-journey-mark" aria-hidden="true">2</span><small>Son solde</small></li>');
     expect(html).toContain('<h2 id="cet-window-reminder-title">Avez-vous un CET ?</h2><p>Vos CA, RTT et jours de fractionnement non pris peuvent y être versés, en une seule demande par an.</p>');
     expect(html).toContain('<div class="cet-window-reminder-answers"><button type="button" class="cet-window-reminder-go">Oui</button><button type="button" class="cet-window-reminder-no" aria-label="Non, je n’ai pas de CET">Non</button></div>');
-    expect(html).toContain('<button type="button" class="cet-window-reminder-link">Pas encore : demander son ouverture</button></aside>');
+    // Pour qui n'en a pas encore, un encart à part sous la question.
+    expect(html).toContain('<div class="cet-window-reminder-open"><p><strong>Pas encore de CET ?</strong> Vous pouvez en ouvrir un à tout moment de l’année.</p><button type="button" class="cet-window-reminder-no">Demander <span>l’ouverture<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span></button></div></aside>');
+    expect(html).not.toContain("cet-window-reminder-link");
     // La même carte, avec les mêmes choix, pour qui a répondu « Je n'ai pas
     // de CET » : avant, plus rien ne lui proposait d'en ouvrir un.
     expect(render("2026-11-20", { ...tracked(), enabled: false })).toBe(html);

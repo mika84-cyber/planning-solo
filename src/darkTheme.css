@@ -171,12 +171,12 @@ html[data-theme="dark"] .useful-form-download-list > .useful-form-download-card 
 html[data-theme="dark"] .absence-form-reminder-actions > a { border-color: #5368a8; background: #5368a8; color: #fff; }
 html[data-theme="dark"] .absence-form-reminder-icon { background: #2b3045; color: #c9d1f2; }
 /* Rappel du CET : les teintes de la carte (variables de adminHomeMessage.css). */
-html[data-theme="dark"] .cet-window-reminder { --ink: #bcb0a0; --edge: #bcb0a0; --on-ink: #211c18; --label: #d6cbbb; --strong: #e6dccd; --soft: #a89d8e; --line: #4f483f; --ring: #3a342d; --track: #3a342d; --field: #8f8474; --rtt: #a39785; --fraction: #6f6556; }
+html[data-theme="dark"] .cet-window-reminder { --ink: #e2a383; --edge: #e2a383; --on-ink: #2a1a12; --label: #e2a383; --strong: #f2c7af; --soft: #c09d8b; --line: #5a4034; --ring: #3e2b22; --track: #3e2b22; --field: #a8806c; --rtt: #b97e63; --fraction: #7d5545; }
 html[data-theme="dark"] .cet-window-reminder .step-label { color: var(--label); }
-html[data-theme="dark"] .cet-window-reminder .step-label.urgent { color: #f0b98a; }
+html[data-theme="dark"] .cet-window-reminder .step-label.urgent { color: #f4977a; }
 html[data-theme="dark"] .cet-window-reminder p.cet-window-reminder-error { color: #f0a08f; }
-html[data-theme="dark"] .cet-ticker { --base: #bcb0a0; --label: #d6cbbb; --more: #d6cbbb; --sep: #8f8474; }
-html[data-theme="dark"] .cet-ticker.urgent { --ink: #f0b98a; --label: #f0b98a; --fill: #f0b98a; }
+html[data-theme="dark"] .cet-ticker { --base: #e2a383; --label: #e2a383; --more: #e2a383; --sep: #a8806c; }
+html[data-theme="dark"] .cet-ticker.urgent { --ink: #f4977a; --label: #f4977a; --fill: #f4977a; }
 html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #1f3327; --tile-ink: #8fd1a8; }
 html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #1f2a3a; --tile-ink: #9ec0ec; }
 /* Dossiers de formulaires et annuaires : icône, lettre, flèche et nombre de

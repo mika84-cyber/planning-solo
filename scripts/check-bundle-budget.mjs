@@ -161,8 +161,11 @@ const budgets = {
   // rubriques de Congés ouvertes en fenêtre avec « Retour » (2 135,3 /
   // 707,1 Kio mesurés). L'administrateur avait accepté ce jour-là jusqu'à
   // 2 140 / 710 Kio, pour ces fenêtres et un parcours guidé du CET qu'il a
-  // ensuite laissé de côté.
-  totalJavaScript: { raw: 2_136 * KIB, gzip: 708 * KIB },
+  // ensuite laissé de côté. Porté le 18 novembre 2026 à 2 137 Kio brut, dans
+  // cette même limite : la carte CET de l'accueil (confirmation du « Non »
+  // plus explicite, encart « Pas encore de CET ? ») ; 2 136,3 / 707,5 Kio
+  // mesurés.
+  totalJavaScript: { raw: 2_137 * KIB, gzip: 708 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

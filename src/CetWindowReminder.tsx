@@ -274,15 +274,24 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
             <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={() => { focusNext.current = "balance"; setAskBalance(true); }}>Oui</button>
             <button type="button" className="cet-window-reminder-no" aria-label="Non, je n’ai pas de CET" onClick={() => { focusNext.current = "card"; setConfirmNo(true); }}>Non</button>
           </div>
-          <button type="button" className="cet-window-reminder-link" onClick={onRequestOpening}>Pas encore : demander son ouverture</button>
+          {/* Pour qui n'en a pas encore : un encart à part, sous la question,
+              plutôt qu'un petit lien souligné qu'on remarquait à peine. */}
+          <div className="cet-window-reminder-open">
+            <p><strong>Pas encore de CET ?</strong> Vous pouvez en ouvrir un à tout moment de l’année.</p>
+            <button type="button" className="cet-window-reminder-no" onClick={onRequestOpening}>Demander <span>l’ouverture<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></span></button>
+          </div>
         </>
       ) : kind === "decline" ? (
         <>
-          <h2 id="cet-window-reminder-title">Pas de CET ?</h2>
-          <p>Le rappel se tait jusqu’à l’an prochain. Pour en ouvrir un d’ici là, la demande est dans Congés › Mon CET.</p>
+          {/* Ce que fait « Confirmer », avec la date du retour, puis ce qui reste
+              possible : « Le rappel se tait jusqu'à l'an prochain » ne disait ni
+              quand, ni que l'ouverture reste possible toute l'année. */}
+          <h2 id="cet-window-reminder-title">Vous n’avez pas de CET ?</h2>
+          <p>Si vous confirmez, ce rappel ne s’affichera plus avant le 15 novembre {Number(todayKey.slice(0, 4)) + 1}.</p>
+          <p>Vous pourrez quand même ouvrir un CET à tout moment de l’année, depuis Congés › Mon CET.</p>
           <div className="cet-window-reminder-answers">
-            <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={declineForYear}>Confirmer</button>
-            <button type="button" className="cet-window-reminder-no" onClick={() => { focusNext.current = "card"; setConfirmNo(false); }}>Annuler</button>
+            <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={declineForYear}>Confirmer : je n’ai pas de CET</button>
+            <button type="button" className="cet-window-reminder-no" onClick={() => { focusNext.current = "card"; setConfirmNo(false); }}>‹ Revenir à la question</button>
           </div>
         </>
       ) : kind === "balance" ? (

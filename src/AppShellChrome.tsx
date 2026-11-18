@@ -331,7 +331,7 @@ export function AppShellChrome({
         onRequestLeave={() => help.requestLeave()}
         onSaveBalance={(initialBalance, legacyCap70) => actions.saveCetAccount(openedCetAccount({ ...emptyCetAccount(), initialBalance, legacyCap70 }))}
         onNoCet={() => void actions.saveCetAccount({ ...emptyCetAccount(), enabled: false }).then((saved) => {
-          if (saved) showSuccess("C’est noté : plus de rappel du CET cette année. Pour en ouvrir un : Congés › Mon CET.");
+          if (saved) showSuccess(`C’est noté : ce rappel reviendra le 15 novembre ${Number(cetReminderDay.slice(0, 4)) + 1}. Pour ouvrir un CET : Congés › Mon CET.`);
         })}
       />}
     </>
