@@ -121,14 +121,32 @@ export function calculateRegulatoryMecenatVacation(start: string, end: string, d
  *  régularisera pas (un rappel au premier trimestre 2027 paraît raisonnable).
  *  D'ici là, l'estimation attend ce que la paie verse vraiment et garde la
  *  différence « à régulariser ».
+ *  Nouvelle de novembre 2026 : les mécénats de novembre seront payés au
+ *  barème, majoration comprise, sur la paie de décembre (`paidFrom`) ; pour
+ *  ceux d'octobre, on ne sait pas encore quand elle sera rattrapée
+ *  (`undecidedFrom`).
  *  Le jour où un bulletin porte la régularisation, `settledPayMonth` prend
  *  son mois de paie (« AAAA-MM ») : les mécénats payés à partir de ce mois le
  *  sont au barème, et plus rien n'est en attente. */
 export const MECENAT_NIGHT_REGULARISATION = {
   from: "2024-01-01",
   expected: "début 2027",
+  /** Mécénats faits à partir de `date` et payés à partir du mois de paie
+   *  `payMonth` (« AAAA-MM ») : la paie verse la majoration. */
+  paidFrom: { date: "2026-11-01", payMonth: "2026-12" },
+  /** Mécénats faits à partir de cette date, et pas encore payés au barème :
+   *  la date de leur régularisation n'est pas connue. */
+  undecidedFrom: "2026-10-01",
   settledPayMonth: null as string | null,
 };
+
+/** Quand la majoration en attente d'un mécénat fait ce jour-là sera
+ *  rattrapée : la date annoncée, ou rien de fixé. */
+export function regularisationWhen(date: string) {
+  return date >= MECENAT_NIGHT_REGULARISATION.undecidedFrom
+    ? "une régularisation dont la date n’est pas encore connue"
+    : `la régularisation annoncée pour ${MECENAT_NIGHT_REGULARISATION.expected}`;
+}
 
 type MecenatPaySlot = { date: string; start: string; end: string; grossAmountCents: number; payYear: number; payMonth: number };
 
@@ -136,10 +154,11 @@ type MecenatPaySlot = { date: string; start: string; end: string; grossAmountCen
  *  qui reste en attente : le barème, moins cette majoration tant qu'elle
  *  n'est pas régularisée. */
 export function mecenatPayment(entry: MecenatPaySlot) {
-  const { from, settledPayMonth } = MECENAT_NIGHT_REGULARISATION;
+  const { from, paidFrom, settledPayMonth } = MECENAT_NIGHT_REGULARISATION;
   const payKey = `${entry.payYear}-${String(entry.payMonth + 1).padStart(2, "0")}`;
   const rates = mecenatRatesFor(entry.date);
-  const waiting = entry.date >= from && rates.nightStartMinutes < 24 * 60 && (settledPayMonth === null || payKey < settledPayMonth);
+  const paidInFull = entry.date >= paidFrom.date && payKey >= paidFrom.payMonth;
+  const waiting = entry.date >= from && rates.nightStartMinutes < 24 * 60 && !paidInFull && (settledPayMonth === null || payKey < settledPayMonth);
   const due = waiting ? splitVacation(entry.start, entry.end, rates) : null;
   const paid = waiting ? splitVacation(entry.start, entry.end, { ...rates, nightStartMinutes: 24 * 60 }) : null;
   const pendingMinutes = due && paid ? due.nightMinutes - paid.nightMinutes : 0;

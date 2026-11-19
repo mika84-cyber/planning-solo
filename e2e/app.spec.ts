@@ -7572,7 +7572,7 @@ test("un mécénat hors des règles du temps de travail est signalé sans empêc
   await expect(warning).toBeHidden();
 });
 
-test("un mécénat qui finit après 22 h garde à part la majoration que la paie ne verse pas encore", async ({ page }) => {
+test("un mécénat qui finit après 22 h : payé au barème depuis novembre 2026, la majoration d’avant gardée à part", async ({ page }) => {
   await prepareDemo(page);
   await goToSection(page, "leave");
   await openLeaveTool(page, "Mécénats");
@@ -7580,19 +7580,29 @@ test("un mécénat qui finit après 22 h garde à part la majoration que la paie
   await expect(card.locator(".mecenat-regularisation")).toHaveCount(0);
   await page.locator(".mecenat-action").click();
   const dialog = page.getByRole("dialog", { name: "Déclarer un mécénat" });
-  await dialog.locator('input[type="date"]').fill(dateKey(addDays(new Date(), -3)));
+  const date = dialog.locator('input[type="date"]');
+  const pending = dialog.locator(".mecenat-pending-preview");
+  await date.fill("2026-11-16");
   const [startHour, , endHour] = await dialog.getByRole("combobox").all();
   await startHour.selectOption("19");
   await endHour.selectOption("23");
-  // 4 h au tarif jour sur la paie suivante ; la majoration de 22 h attend.
-  await expect(dialog.locator(".mecenat-pending-preview")).toContainText(/Sur la paie d(e |’)\p{L}+ : 91,60\s€\. Les 12,10\s€ de majoration de 22 h à minuit attendront la régularisation annoncée pour début 2027\./u);
+  // Novembre 2026 : la paie de décembre verse la majoration, rien n’attend.
+  await expect(dialog.locator(".mecenat-preview")).toContainText(/Total brut103,70\s€/);
+  await expect(pending).toHaveCount(0);
+  // Octobre 2026 : 22 h – minuit au tarif jour, et pas encore de date pour la régularisation.
+  await date.fill("2026-10-14");
+  await expect(pending).toContainText(/Sur la paie de novembre : 91,60\s€\. Les 12,10\s€ de majoration de 22 h à minuit attendront une régularisation dont la date n’est pas encore connue\./);
+  // Septembre : la reprise annoncée pour début 2027.
+  await date.fill("2026-09-16");
+  await expect(pending).toContainText(/Sur la paie d’octobre : 91,60\s€\. Les 12,10\s€ de majoration de 22 h à minuit attendront la régularisation annoncée pour début 2027\./);
   await dialog.getByRole("button", { name: "Enregistrer le mécénat" }).click();
   await expect(dialog).toHaveCount(0);
   const note = card.getByRole("region", { name: /de majoration de nuit/ });
   await expect(note).toContainText("À régulariser · début 2027");
   await expect(note).toContainText(/12,10\s€ de majoration de nuit/);
-  await expect(note).toContainText("1 h de 22 h à minuit sur 1 mécénat, payée au tarif jour.");
-  // L'historique dit ce que la paie verse, la majoration à part.
+  await expect(note).toContainText("1 h de 22 h à minuit sur 1 mécénat, payée au tarif jour. La DRH reprendra les états début 2027, pour les heures faites depuis le 1er janvier 2024.");
+  await expect(note).toContainText("Les mécénats faits depuis le 1er novembre 2026 sont payés au barème, majoration comprise, à partir de la paie de décembre.");
+  // L’historique dit ce que la paie verse, la majoration à part.
   await card.getByRole("button", { name: "Voir l’historique" }).click();
   await expect(card.locator(".mecenat-history-value").first()).toHaveText(/91,60\s€/);
   await expect(card.locator(".mecenat-history-main small").first()).toContainText(/12,10\s€ à régulariser/);

@@ -7,6 +7,7 @@ import {
   mecenatRateLabels,
   pendingMajorationWord,
   pendingNightMajoration,
+  regularisationWhen,
   mecenatRatesFor,
   mecenatForPayMonth,
   mecenatsPaidEarly,
@@ -121,8 +122,20 @@ describe("majoration de 22 h à minuit en attente de régularisation", () => {
 
   it("additionne ce que la régularisation devra rattraper sur les mécénats déjà faits", () => {
     const entries = [slot("2026-10-12", "19:00", "00:00"), slot("2026-11-05", "19:30", "23:00"), slot("2026-12-04", "19:00", "00:00", 11), slot("2026-10-20", "18:00", "22:00")];
-    expect(pendingNightMajoration(entries, "2026-11-13")).toEqual({ count: 2, minutes: 180, cents: 3630, firstDate: "2026-10-12" });
+    expect(pendingNightMajoration(entries, "2026-11-13")).toEqual({ count: 2, minutes: 180, cents: 3630, firstDate: "2026-10-12", lastDate: "2026-11-05" });
     expect(pendingMajorationWord()).toBe("à régulariser");
+  });
+
+  it("paie au barème les mécénats de novembre 2026 sur la paie de décembre, et ne fixe pas de date pour octobre", () => {
+    // Novembre, payé en décembre : la majoration est versée.
+    expect(mecenatPayment(slot("2026-11-16", "19:00", "23:00", 11))).toEqual({ paidCents: 10370, pendingCents: 0, pendingMinutes: 0 });
+    expect(mecenatPayment(slot("2027-01-08", "19:00", "00:00", 1)).pendingCents).toBe(0);
+    // Novembre payé dès novembre, ou octobre payé en retard en décembre : la paie de novembre ne la versait pas, et octobre reste en attente.
+    expect(mecenatPayment(slot("2026-11-05", "19:00", "23:00", 10)).pendingCents).toBe(1210);
+    expect(mecenatPayment(slot("2026-10-28", "19:00", "23:00", 11)).pendingCents).toBe(1210);
+    expect(pendingNightMajoration([slot("2026-11-16", "19:00", "23:00", 11), slot("2026-12-04", "19:00", "00:00", 11)], "2027-01-10").cents).toBe(0);
+    expect(regularisationWhen("2026-09-30")).toBe("la régularisation annoncée pour début 2027");
+    expect(regularisationWhen("2026-10-01")).toBe("une régularisation dont la date n’est pas encore connue");
   });
 
   it("une fois la régularisation versée, paie au barème et n'attend plus rien", () => {

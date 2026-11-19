@@ -1,7 +1,7 @@
 import type { WorkQuota } from "./overtime";
 import { MECENAT_NIGHT_REGULARISATION, calculateRegulatoryMecenatVacation, mecenatPayment } from "./mecenatRegulation";
 import { matchEarlyPayment } from "./earlyPayment";
-export { MECENAT_NIGHT_REGULARISATION, MECENAT_REGULATORY_RATES, mecenatPayment, mecenatRatesFor, mecenatRateLabels, pendingMajorationWord } from "./mecenatRegulation";
+export { MECENAT_NIGHT_REGULARISATION, MECENAT_REGULATORY_RATES, mecenatPayment, mecenatRatesFor, mecenatRateLabels, pendingMajorationWord, regularisationWhen } from "./mecenatRegulation";
 
 export type MecenatEntry = {
   id: string;
@@ -81,6 +81,7 @@ export function pendingNightMajoration(entries: MecenatEntry[], todayKey: string
     minutes: waiting.reduce((total, item) => total + item.pendingMinutes, 0),
     cents: waiting.reduce((total, item) => total + item.pendingCents, 0),
     firstDate: waiting.length ? waiting[0].entry.date : null as string | null,
+    lastDate: waiting.length ? waiting[waiting.length - 1].entry.date : null as string | null,
   };
 }
 

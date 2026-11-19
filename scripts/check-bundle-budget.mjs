@@ -164,8 +164,10 @@ const budgets = {
   // ensuite laissé de côté. Porté le 18 novembre 2026 à 2 137 Kio brut, dans
   // cette même limite : la carte CET de l'accueil (confirmation du « Non »
   // plus explicite, encart « Pas encore de CET ? ») ; 2 136,3 / 707,5 Kio
-  // mesurés.
-  totalJavaScript: { raw: 2_137 * KIB, gzip: 708 * KIB },
+  // mesurés. Porté le 19 novembre 2026 à 2 138 Kio brut, toujours dans cette
+  // limite : la majoration de 22 h des mécénats versée depuis novembre 2026
+  // et la régularisation d'octobre sans date ; 2 137,7 / 707,9 Kio mesurés.
+  totalJavaScript: { raw: 2_138 * KIB, gzip: 708 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

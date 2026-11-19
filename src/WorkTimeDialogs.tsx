@@ -1,7 +1,7 @@
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { ClockTimePicker } from "./ClockTimePicker";
 import { euros } from "./appModel";
-import { MECENAT_NIGHT_REGULARISATION, mecenatPayment, mecenatRateLabels, mecenatRatesFor } from "./mecenat";
+import { mecenatPayment, mecenatRateLabels, mecenatRatesFor, regularisationWhen } from "./mecenat";
 import { defaultRecoveryMinutes, minutesLabel, nextPayPeriod, overtimeRangeRecoveryPreview, type OvertimeDisposition, type WorkQuota } from "./overtime";
 import { DAY_LABELS, MONTHS, getDayInfo } from "./planningLogic";
 
@@ -113,8 +113,8 @@ export function MecenatDialog({
               {payment?.pendingCents && pay ? (
                 <small className="mecenat-pending-preview">
                   Sur la paie {/^[aeiou]/.test(MONTHS[pay.month]) ? "d’" : "de "}{MONTHS[pay.month]} : {euros(payment.paidCents / 100)}. Les{" "}
-                  {euros(payment.pendingCents / 100)} de majoration de 22 h à minuit attendront la
-                  régularisation annoncée pour {MECENAT_NIGHT_REGULARISATION.expected}.
+                  {euros(payment.pendingCents / 100)} de majoration de 22 h à minuit attendront{" "}
+                  {regularisationWhen(draft.date)}.
                 </small>
               ) : null}
             </section>

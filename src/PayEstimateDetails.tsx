@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { euros } from "./appModel";
 import { type HelpTarget, useHelpTarget } from "./helpTargets";
-import { MECENAT_NIGHT_REGULARISATION, MECENAT_REGULATORY_RATES, mecenatPayment, pendingMajorationWord } from "./mecenat";
+import { MECENAT_NIGHT_REGULARISATION, MECENAT_REGULATORY_RATES, mecenatPayment, pendingMajorationWord, regularisationWhen } from "./mecenat";
 import { minutesLabel, type WorkQuota } from "./overtime";
 import { MONTHS, fromKey, longDate } from "./planningLogic";
 import { PayMonthNav } from "./PayMonthNav";
@@ -187,8 +187,8 @@ export function PayEstimateDetails({
           {mecenat.pendingCents && !MECENAT_NIGHT_REGULARISATION.settledPayMonth ? (
             <p className="mecenat-pending-note">
               De 22 h à minuit, la paie verse encore le tarif jour : les{" "}
-              {euros(mecenat.pendingCents / 100)} de majoration attendent la
-              régularisation annoncée pour {MECENAT_NIGHT_REGULARISATION.expected}.
+              {euros(mecenat.pendingCents / 100)} de majoration attendent{" "}
+              {regularisationWhen(mecenat.lines.filter((entry) => mecenatPayment(entry).pendingCents).map((entry) => entry.date).sort().pop() ?? "")}.
             </p>
           ) : null}
           <div className="overtime-pay-lines">

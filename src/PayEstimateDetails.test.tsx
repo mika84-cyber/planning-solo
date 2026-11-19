@@ -39,7 +39,8 @@ describe("détail mensuel de la paie", () => {
         onToday={vi.fn()}
       />,
     );
-    expect(html).toMatch(/De 22 h à minuit, la paie verse encore le tarif jour : les 12,10\s€ de majoration attendent la régularisation annoncée pour début 2027\./);
+    // Un mécénat d'octobre 2026 : la date de sa régularisation n'est pas connue.
+    expect(html).toMatch(/De 22 h à minuit, la paie verse encore le tarif jour : les 12,10\s€ de majoration attendent une régularisation dont la date n’est pas encore connue\./);
     expect(html).toMatch(/<span>4 h tarif jour \(91,60\s€\) · 12,10\s€ à régulariser<\/span><\/div><strong>91,60\s€<\/strong>/);
   });
 

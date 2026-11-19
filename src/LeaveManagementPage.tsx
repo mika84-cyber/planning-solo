@@ -277,7 +277,7 @@ export function LeaveManagementPage({
                 <article><span>{mecenatRateLabels().day}</span><strong>{euros(MECENAT_REGULATORY_RATES.dayRateCents / 100)}/h brut</strong></article>
                 <article><span>{mecenatRateLabels().night}</span><strong>{euros(MECENAT_REGULATORY_RATES.nightRateCents / 100)}/h brut</strong></article>
               </div>
-              <MecenatRegularisationNote pending={pendingMajoration} todayKey={todayKey} />
+              <MecenatRegularisationNote pending={pendingMajoration} />
               {/* Les trois actions sur une rangée : déclarer, puis les deux
                   volets qui s'ouvrent dessous — les dates où l'on s'est inscrit
                   (à retenir ou à effacer) et l'historique. Sur téléphone, elles
