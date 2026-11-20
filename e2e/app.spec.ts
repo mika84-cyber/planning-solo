@@ -2638,12 +2638,15 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(sapLinks.first()).toHaveAttribute("download", "");
   await expect(sapLinks).toHaveText(["Télécharger", "Télécharger", "Télécharger"]);
   const downloadIconBox = (await sapLinks.first().boundingBox())!;
-  // 44 px : la cible tactile minimale recommandée, portée à cette taille
-  // par usefulDocumentAdmin.css. Vérifier le plancher plutôt qu'une valeur
-  // exacte laisse la place à un bouton plus grand, jamais plus petit.
+  // 44 px : la cible tactile minimale recommandée. Vérifier le plancher
+  // plutôt qu'une valeur exacte laisse la place à un lien plus grand, jamais
+  // plus petit.
   expect(downloadIconBox.width).toBeGreaterThanOrEqual(44);
   expect(downloadIconBox.height).toBeGreaterThanOrEqual(44);
-  await expect(sapLinks.first().locator(".useful-form-download-label")).toHaveCSS("width", "1px");
+  // Un sommaire numéroté : « Télécharger » s'écrit en toutes lettres, et
+  // chaque document porte son rang.
+  await expect(sapLinks.first().locator(".useful-form-download-label")).toBeVisible();
+  await expect(page.locator(".useful-form-number")).toHaveText(["1", "2", "3"]);
   await expect(page.locator(".useful-form-file-copy strong")).toHaveText([
     "Demande de congés",
     "Demande de récupérations",
@@ -2684,6 +2687,41 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
     "/useful-forms/horaires-tickets-repas-fast.webp",
   );
   await expect(page.locator(".useful-form-download-list")).toHaveCount(0);
+});
+
+test("un invité voit les documents d’un dossier en sommaire numéroté, sur une ligne", async ({ page }) => {
+  // Jusqu'au 20 novembre 2026, les colonnes d'une fiche n'existaient que dans
+  // la feuille de l'administrateur : un invité voyait l'icône, le titre et un
+  // grand bouton sans texte empilés.
+  await prepareDemo(page);
+  await page.goto("/?local-test=1&preview-feedback-role=user");
+  await openUsefulResource(page, "Formulaires");
+  await page.getByRole("button", { name: /Formulaire SAP/ }).click();
+  const rows = page.locator(".useful-form-download-list > .useful-form-download-card");
+  await expect(rows).toHaveCount(3);
+  await expect(page.locator(".document-share-button")).toHaveCount(0);
+  const row = rows.first();
+  const [rowBox, numberBox, titleBox, linkBox] = await Promise.all([
+    row.boundingBox(),
+    row.locator(".useful-form-number").boundingBox(),
+    row.locator("strong").boundingBox(),
+    row.locator("a").boundingBox(),
+  ]);
+  // Le rang, le titre, puis l'action, côte à côte dans la ligne.
+  expect(numberBox!.x + numberBox!.width).toBeLessThanOrEqual(titleBox!.x);
+  expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(linkBox!.x + 1);
+  expect(linkBox!.x + linkBox!.width).toBeLessThanOrEqual(rowBox!.x + rowBox!.width + 1);
+  expect(Math.abs(linkBox!.y + linkBox!.height / 2 - (rowBox!.y + rowBox!.height / 2))).toBeLessThanOrEqual(2);
+  await expect(row.locator("a")).toHaveText("Télécharger");
+  await expect(row.locator("small").first()).toHaveText("PDF");
+  // Sans case ni fond : un simple filet sous la ligne.
+  await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(row).toHaveCSS("border-bottom-width", "1px");
+  await expect(rows.last()).toHaveCSS("border-bottom-width", page.viewportSize()!.width > 720 ? "1px" : "0px");
+  // Toute la ligne se touche : un toucher sur le titre atteint le lien, étiré
+  // sur la ligne, et ouvre aussi le téléchargement.
+  await row.click({ position: { x: titleBox!.x - rowBox!.x + 12, y: titleBox!.y - rowBox!.y + titleBox!.height / 2 } });
+  await expect(page.getByRole("dialog", { name: "Et si vous la remplissiez dans l’appli ?" })).toBeVisible();
 });
 
 test("l’administrateur partage un document et l’alerte invitée ouvre la bonne rubrique", async ({ page }) => {
@@ -2898,12 +2936,13 @@ test("les documents d’un dossier portent tous la couleur du dossier", async ({
   await openUsefulResource(page, "Formulaires");
   for (const [folder, tone] of [["Formulaire SAP", "rgb(83, 104, 168)"], ["Formulaire Brantôme", "rgb(185, 120, 30)"]] as const) {
     await page.getByRole("button", { name: new RegExp(folder) }).click();
-    const cards = page.locator(".useful-form-download-list > .useful-form-download-card");
-    await expect(cards.first()).toBeVisible();
+    const numbers = page.locator(".useful-form-download-list > .useful-form-download-card > .useful-form-number");
+    await expect(numbers.first()).toBeVisible();
     // Jusqu'au 12 novembre 2026 : six teintes en boucle, sans signification.
-    const borders = await cards.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).borderLeftColor));
-    expect(borders.length).toBeGreaterThan(1);
-    expect(new Set(borders)).toEqual(new Set([tone]));
+    // La couleur du dossier se lit désormais sur le rang de chaque document.
+    const colors = await numbers.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).color));
+    expect(colors.length).toBeGreaterThan(1);
+    expect(new Set(colors)).toEqual(new Set([tone]));
     await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
   }
 });

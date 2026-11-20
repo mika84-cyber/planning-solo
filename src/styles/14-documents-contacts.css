@@ -232,14 +232,32 @@
 
 .useful-forms-folder-header small { color: var(--folder-accent); font-weight: 850; }
 
-.useful-form-download-list { display: grid; gap: 11px; }
+/* Documents d'un dossier : un sommaire numéroté. Un grand chiffre à la couleur
+  du dossier, le titre, puis « Télécharger » ; un filet sépare les lignes, sans
+  case ni fond. Les colonnes sont posées ici, pour tous les comptes : jusqu'au
+  20 novembre 2026 elles ne l'étaient que dans la feuille de l'administrateur,
+  et un invité voyait tout empilé. */
+.useful-form-download-list { display: grid; }
 
 .useful-form-download-card {
+  position: relative;
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 13px;
-  border-radius: 18px;
-  padding: 13px 14px;
+  column-gap: 10px;
+  border-bottom: 1px solid var(--border-soft);
+  padding: 9px 2px;
+}
+
+.useful-form-download-card:last-of-type,
+.useful-form-download-card:has(+ .useful-form-list-heading) { border-bottom: 0; }
+
+.useful-form-number {
+  width: 30px;
+  color: var(--contact-category-accent);
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1;
 }
 
 .resource-search-field { display: grid; gap: 5px; }
@@ -255,18 +273,8 @@
   font: inherit;
 }
 
-.useful-form-file-icon {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--surface);
-}
-
-.useful-form-file-icon svg,
 .useful-form-download-card>a svg {
-  width: 22px;
+  width: 17px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -274,18 +282,11 @@
   stroke-width: 1.8;
 }
 
-.useful-form-file-copy { display: grid; gap: 3px; }
+.useful-form-file-copy { display: grid; gap: 2px; }
 
-.useful-form-file-copy small {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: .06em;
-}
+.useful-form-file-copy small { color: var(--muted); font-size: 12px; font-weight: 600; }
 
 .useful-form-file-copy strong { font-size: 14px; line-height: 1.3; }
-
-.useful-form-file-copy .useful-form-send-to { font-size: 12px; font-weight: 600; letter-spacing: 0; }
 
 .useful-form-send-to a { color: var(--accent-strong); font-weight: 800; }
 
@@ -318,52 +319,40 @@
   margin-top: 0;
 }
 
-/* Dossier d'une exposition : la fiche prend aussi une pastille colorée, et
-  occupe toute la largeur comme l'audioguide qui la suit. */
+/* Dossier d'une exposition : la fiche occupe toute la largeur, comme
+  l'audioguide qui la suit. */
 .useful-form-download-list:has(>.useful-audioguide-card)>.useful-form-download-card {
   grid-column: 1 / -1;
 }
 
-.useful-form-download-list:has(>.useful-audioguide-card) .useful-form-file-icon:not(.useful-audioguide-icon) {
-  background: #e4eef8;
-  color: #2f5f8f;
-}
-
-/* Toujours sous les fiches, sur toute la largeur de la liste, et ses deux
-  boutons côte à côte sous le texte. */
+/* L'audioguide : ses deux boutons côte à côte sous le texte. */
 .useful-form-download-list>.useful-audioguide-card {
-  grid-column: 1 / -1;
   grid-template-columns: auto minmax(0, 1fr);
+  row-gap: 8px;
 }
 
-.useful-form-file-copy .useful-audioguide-code { font-size: 12px; font-weight: 600; letter-spacing: 0; }
-
+/* « Télécharger », en toutes lettres, à la couleur foncée du dossier. */
 .useful-form-download-card>a {
-  min-height: 42px;
-  flex: 0 0 42px;
+  min-width: 44px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0;
-  border: 1px solid var(--border-card);
-  border-radius: 11px;
-  padding: 0;
-  color: #fff;
+  justify-content: flex-end;
+  gap: 5px;
+  color: var(--doc-ink);
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 800;
   text-decoration: none;
+  white-space: nowrap;
 }
 
-.useful-form-download-card>a svg { width: 17px; }
+/* Le lien s'étire sur toute la ligne ; ce qui s'y touche à part (adresse,
+  « Modifier », partage) repasse devant. */
+.useful-form-download-card>a::after { position: absolute; inset: 0; content: ""; }
 
-.useful-form-download-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
+.useful-form-download-card :is(.useful-form-send-to a, .document-edit-button, .document-share-button) {
+  position: relative;
+  z-index: 1;
 }
 
 .useful-form-local-notice {
@@ -466,38 +455,15 @@
   border: 1px solid var(--border-control);
 }
 
-/* Documents d'un dossier de formulaires : même présentation que les rubriques
-  de Contacts Pompidou — liseré de couleur à gauche, fond pastel, titre et
-  bouton à la couleur du liseré. Tous prennent la couleur de leur dossier
-  (`--contact-category-accent`, posée par UsefulFormsSection) ; jusqu'au
-  12 novembre 2026, six teintes en boucle sans signification. */
+/* Tous les documents d'un dossier prennent sa couleur
+  (`--contact-category-accent`, posée par UsefulFormsSection) : le chiffre,
+  puis, en plus foncé, « Télécharger » et les boutons d'un audioguide. Jusqu'au
+  12 novembre 2026, six teintes en boucle sans signification. `--doc-fill` est
+  un fond de bouton : son nom le tient à l'écart de l'éclaircissement des
+  textes en mode sombre, qui rendrait le blanc illisible dessus. */
 .useful-form-download-list {
-  --contact-category-text: color-mix(in srgb, var(--contact-category-accent) 78%, #000);
-  --contact-category-background: linear-gradient(135deg, color-mix(in srgb, var(--contact-category-accent) 12%, #fff), color-mix(in srgb, var(--contact-category-accent) 3%, #fff));
-}
-.useful-form-download-list>.useful-form-download-card {
-  border: 1px solid var(--border-card);
-  border-left: 6px solid var(--contact-category-accent);
-  background: var(--contact-category-background);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--contact-category-accent) 14%, transparent);
-}
-
-.useful-form-download-list>.useful-form-download-card .useful-form-file-copy strong {
-  color: var(--contact-category-text);
-}
-
-.useful-form-download-list>.useful-form-download-card .useful-form-file-copy>small:first-child {
-  color: color-mix(in srgb, var(--contact-category-text) 72%, #7a6f5f);
-}
-
-.useful-form-download-list>.useful-form-download-card>.useful-form-file-icon:not(.useful-audioguide-icon) {
-  background: rgba(255, 255, 255, .7);
-  color: var(--contact-category-text);
-}
-
-.useful-form-download-list>.useful-form-download-card>a {
-  border-color: transparent;
-  background: var(--contact-category-text);
+  --doc-fill: color-mix(in srgb, var(--contact-category-accent) 78%, #000);
+  --doc-ink: var(--doc-fill);
 }
 
 /* ---- Contacts utiles ------------------------------------------------------- */
@@ -558,18 +524,17 @@
   transform: translateY(-50%);
 }
 
-/* Audioguides d'exposition : même carte que les fiches, code d'accès en vue. */
-.useful-audioguide-icon { background: #fbeadf; color: #a4502f; }
-
-.useful-audioguide-actions { display: flex; grid-column: 1 / -1; gap: 8px; }
+/* Audioguides d'exposition : même ligne que les fiches, code d'accès en vue,
+  et deux boutons à la couleur du dossier, alignés sous le titre. */
+.useful-audioguide-actions { display: flex; grid-column: 2; gap: 8px; }
 
 .useful-audioguide-actions>* {
   flex: 1 1 0;
   min-width: 0;
-  border: 1px solid #a4502f;
+  border: 1px solid var(--doc-fill);
   border-radius: 12px;
   padding: 10px 8px;
-  background: #a4502f;
+  background: var(--doc-fill);
   color: #fff;
   font: inherit;
   font-size: 13px;
@@ -579,7 +544,7 @@
   cursor: pointer;
 }
 
-.useful-audioguide-actions button { background: #fff; color: #a4502f; }
+.useful-audioguide-actions button { border-color: currentColor; background: transparent; color: var(--doc-ink); }
 
 .useful-audioguide-code b {
   margin-left: 4px;
@@ -1129,7 +1094,9 @@
   }
   .useful-forms-folder-screen .useful-form-download-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 34px;
   }
+  .useful-forms-folder-screen .useful-form-download-card:last-of-type { border-bottom: 1px solid var(--border-soft); }
   .useful-forms-folder-screen .useful-form-local-notice,
   .useful-forms-folder-screen .useful-form-download-error {
     grid-column: 1 / -1;
@@ -1186,8 +1153,6 @@
   }
   .useful-forms-folder-header .section-back-arrow { left: 12px; }
   .useful-forms-folder-header h2 { font-size: 20px; }
-  .useful-form-download-card { padding: 11px; }
-  .useful-form-download-card>a { align-self: center; }
   .useful-forms-folder-screen {
     border-radius: 21px;
     padding-right: 10px;
@@ -1200,8 +1165,6 @@
     padding-right: 12px;
     padding-left: 12px;
   }
-  .useful-form-download-list { gap: 9px; }
-  .useful-form-download-card { border-radius: 18px; }
   .useful-contact-card>.useful-contact-identity { min-height: 44px; }
   .useful-contact-card>.useful-contact-actions { margin-top: 0; }
   .useful-contacts-screen { border-radius: 18px; padding: 14px; }

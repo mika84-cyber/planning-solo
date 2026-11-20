@@ -13,6 +13,13 @@ describe("QR codes pour les visiteurs", () => {
     expect(html).toContain('href="https://l.ead.me/bg72nl"');
     expect(html).toContain('href="https://l.ead.me/bg72lH"');
     expect(html).toContain("Afficher le QR code");
+    // Même sommaire numéroté que les documents : un rang, plus d'icône.
+    expect(html.match(/<span class="useful-form-number" aria-hidden="true">\d<\/span>/g)).toEqual([
+      '<span class="useful-form-number" aria-hidden="true">1</span>',
+      '<span class="useful-form-number" aria-hidden="true">2</span>',
+    ]);
+    expect(html).not.toContain("useful-form-file-icon");
+    expect(html).toContain("--contact-category-accent:#c9623a");
   });
 
   it("ajoute « Pour les visiteurs » aux annuaires des contacts", () => {

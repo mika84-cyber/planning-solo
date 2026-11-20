@@ -690,14 +690,15 @@ describe("finitions d’interface", () => {
     expect(app).toContain("Math.abs(deltaX) < 48");
   });
 
-  it("propose le mode sombre dans le menu et réduit le téléchargement des formulaires à son icône", () => {
+  it("propose le mode sombre dans le menu, dérivé des feuilles de style", () => {
     // Le mode sombre est dérivé des feuilles de style au lancement (src/darkStyles.ts),
     // pas écrit en double dans les fichiers CSS.
     expect(app).toContain("<ThemeSwitch />");
     expect(main).toContain("initTheme();");
     expect(css.anywhere("html[data-theme=\"dark\"]")).toBe(false);
-    expect(css.mentions(".useful-form-download-label")).toBe(true);
-    expect(css.declaresTogether({ width: "42px", height: "42px" })).toBe(true);
+    // Le téléchargement d'un formulaire n'est plus réduit à son icône : le
+    // sommaire numéroté écrit « Télécharger » (scénario e2e « un invité voit
+    // les documents d’un dossier en sommaire numéroté »).
   });
 
   it("renforce les contours des commandes de l’en-tête", () => {

@@ -525,9 +525,17 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   Comme `UsefulContactsSection.tsx`, l’en-tête se limite au surtitre et au
   titre (phrases d’explication retirées le 4 novembre 2026). Une recherche
   sans résultat le dit (« Aucun document ne porte ce nom. »). Les documents
-  d'un dossier portent tous la couleur du dossier (`FOLDER_TONES`, posée en
-  `--contact-category-accent` sur `.useful-form-download-list`), plus six
-  teintes en boucle. L'écran
+  d'un dossier se lisent en sommaire numéroté, pour tous les comptes : un
+  grand chiffre (`.useful-form-number`) à la couleur du dossier
+  (`FOLDER_TONES`, posée en `--contact-category-accent` sur
+  `.useful-form-download-list`), le titre et son format, puis « Télécharger »
+  en toutes lettres ; un filet sépare les lignes, sans case ni fond, et toute
+  la ligne se touche (lien étiré). Les audioguides d'un dossier et les QR
+  codes des visiteurs (`VisitorQrLinks.tsx`, dans Contacts) suivent le même
+  format, avec leurs deux boutons sous le titre. `--doc-fill` colore les
+  boutons pleins et `--doc-ink` les textes ; le premier garde un nom sans
+  « text » ni « ink » pour échapper à l'éclaircissement des textes du mode
+  sombre (`darkStyles.ts`). L'écran
   `.useful-resources-screen` n'a plus de fond : blanc, il dépassait en bande
   à angles droits sous la carte arrondie.
 - `src/AbsenceFormReminder.tsx` : dans Formulaire SAP, « Télécharger » une

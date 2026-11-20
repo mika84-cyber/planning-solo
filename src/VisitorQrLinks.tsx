@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 /** Un formulaire en ligne à faire flasher par un visiteur : le QR code
  *  d'origine et l'adresse qu'il ouvre, pour l'ouvrir aussi sans scanner. */
@@ -24,18 +24,19 @@ export const VISITOR_QR_LINKS: VisitorQrLink[] = [
   },
 ];
 
-/** Les QR codes pour les visiteurs, dans le format des fiches d'audioguide :
- *  ouvrir le formulaire, ou montrer le QR code à flasher. */
+/** Les QR codes pour les visiteurs, dans le format des lignes d'audioguide
+ *  (sommaire numéroté) : ouvrir le formulaire, ou montrer le QR code à
+ *  flasher. */
 export function VisitorQrLinks({ links = VISITOR_QR_LINKS }: { links?: VisitorQrLink[] }) {
   const [shownQr, setShownQr] = useState("");
   return (
-    <div className="useful-form-download-list visitor-qr-list">
+    // Pas de dossier ici : la liste prend le terracotta de l'appli, posé comme
+    // la couleur d'un dossier dans UsefulFormsSection.
+    <div className="useful-form-download-list visitor-qr-list" style={{ "--contact-category-accent": "#c9623a" } as CSSProperties}>
       <h3 className="useful-form-list-heading">QR codes</h3>
-      {links.map((link) => (
+      {links.map((link, index) => (
         <article key={link.title} className="useful-form-download-card useful-audioguide-card useful-qr-link-card">
-          <span className="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" /></svg>
-          </span>
+          <span className="useful-form-number" aria-hidden="true">{index + 1}</span>
           <span className="useful-form-file-copy">
             <strong>{link.title}</strong>
             <small className="useful-audioguide-code">{link.detail}</small>

@@ -352,15 +352,11 @@ export function UsefulFormsSection({
               const action = getUsefulFormAction(document.format, secureContext);
               return (
               <article key={document.file} className="useful-form-download-card">
-                <span className="useful-form-file-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M6 2h8l4 4v16H6z" />
-                    <path d="M14 2v5h5M9 13h6M9 17h6" />
-                  </svg>
-                </span>
+                {/* Un sommaire : le rang du document, son titre, puis l'action. */}
+                <span className="useful-form-number" aria-hidden="true">{index + 1}</span>
                 <span className="useful-form-file-copy">
-                  <small>{index + 1}. {document.format}</small>
                   <strong>{document.title}</strong>
+                  <small>{document.format}</small>
                   {"sendTo" in document && document.sendTo ? <small className="useful-form-send-to">À envoyer à <a href={`mailto:${document.sendTo}`}>{document.sendTo.split("@")[0]}<wbr />@{document.sendTo.split("@")[1]}</a></small> : null}
                   {isAdmin && document.publishAt && Date.parse(document.publishAt) > Date.now() && <small>{document.publishAt.startsWith('9999') ? 'Brouillon · À reprogrammer' : `Publication le ${new Date(document.publishAt).toLocaleString('fr-FR')}`}</small>}
                   {isAdmin && <button className="document-edit-button" type="button" aria-label={`Modifier ${document.title}`} onClick={() => setEditDocument(document)}>Modifier</button>}
@@ -380,14 +376,14 @@ export function UsefulFormsSection({
                     else void downloadForm(href, document.file, action);
                   }}
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 3v12m-4-4 4 4 4-4M5 19h14" />
-                  </svg>
                   <span className="useful-form-download-label">
                     {downloadingFile === document.file
                       ? "Préparation…"
                       : action === "preview" ? "Ouvrir le PDF" : "Télécharger"}
                   </span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3v12m-4-4 4 4 4-4M5 19h14" />
+                  </svg>
                 </a>
                 {isAdmin && <button type="button" className="document-share-button" aria-label={`Partager ${document.title}`} title="Partager ce document" onClick={() => setShareDocument(document)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></button>}
               </article>
@@ -398,11 +394,8 @@ export function UsefulFormsSection({
             {headings ? <h3 className="useful-form-list-heading">{headings.audioguides}</h3> : null}
             {folder.audioguides?.map((guide, index) => (
               <article key={guide.title} className="useful-form-download-card useful-audioguide-card">
-                <span className="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
-                </span>
+                <span className="useful-form-number" aria-hidden="true">{index + 1}</span>
                 <span className="useful-form-file-copy">
-                  <small>{index + 1}. AUDIOGUIDE</small>
                   <strong>Audioguide {guide.title}</strong>
                   <small className="useful-audioguide-code">{guide.languages}</small>
                   <small className="useful-audioguide-code">Code d’accès <b>{guide.code}</b></small>
