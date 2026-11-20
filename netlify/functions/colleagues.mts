@@ -8,7 +8,7 @@ import { isMikaSharingAccount } from "../lib/sharedCalendarBridge.mts";
 import { userDataKey } from "../lib/userScopedStore.mts";
 import { isCalendarTombstone } from "../lib/calendarAtomic.mts";
 import { presenceShownToColleagues, type Entries, type LeavePeriod } from "../../src/appModel.ts";
-import { dailyMinutesForQuota, type WorkQuota } from "../../src/overtime.ts";
+import { dailyMinutesForQuota, workQuotaFrom } from "../../src/overtime.ts";
 import { GRAND_PALAIS_EXCEPTIONAL_CLOSURES, grandPalaisExceptionalClosure } from "../../src/grandPalaisClosures.ts";
 import type { SharedGrandPalaisEvent } from "../../src/grandPalaisProgramTypes.ts";
 import { validateWorkExchange } from "../../src/workExchange.ts";
@@ -383,8 +383,7 @@ async function sharedPlanningResponse(store: Store, viewerId: string, ownerId: s
   if (!owner?.visible) return json({ error: "Ce planning n’est plus disponible." }, 404);
   const validDate = (value: unknown): value is string => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
   const group = Math.min(6, Math.max(1, Number(formProfile?.group) || 2));
-  const quota: WorkQuota = formProfile?.work_quota === "three_quarters" || formProfile?.work_quota === "half"
-    ? formProfile.work_quota : "full";
+  const quota = workQuotaFrom(formProfile?.work_quota);
   const periods: LeavePeriod[] = rawPeriods.filter((period) => validDate(period.from) && validDate(period.to)).map((period, index) => ({
     id: `shared-${index}`, from: String(period.from), to: String(period.to),
     leaveType: period.leave_type === "half" ? "half" : "annual",

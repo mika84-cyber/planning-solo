@@ -112,6 +112,7 @@ export function PaySectionScreen({
             // Devant un écart du bulletin : le statut, ou les choix de
             // compensation des fériés, se corrigent sans quitter la paie.
             onChangeStatus: changeStatus,
+            onChangeWorkQuota: changeWorkQuota,
             onOpenHolidayChoices: () => {
               setPayScreen("allowances");
               scrollWhenReady("holiday-choices");

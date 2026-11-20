@@ -131,7 +131,7 @@ export type FormProfile = {
    *  fonctionnaire doit donc le déclarer explicitement : son traitement
    *  indiciaire, son IFSE et le calcul de ses retenues en dépendent. */
   status?: "fonctionnaire" | "contractuel";
-  work_quota?: "full" | "three_quarters" | "half";
+  work_quota?: "full" | "four_fifths" | "three_quarters" | "half";
   work_schedule?: {
     start: string;
     end: string;

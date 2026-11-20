@@ -252,6 +252,26 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Signaler une anomalie : proposition de courrier à envoyer aux RH");
   });
 
+  it("propose de caler la quotité du profil sur celle du bulletin", () => {
+    const check = { name: "bulletin.jpg", reading: { month: 7, year: 2026, sundaysBeyondTen: 0, gross: 2500, baseSalary: 1900, workTime: 80 } };
+    const review = { verdict: "Comparaison disponible", tone: "unknown" as const, issues: [], verified: [], unavailable: [] };
+    const html = renderToStaticMarkup(
+      <PayslipCheckSection {...baseProps} check={check} review={review} workQuota="full" onChangeWorkQuota={vi.fn()} />,
+    );
+    expect(html).toContain("Ce bulletin indique « Temps partiel 80 % », mais votre profil dit « Temps plein »");
+    expect(html).toContain("Passer ma quotité en Temps partiel 80 %");
+    // Le profil dit déjà 80 % : rien à proposer.
+    const same = renderToStaticMarkup(
+      <PayslipCheckSection {...baseProps} check={check} review={review} workQuota="four_fifths" onChangeWorkQuota={vi.fn()} />,
+    );
+    expect(same).not.toContain("Passer ma quotité");
+    // Un temps de travail que le profil ne connaît pas (90 %) : rien non plus.
+    const unknown = renderToStaticMarkup(
+      <PayslipCheckSection {...baseProps} check={{ ...check, reading: { ...check.reading, workTime: 90 } }} review={review} workQuota="full" onChangeWorkQuota={vi.fn()} />,
+    );
+    expect(unknown).not.toContain("Passer ma quotité");
+  });
+
   it("ne reporte pas les détails d’un bulletin sur un autre mois", () => {
     const html = renderToStaticMarkup(
       <PayslipCheckSection

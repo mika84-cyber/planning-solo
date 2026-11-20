@@ -766,7 +766,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/workPost.ts` : poste du jour (en salle par défaut, accueil ou
   billetterie), stocké en `work_post` sur la journée et partagé aux collègues
   par `personalPresenceForDate` (lettres E, C, B dans la semaine).
-- `src/overtime.ts` : heures supplémentaires et récupérations.
+- `src/overtime.ts` : heures supplémentaires et récupérations. Les quotités
+  du profil y sont décrites dans une seule table (`WORK_QUOTA_OPTIONS` :
+  temps plein, 80 %, trois-quarts, mi-temps, avec la durée d'une journée et
+  le pourcentage) ; le serveur la relit par `isWorkQuota` / `workQuotaFrom`.
+  À 80 %, les journées restent entières (quatre jours par semaine) et le
+  traitement est payé aux 6/7 (`paidSalaryShare`) ; un bulletin lu propose
+  de caler le profil sur son temps de travail (`workQuotaFromWorkTime`).
 - `src/mecenat.ts` / `src/mecenatRegulation.ts` : calcul des mécénats, au
   barème du jour de la vacation (décret n° 2010-147, arrêté du 18 mai 2010
   modifié ; depuis 2024, 22,90 € de 7 h à 22 h et 35 € de 22 h à 7 h).

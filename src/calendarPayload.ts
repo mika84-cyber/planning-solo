@@ -15,7 +15,7 @@ import { sanitizePayslipVerifications } from "./payslipVerificationRecords";
 import { sanitizeMealVoucherPlans } from "./mealVouchers";
 import { sanitizePayslipRateSamples } from "./payslipRateSamples";
 import type { MecenatEntry, MecenatSignup } from "./mecenat";
-import type { OvertimeEntry, RecoveryUse } from "./overtime";
+import { workQuotaFrom, type OvertimeEntry, type RecoveryUse } from "./overtime";
 import { halfBalanceFromApi, type HalfMoment, type HolidayPay, type LeaveType } from "./planningLogic";
 
 type JsonRecord = Record<string, unknown>;
@@ -103,10 +103,7 @@ function formProfileFromApi(value: unknown): FormProfile | null {
     group: text(raw.group),
     signature: text(raw.signature),
     status: raw.status === "contractuel" ? "contractuel" : "fonctionnaire",
-    workQuota:
-      raw.work_quota === "half" || raw.work_quota === "three_quarters"
-        ? raw.work_quota
-        : "full",
+    workQuota: workQuotaFrom(raw.work_quota),
     workSchedule: (() => {
       if (!raw.work_schedule || typeof raw.work_schedule !== "object" || Array.isArray(raw.work_schedule)) return undefined;
       const schedule = record(raw.work_schedule);

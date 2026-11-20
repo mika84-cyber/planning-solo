@@ -2,6 +2,7 @@ import { isValidDateKey, sanitizeDeductionPayMonths } from "./calendarValidation
 import { sanitizePayslipVerifications } from "../../src/payslipVerificationRecords.ts";
 import { sanitizeMealVoucherPlans } from "../../src/mealVouchers.ts";
 import { sanitizePayslipRateSamples } from "../../src/payslipRateSamples.ts";
+import { workQuotaFrom } from "../../src/overtime.ts";
 
 const ID_RE = /^[a-zA-Z0-9-]{8,80}$/;
 const COLORS = new Set(["#D3943D", "#7358d8", "#2878b8", "#268b69", "#d57928"]);
@@ -371,10 +372,7 @@ export function sanitizeCalendarBackup(value: unknown) {
     formProfile = {
       full_name: typeof raw.full_name === "string" ? raw.full_name.trim().slice(0, 120) : "",
       group: ["1", "2", "3"].includes(String(raw.group)) ? String(raw.group) : "",
-      work_quota:
-        raw.work_quota === "half" || raw.work_quota === "three_quarters"
-          ? raw.work_quota
-          : "full",
+      work_quota: workQuotaFrom(raw.work_quota),
       signature,
       status: raw.status === "fonctionnaire" ? "fonctionnaire" : "contractuel",
       ...sanitizePayValues(raw),

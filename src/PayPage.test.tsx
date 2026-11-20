@@ -1,8 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { PayPage, type PayScreen } from "./PayPage";
+import type { WorkQuota } from "./overtime";
 
-function renderPage(screen: PayScreen, props: { netEstimateComplete?: boolean; profileOpen?: boolean; settingsOpen?: boolean } = {}) {
+function renderPage(screen: PayScreen, props: { netEstimateComplete?: boolean; profileOpen?: boolean; settingsOpen?: boolean; workQuota?: WorkQuota; status?: "fonctionnaire" | "contractuel" } = {}) {
   return renderToStaticMarkup(
     <PayPage
       screen={screen}
@@ -75,5 +76,17 @@ describe("PayPage", () => {
     const open = renderPage("overview", { profileOpen: true });
     expect(open).not.toContain("pay-profile-open-copy");
     expect(open).not.toContain("Replier");
+  });
+
+  it("laisse la quotité et le statut vides tant qu’ils n’ont pas été choisis, puis les nomme", () => {
+    // Les calculs retiennent un temps plein contractuel par défaut, mais
+    // l'afficher ferait passer pour renseigné ce qui reste à décider.
+    const empty = renderPage("overview", { settingsOpen: true, profileOpen: true });
+    expect(empty).toContain("<small>Quotité et statut à renseigner</small>");
+    expect(empty.match(/choice-picker-trigger[^"]*empty/g)?.length).toBe(2);
+    expect(empty.match(/À renseigner/g)?.length).toBe(2);
+    const chosen = renderPage("overview", { settingsOpen: true, profileOpen: true, workQuota: "four_fifths", status: "contractuel" });
+    expect(chosen).toContain("<small>Temps partiel 80 % · Contractuel</small>");
+    expect(chosen).not.toContain("choice-picker-trigger empty");
   });
 });

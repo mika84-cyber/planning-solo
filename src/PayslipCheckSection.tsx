@@ -2,7 +2,7 @@ import type { PayslipVerificationRecord, PayslipVerificationRecords } from "./pa
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { NetRatioCalibration } from "./payslip";
 import type { MecenatEntry } from "./mecenat";
-import type { OvertimeEntry } from "./overtime";
+import type { OvertimeEntry, WorkQuota } from "./overtime";
 import type { PayslipReviewSummary } from "./payslipReview";
 import type { PayslipGapExplanation } from "./payslipGapExplanation";
 import type {
@@ -86,6 +86,9 @@ export type PayslipCheckSectionProps = {
   onApplyPayslipValue: (field: PayDraftKey, value: number) => void;
   onDeferMecenats?: (entries: MecenatEntry[], year: number, month: number) => void;
   onChangeStatus?: (status: "fonctionnaire" | "contractuel") => void;
+  /** La quotité du profil, et de quoi la caler sur celle du bulletin. */
+  workQuota?: WorkQuota;
+  onChangeWorkQuota?: (quota: WorkQuota) => void;
   onOpenHolidayChoices?: () => void;
   onOpenMealVouchers?: () => void;
   /** Les prochaines paies, mois par mois : l'année en un coup d'œil. */
@@ -166,6 +169,8 @@ export function PayslipCheckSection({
   onApplyPayslipValue,
   onDeferMecenats,
   onChangeStatus,
+  workQuota,
+  onChangeWorkQuota,
   onOpenHolidayChoices,
   onOpenMealVouchers,
   onOpenYear,
@@ -242,6 +247,8 @@ export function PayslipCheckSection({
       onApplyPayslipValue={onApplyPayslipValue}
       onDeferMecenats={onDeferMecenats}
       onChangeStatus={onChangeStatus}
+      workQuota={workQuota}
+      onChangeWorkQuota={onChangeWorkQuota}
       onOpenHolidayChoices={onOpenHolidayChoices}
       onOpenMealVouchers={onOpenMealVouchers}
       holidayPending={holidayPending}

@@ -10,7 +10,7 @@ import { emptyEntry, euros } from "./appModel";
 import type { MecenatEntry } from "./mecenat";
 import { mecenatForPayMonth } from "./mecenat";
 import type { RecoveryUse } from "./overtime";
-import { holidayRecoveryMinutesForQuota } from "./overtime";
+import { holidayRecoveryMinutesForQuota, workQuotaFromWorkTime } from "./overtime";
 import {
   calculateNetRatios,
   defaultNetRatiosForPeriod,
@@ -981,6 +981,13 @@ export function usePayActions(options: PayActionsOptions) {
       // Le statut que dit le bulletin (cotisation IRCANTEC, pension civile)
       // devient celui du profil tant qu'aucun n'y est enregistré.
       const bulletinStatus = formProfile?.status === undefined ? profileSource?.reading.status : undefined;
+      // De même pour le temps de travail du bulletin (80 %, mi-temps…).
+      const bulletinQuota = formProfile?.workQuota === undefined ? workQuotaFromWorkTime(profileSource?.reading.workTime) : undefined;
+      // Ce que le bulletin apprend au profil, pour l'appli et pour le serveur.
+      const bulletinProfile = {
+        ...(bulletinStatus ? { status: bulletinStatus } : {}),
+        ...(bulletinQuota ? { workQuota: bulletinQuota } : {}),
+      };
       const calculatedRates = calculateNetRatios(
         compatibleRateReadings,
         defaultNetRatiosForPeriod(Number(targetPayYear), targetPayMonth, (formProfile?.status ?? bulletinStatus) === "contractuel"),
@@ -1083,7 +1090,7 @@ export function usePayActions(options: PayActionsOptions) {
       );
       const nextProfile: FormProfile = {
         ...payProfileBase(formProfile, group),
-        ...(bulletinStatus ? { status: bulletinStatus } : {}),
+        ...bulletinProfile,
         deductionPayMonths,
         baseSalary:
           found.baseSalary ??
@@ -1166,7 +1173,7 @@ export function usePayActions(options: PayActionsOptions) {
           fullName: nextProfile.fullName,
           group: nextProfile.group,
           signature: nextProfile.signature,
-          ...(bulletinStatus ? { status: bulletinStatus } : {}),
+          ...bulletinProfile,
         };
         if (found.baseSalary !== undefined)
           body.baseSalaryCents = Math.round(found.baseSalary * 100);

@@ -4,6 +4,7 @@ import { sanitizeDeductionPayMonths } from "../calendarValidation.mts";
 import { sanitizePayslipVerifications } from "../../../src/payslipVerificationRecords.ts";
 import { sanitizeMealVoucherPlans } from "../../../src/mealVouchers.ts";
 import { mergePayslipRateSamples } from "../../../src/payslipRateSamples.ts";
+import { isWorkQuota } from "../../../src/overtime.ts";
 import { readAtomic, writeAtomic } from "../calendarAtomic.mts";
 export async function handleSaveFormProfile(
   context: CalendarActionContext,
@@ -48,12 +49,9 @@ export async function handleSaveFormProfile(
     body.status === "fonctionnaire" || body.status === "contractuel"
       ? body.status
       : previousProfile?.status || "contractuel";
-  const workQuota =
-    body.workQuota === "full" ||
-    body.workQuota === "three_quarters" ||
-    body.workQuota === "half"
-      ? body.workQuota
-      : previousProfile?.work_quota || "full";
+  const workQuota = isWorkQuota(body.workQuota)
+    ? body.workQuota
+    : previousProfile?.work_quota || "full";
   // Toute la plage du sélecteur d'heures pour une journée habituelle : de
   // 7 h à 23 h 45, au quart d'heure.
   const timeValue = (value: unknown) =>

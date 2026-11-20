@@ -4,7 +4,7 @@ import { ClockTimePicker } from "./ClockTimePicker";
 import { PayDashboard, type PayDashboardAcceptedGap, type PayDashboardVariable, type PayDashboardVerification } from "./PayDashboard";
 import type { PayCalculationBreakdown } from "./PayEstimateDetails";
 import { PAY_STATUS_OPTIONS, type PayStatus } from "./appModel";
-import { WORK_QUOTA_OPTIONS, type WorkQuota, type WorkSchedule } from "./overtime";
+import { WORK_QUOTA_OPTIONS, workQuotaLabel, type WorkQuota, type WorkSchedule } from "./overtime";
 import { MONTHS } from "./planningLogic";
 
 export type PayScreen = "overview" | "allowances" | "payslip" | "year" | "meal";
@@ -103,7 +103,7 @@ export function PayPage({
      Contractuel » sans que personne ne l'ait retenu donnerait le profil pour
      réglé. */
   const profileRecap = [
-    WORK_QUOTA_OPTIONS.find((option) => option.value === workQuota)?.label,
+    workQuotaLabel(workQuota),
     PAY_STATUS_OPTIONS.find((option) => option.value === status)?.label,
   ].filter(Boolean).join(" · ") || "Quotité et statut à renseigner";
 

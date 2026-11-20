@@ -8,6 +8,10 @@ import {
   defaultRecoveryMinutes,
   holidayRecoveryCreditMinutes,
   holidayRecoveryEntries,
+  isWorkQuota,
+  paidSalaryShare,
+  workQuotaFrom,
+  workQuotaFromWorkTime,
   storedHolidayRecoveryCreditMinutes,
   monthlyRecoveryBalance,
   nextPayPeriod,
@@ -58,7 +62,7 @@ describe("horaires proposés", () => {
 
 describe("durée présélectionnée des récupérations", () => {
   it.each([
-    ["full", 495], ["three_quarters", 390], ["half", 240],
+    ["full", 495], ["four_fifths", 495], ["three_quarters", 390], ["half", 240],
   ] as const)("utilise %i minutes pour un férié à quotité %s", (quota, expected) => {
     expect(defaultRecoveryMinutes("holiday", quota)).toBe(expected);
   });
@@ -69,6 +73,34 @@ describe("quotité de travail", () => {
     expect(dailyMinutesForQuota("full")).toBe(480);
     expect(dailyMinutesForQuota("three_quarters")).toBe(360);
     expect(dailyMinutesForQuota("half")).toBe(225);
+  });
+
+  it("garde des journées entières à 80 %, payé aux 6/7", () => {
+    // Quatre jours par semaine : la journée et le férié valent ceux d'un
+    // temps plein ; seul le traitement suit la règle des 6/7.
+    expect(dailyMinutesForQuota("four_fifths")).toBe(480);
+    expect(paidSalaryShare("four_fifths")).toBeCloseTo(0.85714, 5);
+    expect(paidSalaryShare("three_quarters")).toBe(0.75);
+    expect(paidSalaryShare("full")).toBe(1);
+  });
+
+  it("relit la quotité enregistrée, et le temps plein quand elle est inconnue", () => {
+    expect(isWorkQuota("four_fifths")).toBe(true);
+    expect(isWorkQuota("quatre_cinquiemes")).toBe(false);
+    expect(workQuotaFrom("four_fifths")).toBe("four_fifths");
+    expect(workQuotaFrom("half")).toBe("half");
+    expect(workQuotaFrom(undefined)).toBe("full");
+    expect(workQuotaFrom("autre")).toBe("full");
+  });
+
+  it("déduit la quotité du temps de travail d’un bulletin", () => {
+    expect(workQuotaFromWorkTime(100)).toBe("full");
+    expect(workQuotaFromWorkTime(80)).toBe("four_fifths");
+    expect(workQuotaFromWorkTime(75)).toBe("three_quarters");
+    expect(workQuotaFromWorkTime(50)).toBe("half");
+    // 90 % et 60 % ne sont pas des quotités du profil : rien n'est proposé.
+    expect(workQuotaFromWorkTime(90)).toBeUndefined();
+    expect(workQuotaFromWorkTime(undefined)).toBeUndefined();
   });
 });
 
@@ -205,6 +237,11 @@ describe("calcul IHTS", () => {
     expect(result.amount).toBeCloseTo(result.hourlyBase, 8);
     const threeQuarters = calculatePaidOvertime([entry("jour", 60, "paid")], 2026, 8, "three_quarters", 1500, 45);
     expect(threeQuarters.hourlyBase).toBeCloseTo(((2000 + 60) * 12) / 1820, 8);
+    // À 80 %, le traitement versé vaut les 6/7 du temps plein : 2 253,22 €
+    // versés pour 2 628,76 €, et l'heure se calcule sur ce temps plein.
+    const fourFifths = calculatePaidOvertime([entry("jour", 60, "paid")], 2026, 8, "four_fifths", 2253.22, 67.6);
+    expect(fourFifths.hourlyBase).toBeCloseTo(((2628.76 + 78.86) * 12) / 1820, 2);
+    expect(fourFifths.amount).toBeCloseTo(fourFifths.hourlyBase, 8);
   });
 });
 
@@ -229,6 +266,7 @@ describe("solde de récupération", () => {
 
   it.each([
     ["full", 480, 240],
+    ["four_fifths", 480, 240],
     ["three_quarters", 360, 180],
     ["half", 225, 225],
   ] as const)("convertit journée et demi-journée selon la quotité %s", (quota, day, half) => {
@@ -238,6 +276,7 @@ describe("solde de récupération", () => {
 
   it.each([
     ["full", 495],
+    ["four_fifths", 495],
     ["three_quarters", 390],
     ["half", 240],
   ] as const)("solde exactement un férié acquis puis posé à la quotité %s", (quota, minutes) => {
@@ -262,6 +301,7 @@ describe("solde de récupération", () => {
 
   it.each([
     ["full", 495],
+    ["four_fifths", 495],
     ["three_quarters", 390],
     ["half", 240],
   ] as const)("crédite prime + récupération selon la quotité %s", (quota, expected) => {
@@ -580,6 +620,8 @@ describe("plafond mensuel des heures payées", () => {
     const threeQuarters = calculatePaidOvertime([entry("long", 30 * 60)], 2026, 8, "three_quarters", 927.94, 27.84);
     expect(threeQuarters.capMinutes).toBe(18 * 60 + 45);
     expect(threeQuarters.cappedMinutes).toBe(11 * 60 + 15);
+    // 80 % : vingt heures payées au plus.
+    expect(calculatePaidOvertime([entry("long", 30 * 60)], 2026, 8, "four_fifths", 2253.22, 67.6).capMinutes).toBe(20 * 60);
     expect(calculatePaidOvertime([entry("long", 30 * 60)], 2026, 8, "full", 927.94, 27.84).capMinutes).toBe(25 * 60);
   });
 });

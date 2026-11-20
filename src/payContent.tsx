@@ -83,6 +83,7 @@ export type PayContentInput = {
   onMarkOvertimePaidEarly: PayslipCheckSectionProps["onMarkOvertimePaidEarly"];
   onDeferMecenats: PayslipCheckSectionProps["onDeferMecenats"];
   onChangeStatus: PayslipCheckSectionProps["onChangeStatus"];
+  onChangeWorkQuota: PayslipCheckSectionProps["onChangeWorkQuota"];
   onOpenHolidayChoices: PayslipCheckSectionProps["onOpenHolidayChoices"];
   onOpenMealVouchers: PayslipCheckSectionProps["onOpenMealVouchers"];
   onOpenYear: PayslipCheckSectionProps["onOpenYear"];
@@ -143,6 +144,7 @@ export function buildPayContent({
   onMarkOvertimePaidEarly,
   onDeferMecenats,
   onChangeStatus,
+  onChangeWorkQuota,
   onOpenHolidayChoices,
   onOpenMealVouchers,
   onOpenYear,
@@ -834,6 +836,8 @@ export function buildPayContent({
     onMarkOvertimePaidEarly,
     onDeferMecenats,
     onChangeStatus,
+    workQuota,
+    onChangeWorkQuota,
     onOpenHolidayChoices,
     onOpenMealVouchers,
     onOpenYear,

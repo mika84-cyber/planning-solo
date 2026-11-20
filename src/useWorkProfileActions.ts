@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { FormProfile, PayStatus } from "./appModel";
 import { calendarErrorMessage } from "./calendarApi";
 import type { WorkQuota, WorkSchedule } from "./overtime";
-import type { PayCalendarPost } from "./usePayActions";
+import { payProfileBase, type PayCalendarPost } from "./usePayActions";
 
 type WorkProfileActionsOptions = {
   demoMode: boolean;
@@ -17,7 +17,9 @@ type WorkProfileActionsOptions = {
 
 /** Le groupe, le statut, la quotité et les horaires habituels du profil de
  *  calcul : enregistrés sur-le-champ, et rendus tels quels si le serveur
- *  refuse. */
+ *  refuse. Chaque changement repart de `payProfileBase`, pour ne rien faire
+ *  disparaître de l'écran (bulletins vérifiés, bulletins qui calent les
+ *  taux, report de dimanches). */
 export function useWorkProfileActions({
   demoMode,
   group,
@@ -32,37 +34,7 @@ export function useWorkProfileActions({
     const previousGroup = group;
     const previousProfile = formProfile;
     setGroup(nextGroup);
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: String(nextGroup),
-      signature: formProfile?.signature || "",
-      status: formProfile?.status,
-      workQuota: formProfile?.workQuota,
-      workSchedule: formProfile?.workSchedule,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: formProfile?.ciaMonth,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-      deductionPayMonths: formProfile?.deductionPayMonths,
-      mealVoucherPlans: formProfile?.mealVoucherPlans,
-      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
-      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
-      sundayCarryover: formProfile?.sundayCarryover,
-      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
-      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
-      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
-      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
-    };
+    const nextProfile: FormProfile = { ...payProfileBase(formProfile, group), group: String(nextGroup) };
     setFormProfile(nextProfile);
     if (demoMode)
       return;
@@ -85,37 +57,7 @@ export function useWorkProfileActions({
    *  s'affiche, au cas où ce statut serait choisi puis annulé. */
   function changeStatus(nextStatus: PayStatus) {
     const previousProfile = formProfile;
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: formProfile?.group || String(group),
-      signature: formProfile?.signature || "",
-      status: nextStatus,
-      workQuota: formProfile?.workQuota,
-      workSchedule: formProfile?.workSchedule,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: formProfile?.ciaMonth,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-      deductionPayMonths: formProfile?.deductionPayMonths,
-      mealVoucherPlans: formProfile?.mealVoucherPlans,
-      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
-      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
-      sundayCarryover: formProfile?.sundayCarryover,
-      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
-      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
-      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
-      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
-    };
+    const nextProfile: FormProfile = { ...payProfileBase(formProfile, group), status: nextStatus };
     setFormProfile(nextProfile);
     if (demoMode)
       return;
@@ -134,37 +76,7 @@ export function useWorkProfileActions({
   }
   function changeWorkQuota(nextQuota: WorkQuota) {
     const previousProfile = formProfile;
-    const nextProfile: FormProfile = {
-      fullName: formProfile?.fullName || "",
-      group: formProfile?.group || String(group),
-      signature: formProfile?.signature || "",
-      status: formProfile?.status,
-      workQuota: nextQuota,
-      workSchedule: formProfile?.workSchedule,
-      baseSalary: formProfile?.baseSalary,
-      residenceAllowance: formProfile?.residenceAllowance,
-      ifse: formProfile?.ifse,
-      carenceDay: formProfile?.carenceDay,
-      otherFixed: formProfile?.otherFixed,
-      cia: formProfile?.cia,
-      ciaMonth: formProfile?.ciaMonth,
-      netRatioFixed: formProfile?.netRatioFixed,
-      netRatioVariable: formProfile?.netRatioVariable,
-      navigo: formProfile?.navigo,
-      mealVoucherDeduction: formProfile?.mealVoucherDeduction,
-      pasRate: formProfile?.pasRate,
-      manualAdjustments: formProfile?.manualAdjustments,
-      cetAccount: formProfile?.cetAccount,
-      deductionPayMonths: formProfile?.deductionPayMonths,
-      mealVoucherPlans: formProfile?.mealVoucherPlans,
-      // Le report de dimanches en cours n'appartient qu'aux écrans qui le posent
-      // ou le retirent : les autres enregistrements doivent le laisser tel quel.
-      sundayCarryover: formProfile?.sundayCarryover,
-      sundayCarryoverYear: formProfile?.sundayCarryoverYear,
-      sundayCarryoverMonth: formProfile?.sundayCarryoverMonth,
-      sundayCarryoverFromYear: formProfile?.sundayCarryoverFromYear,
-      sundayCarryoverFromMonth: formProfile?.sundayCarryoverFromMonth,
-    };
+    const nextProfile: FormProfile = { ...payProfileBase(formProfile, group), workQuota: nextQuota };
     setFormProfile(nextProfile);
     if (demoMode)
       return;

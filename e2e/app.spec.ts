@@ -1878,6 +1878,9 @@ test("une photo que le calcul prouve s’enregistre sans rien demander, et le bu
   test.setTimeout(180_000);
   await prepareDemo(page);
   await goToSection(page, "pay");
+  // Le profil, ouvert pour y lire la quotité après la lecture du bulletin.
+  await page.getByRole("button", { name: "Profil et réglages" }).click();
+  const payProfile = page.locator(".pay-dashboard-profile-slot .pay-profile-settings");
   await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
   // Le premier bloc dit ce que fait chaque bouton, et que rien n'est envoyé.
   const choose = page.locator(".payslip-guide-step").first();
@@ -1918,6 +1921,10 @@ test("une photo que le calcul prouve s’enregistre sans rien demander, et le bu
   await expect(audit).toContainText(/vieillesse 6,90.% \+ 0,40.% · IRCANTEC 2,80.% · CSG 6,80.% \+ 2,40.% · CRDS 0,50.%/);
   await expect(audit).toContainText("Indemnité de résidence : 3 % du traitement");
   await expect(audit).toContainText("Temps partiel à 80 %");
+  // Le profil n'avait pas de quotité : il prend d'office celle du bulletin
+  // (payé aux 6/7, soit 80 %), et rien n'est à proposer.
+  await expect(payProfile.getByRole("button", { name: "Choisir la quotité de travail" })).toContainText("Temps partiel 80 %");
+  await expect(page.getByRole("button", { name: /Passer ma quotité/ })).toHaveCount(0);
   // Les montants du bulletin sont dans le profil, sans confirmation.
   await expect(page.getByRole("region", { name: "Que voulez-vous faire ?" })).toBeVisible();
   // Et les prochaines paies se voient mois par mois.

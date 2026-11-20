@@ -10,7 +10,7 @@ import { HomeAdminMessage } from "./HomeAdminMessage";
 import { InstallAppNotice } from "./InstallAppNotice";
 import type { HelpChoice, ProfileGroup } from "./HelpSheet";
 import { type HelpTarget, requestHelpTarget, useSectionRequest } from "./helpTargets";
-import { usableWorkSchedule, WORK_QUOTA_OPTIONS } from "./overtime";
+import { usableWorkSchedule, workQuotaLabel } from "./overtime";
 import { computePayAllowances } from "./payAllowances";
 import { dateKey, localDate, SCHOOL_ZONE_OPTIONS } from "./planningLogic";
 import { scrollWhenReady } from "./scrollWhenReady";
@@ -133,7 +133,7 @@ export function AppShellChrome({
           { icon: "team", title: "Groupe de planning", value: `Groupe ${group}`, onOpen: close(() => setGroupChooserOpen(true)) },
           {
             icon: "form", title: "Statut et quotité", onOpen: openPayProfile,
-            value: [statusLabel, WORK_QUOTA_OPTIONS.find((option) => option.value === formProfile?.workQuota)?.label].filter(Boolean).join(" · ") || "À renseigner",
+            value: [statusLabel, workQuotaLabel(formProfile?.workQuota)].filter(Boolean).join(" · ") || "À renseigner",
           },
           { icon: "clock", title: "Horaires habituels", value: schedule ? `${hour(schedule.start)} – ${hour(schedule.end)}` : "À renseigner", onOpen: openPayProfile },
         ] },

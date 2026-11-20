@@ -1512,6 +1512,15 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/form-profile")).toMatchObject({ signature: "", full_name: "Mika", group: "3" });
   });
 
+  it("enregistre le temps partiel à 80 % et garde la quotité devant une valeur inconnue", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "", workQuota: "four_fifths" }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ work_quota: "four_fifths" });
+    // Une quotité que le serveur ne connaît pas ne remplace pas celle du profil.
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "", workQuota: "nine_tenths" }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ work_quota: "four_fifths" });
+  });
+
   it("accepte la durée de récupération de jour férié de chaque quotité", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     for (const { value: quota } of WORK_QUOTA_OPTIONS) {

@@ -1,4 +1,4 @@
-export type WorkQuota = "full" | "three_quarters" | "half";
+export type WorkQuota = "full" | "four_fifths" | "three_quarters" | "half";
 export type WorkSchedule = {
   start: string;
   end: string;
@@ -72,16 +72,50 @@ export const WORK_QUOTA_OPTIONS: Array<{
   value: WorkQuota;
   label: string;
   dailyMinutes: number;
+  /** Temps de travail, en pourcentage du temps plein. */
+  percent: number;
 }> = [
-  { value: "full", label: "Temps plein", dailyMinutes: 8 * 60 },
-  { value: "three_quarters", label: "Trois-quarts temps", dailyMinutes: 6 * 60 },
-  { value: "half", label: "Mi-temps", dailyMinutes: 3 * 60 + 45 },
+  { value: "full", label: "Temps plein", dailyMinutes: 8 * 60, percent: 100 },
+  // À 80 %, on travaille quatre jours par semaine (« Temps partiel 80 % -
+  // 4 jours/semaine », note du ministère reprise dans cet.ts) : les journées
+  // restent entières, comme à temps plein.
+  { value: "four_fifths", label: "Temps partiel 80 %", dailyMinutes: 8 * 60, percent: 80 },
+  { value: "three_quarters", label: "Trois-quarts temps", dailyMinutes: 6 * 60, percent: 75 },
+  { value: "half", label: "Mi-temps", dailyMinutes: 3 * 60 + 45, percent: 50 },
 ];
 
-/** Quotité de travail : la part du temps plein, qui est aussi la part du
- *  traitement versé à mi-temps et à trois-quarts temps. */
+const quotaOption = (value: unknown) => WORK_QUOTA_OPTIONS.find((option) => option.value === value);
+
+export function isWorkQuota(value: unknown): value is WorkQuota {
+  return Boolean(quotaOption(value));
+}
+
+/** La quotité enregistrée ; le temps plein quand elle manque ou qu'elle est
+ *  inconnue. Commun à l'appli et au serveur. */
+export function workQuotaFrom(value: unknown): WorkQuota {
+  return quotaOption(value)?.value ?? "full";
+}
+
+/** Le nom de la quotité, tel que le profil l'affiche. */
+export function workQuotaLabel(quota: WorkQuota | undefined) {
+  return quotaOption(quota)?.label;
+}
+
+/** La quotité que dit le temps de travail d'un bulletin, en pourcentage. */
+export function workQuotaFromWorkTime(percent: number | undefined) {
+  return WORK_QUOTA_OPTIONS.find((option) => option.percent === percent)?.value;
+}
+
+/** Quotité de travail : la part du temps plein. */
 export function workQuotity(quota: WorkQuota) {
-  return quota === "three_quarters" ? 0.75 : quota === "half" ? 0.5 : 1;
+  return (quotaOption(quota)?.percent ?? 100) / 100;
+}
+
+/** Part du traitement versée : la quotité, sauf à 80 %, payé aux 6/7 — le
+ *  bulletin d'octobre 2026 d'une contractuelle à 80 % le confirme (taux
+ *  0,85714). */
+export function paidSalaryShare(quota: WorkQuota) {
+  return quota === "four_fifths" ? 6 / 7 : workQuotity(quota);
 }
 
 /** Plafond mensuel des heures payées : vingt-cinq heures à temps plein,
@@ -91,10 +125,7 @@ export function paidOvertimeMonthlyCapMinutes(quota: WorkQuota) {
 }
 
 export function dailyMinutesForQuota(quota: WorkQuota) {
-  return (
-    WORK_QUOTA_OPTIONS.find((option) => option.value === quota)?.dailyMinutes ??
-    8 * 60
-  );
+  return quotaOption(quota)?.dailyMinutes ?? 8 * 60;
 }
 
 /** Durée proposée par défaut pour une formation ; la fenêtre permet ensuite
@@ -115,11 +146,12 @@ export function trainingRecoveryTimes(
 }
 
 /** Crédit attaché au choix « prime + récupération » d'un jour férié :
- * 8 h 15 à temps plein, 6 h 30 à trois-quarts temps et 4 h à mi-temps.
+ * 8 h 15 à temps plein et à 80 % (journées entières), 6 h 30 à trois-quarts
+ * temps et 4 h à mi-temps.
  * Les dates sont dédupliquées : une resynchronisation du même jour ne peut
  * jamais créditer le solde une seconde fois. */
 export function holidayRecoveryMinutesForQuota(quota: WorkQuota) {
-  if (quota === "full") return 8 * 60 + 15;
+  if (quota === "full" || quota === "four_fifths") return 8 * 60 + 15;
   if (quota === "three_quarters") return 6 * 60 + 30;
   return 4 * 60;
 }
@@ -430,7 +462,8 @@ export function overtimeRangeRecoveryPreview(
  * 8 du décret n° 2002-60) : l'heure vaut le traitement annuel et l'indemnité
  * de résidence d'un agent au même indice à temps plein, divisés par 1 820,
  * sans aucune majoration ; le plafond de 25 h est ramené à la quotité. Le
- * traitement enregistré étant celui versé, il est ramené au temps plein. */
+ * traitement enregistré étant celui versé, il est ramené au temps plein par
+ * la part versée (6/7 à 80 %, la quotité sinon). */
 export function calculatePaidOvertime(
   entries: OvertimeEntry[],
   year: number,
@@ -461,7 +494,7 @@ export function calculatePaidOvertime(
       ),
     );
   const hourlyBase =
-    ((monthlyBaseSalary + monthlyResidenceAllowance) * 12) / 1820 / workQuotity(quota);
+    ((monthlyBaseSalary + monthlyResidenceAllowance) * 12) / 1820 / paidSalaryShare(quota);
   const capMinutes = paidOvertimeMonthlyCapMinutes(quota);
   if (!monthlyBaseSalary || !Number.isFinite(hourlyBase) || hourlyBase <= 0)
     return {

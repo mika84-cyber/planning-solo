@@ -340,8 +340,8 @@ describe("finitions d’interface", () => {
     // mais l’afficher ferait passer pour renseigné ce qui reste à décider.
     expect(paySectionScreen).toContain("workQuota: formProfile?.workQuota,");
     expect(paySectionScreen).toContain("status: formProfile?.status,");
-    expect(payPage).toContain('placeholder="À renseigner"');
-    expect(payPage).toContain("Quotité et statut à renseigner");
+    // Le libellé vide du résumé et des deux sélecteurs : test de rendu dans
+    // PayPage.test.tsx.
     expect(payPage).not.toContain('status={formProfile?.status || "contractuel"}');
     expect(css.mentions(".choice-picker-trigger.empty")).toBe(true);
   });

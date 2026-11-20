@@ -1,4 +1,4 @@
-import type { WorkQuota, RecoveryRequestType } from "./overtime";
+import { workQuotaFrom, type WorkQuota, type RecoveryRequestType } from "./overtime";
 import type { LeaveType } from "./planningLogic";
 
 type DemoRequestBase = {
@@ -72,11 +72,7 @@ export function parseDemoCompletedRequestJson(rawJson: string | null): DemoCompl
       (requestKind !== "leave" && requestKind !== "recovery")) return null;
 
   const rawProfile = record(raw.profile);
-  const candidateQuota = rawProfile?.workQuota;
-  const workQuota: WorkQuota =
-    candidateQuota === "half" || candidateQuota === "three_quarters"
-      ? candidateQuota
-      : "full";
+  const workQuota = workQuotaFrom(rawProfile?.workQuota);
   const base = { requestId, group, profile: { workQuota } };
   const rawPeriods = Array.isArray(raw.periods) ? raw.periods : [];
   const rawTimed = Array.isArray(raw.timed) ? raw.timed : [];

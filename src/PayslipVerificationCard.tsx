@@ -2,7 +2,7 @@ import { ChoicePicker } from "./ChoicePicker";
 import { useState } from "react";
 import { euros } from "./appModel";
 import { MONTHS, MONTH_OPTIONS, YEAR_OPTIONS, s, sundayCountLabel } from "./planningLogic";
-import { minutesLabel, type OvertimeEntry } from "./overtime";
+import { minutesLabel, workQuotaFromWorkTime, workQuotaLabel, type OvertimeEntry } from "./overtime";
 import { matchEarlyPayment } from "./earlyPayment";
 import { mecenatForPayMonth, mecenatPaidCents, mecenatsPaidEarly, type MecenatEntry } from "./mecenat";
 import { payslipGapChoices, type PayslipGapAction, type PayslipGapChoice } from "./payslipGapChoices";
@@ -58,7 +58,7 @@ type Props = Pick<
   "mecenatEntries" | "onMarkMecenatsPaidEarly" | "overtimeEarlyCandidates" |
   "onMarkOvertimePaidEarly" | "onReportMissingSundays" | "nextSundayPayout" | "sundayCarryover" |
   "sundayCarryoverMonth" | "sundayCarryoverYear" | "onClearSundayCarryover" |
-  "isContractuel" | "onOpenYear"
+  "isContractuel" | "onOpenYear" | "workQuota" | "onChangeWorkQuota"
 >;
 
 /** « 19:00 » devient « 19 h », « 09:30 » devient « 9 h 30 ». */
@@ -216,6 +216,8 @@ export function PayslipVerificationCard({
   onClearSundayCarryover: clearSundayCarryover,
   isContractuel,
   onOpenYear,
+  workQuota,
+  onChangeWorkQuota,
 }: Props) {
   // D'où vient le bulletin en cours de lecture : un PDF, des photos
   // choisies, ou l'appareil photo.
@@ -370,6 +372,17 @@ export function PayslipVerificationCard({
         : "Ce bulletin est celui d’un fonctionnaire (il porte une pension civile), mais votre profil dit « Contractuel » : l’estimation n’attend ni IFSE ni pension civile."}{" "}
       <button type="button" className="text-button" onClick={() => onChangeStatus(bulletinStatus)}>
         Passer mon statut en {bulletinStatus === "contractuel" ? "Contractuel" : "Fonctionnaire"}
+      </button>
+    </p>
+  ) : null;
+  // Même chose pour le temps de travail : à temps partiel, les heures
+  // supplémentaires ne se paient pas comme à temps plein.
+  const bulletinQuota = workQuotaFromWorkTime(payslipCheck?.reading.workTime);
+  const quotaNotice = bulletinQuota && workQuota && bulletinQuota !== workQuota && onChangeWorkQuota ? (
+    <p className="allowance-note warn">
+      Ce bulletin indique « {workQuotaLabel(bulletinQuota)} », mais votre profil dit « {workQuotaLabel(workQuota)} » : les heures supplémentaires en dépendent.{" "}
+      <button type="button" className="text-button" onClick={() => onChangeWorkQuota(bulletinQuota)}>
+        Passer ma quotité en {workQuotaLabel(bulletinQuota)}
       </button>
     </p>
   ) : null;
@@ -541,6 +554,7 @@ export function PayslipVerificationCard({
                   </ul>
                 ) : null}
                 {photoPending ? null : statusNotice}
+                {photoPending ? null : quotaNotice}
                 {/* La photo n'a pas pu être prouvée : ce qu'elle a de gênant. */}
                 {readStatus.advice.length && !proven ? (
                   <p className="allowance-note payslip-import-note">

@@ -19,6 +19,7 @@ describe("parseCalendarSnapshot", () => {
         full_name: "Agent",
         group: "2",
         signature: "A",
+        work_quota: "four_fifths",
         work_schedule: { start: "09:15", end: "17:30" },
         base_salary_cents: 250_000,
         pay_profiles: { 2026: { cia_cents: 12_000, cia_month: 7 } },
@@ -57,6 +58,7 @@ describe("parseCalendarSnapshot", () => {
     expect(snapshot.periods[0]).toMatchObject({ leaveType: "annual", updatedAt: "u" });
     expect(snapshot.formProfile?.baseSalary).toBe(2500);
     expect(snapshot.formProfile?.workSchedule).toEqual({ start: "09:15", end: "17:30" });
+    expect(snapshot.formProfile?.workQuota).toBe("four_fifths");
     expect(snapshot.payProfiles["2026"]).toMatchObject({ cia: 120, ciaMonth: 7 });
     expect(snapshot.overtimeEntries[0].disposition).toBe("paid");
     expect(snapshot.recoveryUses[0].kind).toBe("training");
