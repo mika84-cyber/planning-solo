@@ -167,7 +167,13 @@ const budgets = {
   // mesurés. Porté le 19 novembre 2026 à 2 138 Kio brut, toujours dans cette
   // limite : la majoration de 22 h des mécénats versée depuis novembre 2026
   // et la régularisation d'octobre sans date ; 2 137,7 / 707,9 Kio mesurés.
-  totalJavaScript: { raw: 2_138 * KIB, gzip: 708 * KIB },
+  // Relevé le 20 novembre 2026 à 2 164 / 719 Kio, avec l'accord de
+  // l'administrateur : la lecture d'un bulletin photographié refaite
+  // (préparation de la photo, lignes reconstituées, rubriques, preuve par le
+  // calcul, contrôle du bulletin). Ce code ne se charge qu'avec le moteur de
+  // lecture, au choix d'une photo : le chargement initial, lui, baisse
+  // (551,4 Kio au lieu de 557,3) ; 2 163,2 / 718,4 Kio mesurés.
+  totalJavaScript: { raw: 2_164 * KIB, gzip: 719 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -216,7 +222,10 @@ const budgets = {
   // (538,6 / 104,7 Kio mesurés). Relevé le 15 novembre 2026 à 543 / 106 Kio,
   // avec l'accord de l'administrateur : le rappel du CET en parcours guidé,
   // ses teintes regroupées en variables (542,3 / 105,4 Kio mesurés).
-  totalCss: { raw: 543 * KIB, gzip: 106 * KIB },
+  // Relevé le 20 novembre 2026 à 544 Kio brut, avec l'accord de
+  // l'administrateur : la liste « Contrôle du bulletin » sous la lecture
+  // d'une photo (543,4 Kio mesurés).
+  totalCss: { raw: 544 * KIB, gzip: 106 * KIB },
 };
 
 async function filesUnder(directory) {

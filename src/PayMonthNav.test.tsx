@@ -22,5 +22,7 @@ describe("PayMonthNav", () => {
     );
     expect(past).toContain('<h3 id="variable-pay-title">Janvier 2024</h3>');
     expect(past).toContain('class="pay-bulletin-today">Revenir à aujourd’hui</button>');
+    // Une seule fois : le navigateur commun le porte pour tous les écrans de paie.
+    expect((past.match(/pay-bulletin-today/g) || []).length).toBe(1);
   });
 });

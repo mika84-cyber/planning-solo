@@ -10,6 +10,8 @@
  *  d'annoncer « tout est bon » à tort.
  */
 
+import type { PayslipProof, PayslipRowsReading } from "./payslipRows";
+
 /** Un montant relevé sur le bulletin. */
 export type PayslipReading = {
   /** Ligne « CUMUL BRUT » : le total sur lequel tout se recoupe. */
@@ -71,6 +73,26 @@ export type PayslipReading = {
    *  est un élément fixe ou ponctuelle ; un rappel (« R ») ne vaut que pour ce
    *  mois ; une ligne d'arrêt maladie (« C ») est déjà calculée. */
   extraLines?: PayslipExtraLine[];
+  /** Net versé après impôt, case « NET A PAYER ». */
+  netPaid?: number;
+  /** Net imposable : l'assiette du prélèvement à la source. */
+  taxableNet?: number;
+  /** Totaux du pied du bulletin : « A payer » et « A déduire ». */
+  totalEarnings?: number;
+  totalDeductions?: number;
+  /** Ce que le bulletin dit du statut : cotisation IRCANTEC ou contrat
+   *  (« CDI ») pour un contractuel, pension civile pour un fonctionnaire. */
+  status?: "contractuel" | "fonctionnaire";
+  /** Temps de travail du bulletin, en pourcentage : 80 pour un temps partiel
+   *  à 80 % (payé 6/7). */
+  workTime?: number;
+  /** Les rubriques lues une à une sur une photo, et la preuve par le calcul
+   *  qui en découle (voir payslipRows.ts). */
+  rows?: PayslipRowsReading;
+  proof?: PayslipProof;
+  /** Les rubriques d'une seconde lecture de la même page, gardées en
+   *  réserve : si la preuve échoue avec les premières, elle les essaie. */
+  otherRows?: PayslipRowsReading;
 };
 
 export type PayslipExtraLine = {

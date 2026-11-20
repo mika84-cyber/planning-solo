@@ -215,6 +215,14 @@
 .payslip-photo-drop { gap: 8px; border-color: var(--border-control); background: var(--surface); color: var(--text); }
 .payslip-photo-drop:hover { border-color: var(--muted); background: var(--surface); color: var(--text); filter: brightness(0.97); }
 .payslip-photo-drop svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+/* Le contrôle du bulletin lu : une coche par constat vérifié, un point
+   d'exclamation pour un écart, un « i » pour ce qui est à savoir. */
+.payslip-audit { display: grid; gap: 7px; margin: 10px 0 0; padding: 0; list-style: none; }
+.payslip-audit li { position: relative; display: grid; gap: 1px; padding-left: 22px; font-size: .86rem; line-height: 1.35; }
+.payslip-audit li::before { position: absolute; left: 2px; color: var(--accent); font-weight: 900; content: "✓"; }
+.payslip-audit li.warn::before { color: #8e3040; content: "!"; }
+.payslip-audit li.info::before { color: var(--muted); content: "i"; }
+.payslip-audit span { color: var(--muted); font-size: .8rem; }
 /* L'autre page attendue : l'étape suivante du même parcours. */
 .payslip-page-step { margin-top: 10px; }
 .payslip-page-step .payslip-import-actions .text-button { justify-self: start; padding: 4px 0; }

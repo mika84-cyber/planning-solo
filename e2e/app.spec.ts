@@ -107,9 +107,9 @@ async function answerConfirm(page: Page, accept = true, expectedText?: string | 
 
 /** Une photo jugée peu nette s'analyse quand même ; sinon on attend `next`. */
 async function analyseAnyway(page: Page, next: Locator) {
-  const quality = page.getByRole("alertdialog", { name: "La lecture risque d’être moins fiable" });
-  await expect(quality.or(next).first()).toBeVisible({ timeout: 90_000 });
-  if (await quality.count()) await quality.getByRole("button", { name: "Analyser quand même" }).click();
+  // Plus aucun avertissement ne s'interpose avant la lecture d'une photo.
+  await expect(next).toBeVisible({ timeout: 90_000 });
+  await expect(page.getByRole("alertdialog", { name: "La lecture risque d’être moins fiable" })).toHaveCount(0);
 }
 
 async function workedDaysOnHome(page: Page) {
@@ -1816,7 +1816,7 @@ test("un bulletin photographié se lit page après page, et ne conclut qu’une 
   // et rien n'a encore été demandé ni conclu.
   const nextPage = page.getByRole("status", { name: "Page 2 du bulletin" });
   await analyseAnyway(page, nextPage);
-  await expect(nextPage).toContainText("Page 1 lue · photographiez la page 2", { timeout: 90_000 });
+  await expect(nextPage).toContainText("Rubriques lues · il manque la page du net", { timeout: 90_000 });
   await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026");
   await expect(page.locator(".payslip-read-values")).toContainText("2 962,07 €");
   await expect(page.getByRole("region", { name: "Que voulez-vous faire ?" })).toHaveCount(0);
@@ -1834,6 +1834,95 @@ test("un bulletin photographié se lit page après page, et ne conclut qu’une 
   await expect(photoValues).toHaveCount(0);
   await expect(page.locator(".payslip-read-values")).toContainText("2 962,07 €");
   await expect(page.locator(".payslip-read-values")).toContainText("2 311,42 €");
+});
+
+/** Une photo de bulletin entier, comme une feuille bien cadrée : le mois,
+ *  les rubriques en colonnes (code et libellé, base, taux, montant), puis au
+ *  pied les totaux et la case du net. */
+async function payslipSheetPhoto(page: Page, month: string, rows: Array<[string, string[]]>, footer: { totals: string[]; net: string }) {
+  const base64 = await page.evaluate(({ month, rows, footer }) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 2100;
+    canvas.height = 2800;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "white";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "black";
+    context.font = "700 46px Arial";
+    context.fillText(month, 1400, 160);
+    context.font = "38px Arial";
+    const columns = [1330, 1570, 1810, 2010];
+    const numbers = (values: string[], y: number, from = 0) => values.forEach((value, index) => {
+      context.fillText(value, columns[from + index] - context.measureText(value).width, y);
+    });
+    rows.forEach(([label, values], index) => {
+      const y = 300 + index * 68;
+      context.fillText(label, 110, y);
+      // Un total seul (« CUMUL BRUT ») s'écrit dans la colonne « A payer ».
+      numbers(values, y, values.length === 1 ? 2 : 0);
+    });
+    const bottom = 300 + rows.length * 68 + 90;
+    numbers(footer.totals, bottom, 2);
+    context.font = "700 40px Arial";
+    context.fillText("NET A PAYER AVANT IMPOT", 1280, bottom + 120);
+    context.font = "38px Arial";
+    context.fillText("EN EUROS", 1300, bottom + 190);
+    context.font = "700 40px Arial";
+    context.fillText(footer.net, 1760, bottom + 190);
+    return canvas.toDataURL("image/png").split(",")[1];
+  }, { month, rows, footer });
+  return { name: "bulletin.png", mimeType: "image/png", buffer: Buffer.from(base64, "base64") };
+}
+
+test("une photo que le calcul prouve s’enregistre sans rien demander, et le bulletin est contrôlé", async ({ page }) => {
+  test.setTimeout(180_000);
+  await prepareDemo(page);
+  await goToSection(page, "pay");
+  await page.getByRole("button", { name: "Vérifier le bulletin" }).click();
+  // Le premier bloc dit ce que fait chaque bouton, et que rien n'est envoyé.
+  const choose = page.locator(".payslip-guide-step").first();
+  await expect(choose).toContainText("dans n’importe quel ordre");
+  await expect(choose).toContainText("rien n’est envoyé");
+  await expect(choose.locator(".payslip-file-drop")).toContainText("Choisir des photos ou un PDF");
+  await expect(choose.locator(".payslip-photo-drop")).toContainText("Prendre le bulletin en photo");
+  // Le bulletin d'une contractuelle à 80 % : brut 2 466,52 €, 519,03 € de
+  // cotisations, 68,10 € de Navigo, 99,00 € de titres repas, net 1 916,59 €.
+  await choose.locator(".payslip-file-drop input").setInputFiles(await payslipSheetPhoto(page, "Octobre 2026", [
+    ["300.00 Traitement de Base", ["2500.00", "0.85714", "2142.85"]],
+    ["308.00 Indemnité de Résidence", ["2142.85", "3.00", "64.29"]],
+    ["454.02 Indem trav dominical régulier", ["89.59", "1.00", "89.59"]],
+    ["639.54 Aide employeur options MGEN", ["5.00", "1.00", "5.00"]],
+    ["CUMUL BRUT", ["2301.73"]],
+    ["674.00 Cotisation vieillesse", ["2301.73", "6.90", "158.82"]],
+    ["675.00 Cotis vieillesse déplafonnée", ["2301.73", "0.40", "9.21"]],
+    ["751.00 Cotisation IRCANTEC Tranche A", ["2301.73", "2.80", "64.45"]],
+    ["794.28 MGEN part individuelle forfaitaire", ["67.02", "20.00", "13.40"]],
+    ["794.29 MGEN part individuelle solidaire", ["2301.73", "0.70", "16.11"]],
+    ["797.00 C.S.G. Déductible", ["2294.96", "6.80", "156.06"]],
+    ["798.00 Remboursement Dette Sociale", ["2294.96", "0.50", "11.47"]],
+    ["799.00 Cont. Sociale généralisée", ["2294.96", "2.40", "55.08"]],
+    ["823.22 Forfait Navigo TZ mensuel", ["68.10", "1.00", "68.10"]],
+    ["870.02 Titres repas carte", ["4.95", "20.00", "-99.00"]],
+    ["884.70 PAS prélèvement à la source", ["1917.19", "0.00", "0.00"]],
+  ], { totals: ["2270.83", "484.60"], net: "1786.23" }));
+  // La lecture se prouve : le brut est la somme des lignes, le net se
+  // retrouve au centime. Aucune fenêtre ne s'ouvre, ni avant ni après.
+  const audit = page.getByRole("list", { name: "Contrôle du bulletin" });
+  await expect(audit).toBeVisible({ timeout: 120_000 });
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(page.locator(".payslip-detected-period")).toContainText("octobre 2026");
+  await expect(page.locator(".payslip-read-values")).toContainText(/brut 2.301,73.€ · net avant impôt 1.786,23.€/);
+  await expect(audit).toContainText("Lecture vérifiée par le calcul");
+  await expect(audit).toContainText(/Le net se retrouve au centime : brut − 484,60.€ de cotisations \+ 68,10.€ remboursés − 99,00.€ de titres repas\./);
+  await expect(audit).toContainText("Cotisations aux taux légaux");
+  await expect(audit).toContainText(/vieillesse 6,90.% \+ 0,40.% · IRCANTEC 2,80.% · CSG 6,80.% \+ 2,40.% · CRDS 0,50.%/);
+  await expect(audit).toContainText("Indemnité de résidence : 3 % du traitement");
+  await expect(audit).toContainText("Temps partiel à 80 %");
+  // Les montants du bulletin sont dans le profil, sans confirmation.
+  await expect(page.getByRole("region", { name: "Que voulez-vous faire ?" })).toBeVisible();
+  // Et les prochaines paies se voient mois par mois.
+  await page.getByRole("button", { name: "Voir mes prochaines paies" }).click();
+  await expect(page.getByRole("heading", { name: "L’année en un coup d’œil" })).toBeVisible();
 });
 
 test("devant un écart du bulletin, le geste qui l’explique est proposé : passer en fonctionnaire", async ({ page }) => {
@@ -1957,14 +2046,13 @@ test("une photo de bulletin est reconnue localement", async ({ page }) => {
     mimeType: "image/png",
     buffer: Buffer.from(imageBase64, "base64"),
   });
-  // Une photo jugée peu nette s'analyse quand même ; puis les valeurs lues
-  // s'enregistrent depuis la fenêtre de l'application.
-  const quality = page.getByRole("alertdialog", { name: "La lecture risque d’être moins fiable" });
+  // Aucun avertissement avant la lecture. Cette photo ne porte pas les
+  // rubriques qui permettraient de la prouver par le calcul : les valeurs
+  // lues se confirment dans la fenêtre de l'application.
   const photoValues = page.getByRole("alertdialog", { name: "Valeurs lues sur la photo" });
-  await expect(quality.or(photoValues).first()).toBeVisible({ timeout: 90_000 });
-  if (await quality.count()) await quality.getByRole("button", { name: "Analyser quand même" }).click();
   await expect(photoValues).toBeVisible({ timeout: 90_000 });
-  await expect(photoValues).toContainText("Vérifiez");
+  await expect(page.getByRole("alertdialog", { name: "La lecture risque d’être moins fiable" })).toHaveCount(0);
+  await expect(photoValues).toContainText("Le calcul n’a pas pu confirmer cette lecture. Comparez ces valeurs à votre bulletin");
   await photoValues.getByRole("button", { name: "Enregistrer dans mon profil" }).click();
 
   await expect(page.locator(".payslip-detected-period")).toContainText("septembre 2026", { timeout: 90_000 });

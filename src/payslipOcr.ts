@@ -1,21 +1,14 @@
 import type { PayslipExtraLine, PayslipReading } from "./payslip";
-import { carenceDatesFromLabels, isKnownEarningLabel, isPlausibleSundayRate, withExtraLines, extractPayslipTokens, readPayslip } from "./payslip";
-import { payslipSkewDegrees } from "./payslipImageQuality";
+import { extractPayslipTokens, readPayslip } from "./payslip";
 
 export const PAYSLIP_FILE_ACCEPT =
   "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
 
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
-// Environ 170 dpi pour une page A4 : suffisamment précis pour les petites
-// lignes d’un bulletin, tout en évitant d’analyser les 12 à 50 Mpx du téléphone.
-const MAX_OCR_IMAGE_SIDE = 2000;
-// La feuille redressée garde assez de détail pour les bandes agrandies
-// ci-dessous, sans dépasser ce qu'un téléphone dessine sans peine.
-const MAX_STRAIGHTENED_SIDE = 3000;
 const OCR_START_TIMEOUT_MS = 45_000;
-const OCR_RECOGNITION_TIMEOUT_MS = 60_000;
+export const OCR_RECOGNITION_TIMEOUT_MS = 60_000;
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
+export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
@@ -27,364 +20,6 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: s
   } finally {
     if (timer !== undefined) clearTimeout(timer);
   }
-}
-
-type PreparedPayslipImage = {
-  source: File | Blob;
-  rotateAuto: boolean;
-  fallbackSource?: Blob;
-};
-
-async function canvasToPayslipBlob(canvas: HTMLCanvasElement) {
-  return withTimeout(
-    new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => blob ? resolve(blob) : reject(new Error("Image illisible.")),
-        "image/jpeg",
-        0.92,
-      );
-    }),
-    15_000,
-    "Cette photo n’a pas pu être préparée.",
-  );
-}
-
-/** Une feuille photographiée un peu de travers : la droite de chaque ligne
- *  descend (ou monte) de quelques pour cent de la hauteur, et son montant
- *  tomberait dans une autre bande que son libellé. On la remet d'aplomb. */
-function straightenedPayslip(bitmap: ImageBitmap): ImageBitmap | HTMLCanvasElement {
-  const skew = payslipSkewDegrees(bitmap);
-  if (Math.abs(skew) < 1) return bitmap;
-  const scale = Math.min(1, MAX_STRAIGHTENED_SIDE / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  const context = canvas.getContext("2d");
-  if (!context) return bitmap;
-  context.fillStyle = "#fff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.translate(canvas.width / 2, canvas.height / 2);
-  context.rotate((-skew * Math.PI) / 180);
-  context.drawImage(bitmap, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
-  return canvas;
-}
-
-async function preparePayslipImage(file: File): Promise<PreparedPayslipImage> {
-  if (typeof createImageBitmap !== "function" || typeof document === "undefined") {
-    return { source: file, rotateAuto: true };
-  }
-
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await withTimeout(
-      createImageBitmap(file, { imageOrientation: "from-image" }),
-      15_000,
-      "Cette photo n’a pas pu être préparée.",
-    );
-  } catch {
-    // Certains navigateurs ne savent pas préparer l’image mais Tesseract peut
-    // encore la lire directement.
-    return { source: file, rotateAuto: true };
-  }
-
-  try {
-    const image = straightenedPayslip(bitmap);
-    const longestSide = Math.max(image.width, image.height);
-    const ratio = Math.min(1, MAX_OCR_IMAGE_SIDE / longestSide);
-    const fullCanvas = document.createElement("canvas");
-    fullCanvas.width = Math.max(1, Math.round(image.width * ratio));
-    fullCanvas.height = Math.max(1, Math.round(image.height * ratio));
-    const fullContext = fullCanvas.getContext("2d");
-    if (!fullContext) return { source: file, rotateAuto: true };
-    fullContext.fillStyle = "#fff";
-    fullContext.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
-    fullContext.filter = "grayscale(1) contrast(1.25) brightness(1.05)";
-    fullContext.drawImage(image, 0, 0, fullCanvas.width, fullCanvas.height);
-    const fullSource = await canvasToPayslipBlob(fullCanvas);
-
-    // Sur une photo verticale, une seule image compacte réunit les quatre
-    // zones utiles des bulletins : période, rémunération, retenues et net.
-    // Les lignes sont plus grandes et l’OCR ignore les zones sans intérêt.
-    if (image.height >= image.width * 1.15) {
-      const sourceX = image.width * 0.07;
-      const sourceWidth = image.width * 0.89;
-      const focusedWidth = Math.min(
-        1800,
-        Math.max(1200, Math.round(sourceWidth * 1.35)),
-      );
-      const gap = 24;
-      const bands = [
-        [0.05, 0.18],
-        [0.24, 0.43],
-        [0.43, 0.69],
-        [0.7, 0.83],
-      ] as const;
-      const heights = bands.map(([from, to]) =>
-        Math.round((to - from) * image.height * focusedWidth / sourceWidth));
-      const focusedCanvas = document.createElement("canvas");
-      focusedCanvas.width = focusedWidth;
-      focusedCanvas.height = heights.reduce((sum, height) => sum + height, 0) + gap * 3;
-      const focusedContext = focusedCanvas.getContext("2d");
-      if (focusedContext) {
-        focusedContext.fillStyle = "#fff";
-        focusedContext.fillRect(0, 0, focusedCanvas.width, focusedCanvas.height);
-        focusedContext.filter = "grayscale(1) contrast(1.35) brightness(1.08)";
-        let destinationY = 0;
-        bands.forEach(([from, to], index) => {
-          focusedContext.drawImage(
-            image,
-            sourceX,
-            image.height * from,
-            sourceWidth,
-            image.height * (to - from),
-            0,
-            destinationY,
-            focusedWidth,
-            heights[index],
-          );
-          destinationY += heights[index] + gap;
-        });
-        return {
-          source: await canvasToPayslipBlob(focusedCanvas),
-          rotateAuto: false,
-          fallbackSource: fullSource,
-        };
-      }
-    }
-
-    // createImageBitmap applique l’orientation EXIF et le canvas la fige : le
-    // moteur peut donc éviter sa seconde passe d’orientation automatique.
-    return { source: fullSource, rotateAuto: false };
-  } catch {
-    return { source: file, rotateAuto: true };
-  } finally {
-    bitmap.close();
-  }
-}
-
-function normalized(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[’']/g, " ")
-    .replace(/[^A-Z0-9]+/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-}
-
-function parseOcrAmount(value: string) {
-  const amount = Number(
-    value
-      .replace(/[−–—]/g, "-")
-      .replace(/[\s\u00a0\u202f]/g, "")
-      .replace(",", "."),
-  );
-  return Number.isFinite(amount) ? amount : undefined;
-}
-
-function amountsIn(line: string) {
-  return [...line.matchAll(/[-−–—]?\d+(?:[\s\u00a0\u202f]\d{3})*[,.]\d{2}/g)]
-    .map((match) => parseOcrAmount(match[0]))
-    .filter((amount): amount is number => amount !== undefined);
-}
-
-/** Le code de rubrique (« 641.28 ») ouvre la ligne, devant le libellé, avec
- *  pour un rappel ou une carence son mois et « R » ou « C » : ce n'est jamais
- *  un montant. Pris pour tel quand l'OCR a manqué la colonne « A payer », il
- *  donnait une IFSE de 641,28 €. */
-const RUBRIC_CODE = /^\s*(?:(?:\d{1,2}\/\d{4}\s+)?[RC]\s+)?\d{3}[.,]\d{2}(?=\s*[|[(]?\s*[A-Za-zÀ-ÿ])/;
-
-/** Les montants d'une ligne de rubrique, sans son code. */
-function rowAmounts(line: string) {
-  return amountsIn(line.replace(RUBRIC_CODE, " "));
-}
-
-function linesFor(text: string) {
-  return text
-    .split(/[\r\n]+/)
-    .map((line) => line.replace(/\s+/g, " ").trim())
-    .filter(Boolean);
-}
-
-function matchingLineIndexes(lines: string[], labels: string[]) {
-  const expected = labels.map(normalized);
-  return lines.flatMap((line, index) => {
-    const candidate = ` ${normalized(line)} `;
-    return expected.some((label) => candidate.includes(` ${label} `)) ? [index] : [];
-  });
-}
-
-function lastAmountNear(lines: string[], labels: string[], maxOffset = 1) {
-  const index = matchingLineIndexes(lines, labels)[0];
-  if (index === undefined) return undefined;
-  for (let offset = 0; offset <= maxOffset; offset++) {
-    const line = lines[index + offset] || "";
-    // Des montants passés à la ligne, oui ; ceux de la rubrique suivante, non.
-    if (offset > 0 && RUBRIC_CODE.test(line)) break;
-    const amounts = rowAmounts(line);
-    if (amounts.length) return amounts[amounts.length - 1];
-  }
-  return undefined;
-}
-
-function residenceAmount(lines: string[]) {
-  const index = matchingLineIndexes(lines, ["Indemnité de Résidence"])[0];
-  if (index === undefined) return undefined;
-  let amounts = amountsIn(lines[index] || "");
-  // Les bulletins papier placent souvent le code de rubrique (ex. 308.00)
-  // avant le libellé : ce nombre n’est pas un montant.
-  if (amounts.length >= 3 && amounts[0] < 1000 && amounts[1] >= 100) {
-    amounts = amounts.slice(1);
-  }
-  if (amounts.length >= 3) {
-    const [base, rate] = amounts;
-    const paid = amounts.at(-1);
-    if (base >= 100 && Math.abs(rate) <= 10 && paid !== undefined) {
-      const derived = Math.round(base * rate) / 100;
-      if (Math.abs(paid) < Math.abs(derived) * 0.5) return derived;
-    }
-    return paid;
-  }
-  if (amounts.length === 2 && amounts[0] >= 100 && Math.abs(amounts[1]) <= 10) {
-    return Math.round(amounts[0] * amounts[1]) / 100;
-  }
-  return amounts.at(-1) ?? lastAmountNear(lines, ["Indemnité de Résidence"]);
-}
-
-const OCR_MONTHS = [
-  "JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN",
-  "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE",
-];
-
-/** Le mois du bulletin : le premier « Mois Année » du texte, celui de
- *  l'en-tête. Un rappel plus bas (« FERIES DES 08 ET 24 MAI 2026 » sur le
- *  bulletin de juin) ne doit pas le remplacer. */
-function readOcrPeriod(text: string) {
-  const plain = normalized(text);
-  const match = new RegExp(`\\b(${OCR_MONTHS.join("|")})\\s+(20\\d{2})\\b`).exec(plain);
-  return match ? { month: OCR_MONTHS.indexOf(match[1]), year: Number(match[2]) } : {};
-}
-
-/** Les lignes de rémunération d'une photo, avant « CUMUL BRUT », que
- *  l'application ne connaît pas : « 454.04 Indemnité X 57,00 1,00 57,00 ».
- *  Un rappel commence par son mois et « R » (« 5/2026 R 453.09 … ») ; une
- *  carence ou un arrêt maladie, par son mois et « C ». */
-function ocrExtraLines(lines: string[]): PayslipExtraLine[] | undefined {
-  const cumul = matchingLineIndexes(lines, ["CUMUL BRUT", "ICUMUL BRUT"])[0];
-  if (cumul === undefined) return undefined;
-  const found = lines.slice(0, cumul).flatMap((line) => {
-    const match = /^(?:\d{1,2}\/\d{4}\s+([RC])\s+)?\d{3}[.,]\d{2}\s+([^\d−–—-][^\d]*?)\s+[-−–—]?\d/.exec(line);
-    if (!match || isKnownEarningLabel(match[2])) return [];
-    const amount = rowAmounts(line.replace(/\b(?:\d{1,2}\/)?(?:19|20)\d{2}\b(?![,.]\d)/g, " ")).at(-1);
-    return amount === undefined ? [] : [{
-      label: match[2].trim(),
-      amount,
-      recall: match[1] === "R",
-      ...(match[1] === "C" ? { sick: true } : {}),
-    }];
-  });
-  return found.length ? found : undefined;
-}
-
-/** Une lecture ratée plutôt qu'une valeur à proposer : un traitement de
- *  quelques euros (le taux « 1,00 » de la ligne), un taux d'impôt au-delà du
- *  barème, qui s'arrête à 43 % (le code « 884,71 » de la ligne). */
-const plausibleBaseSalary = (value: number | undefined) => value !== undefined && value >= 100 ? value : undefined;
-const plausiblePasRate = (value: number | undefined) => value !== undefined && value >= 0 && value <= 50 ? value : undefined;
-
-/** Lecture prudente des lignes produites par l’OCR d’une photo de bulletin.
- * Les montants sont pris dans la dernière colonne de chaque ligne reconnue ;
- * un libellé incertain est ignoré plutôt que transformé en valeur trompeuse. */
-export function readPayslipOcrText(text: string): PayslipReading {
-  const lines = linesFor(text);
-  const residenceAllowance = residenceAmount(lines);
-  const fixedParts = [
-    residenceAllowance,
-    lastAmountNear(lines, ["Indemnité comp. au SMIC"]),
-    lastAmountNear(lines, ["ICHCSG"]),
-    lastAmountNear(lines, ["Aide employeur options MGEN"]),
-    lastAmountNear(lines, ["Indemnité de caisse"]),
-    lastAmountNear(lines, ["Transfert primes/points"]),
-  ].filter((amount): amount is number => amount !== undefined);
-  const carence = matchingLineIndexes(lines, ["Jour de carence"])
-    .map((index) => rowAmounts(lines[index]).at(-1))
-    .filter((amount): amount is number => amount !== undefined)
-    .reduce((sum, amount) => sum + Math.abs(amount), 0);
-  // Taux puis montant sur la même ligne : le compte suit le taux lu, pour
-  // rester juste après une revalorisation (54,93 € à défaut).
-  const sundayIndex = matchingLineIndexes(lines, ["Indemnité trav. dom > 10 dim"])[0];
-  const sundayAmounts = sundayIndex === undefined ? [] : rowAmounts(lines[sundayIndex]);
-  const sundayAmount = sundayAmounts.at(-1) ?? lastAmountNear(lines, ["Indemnité trav. dom > 10 dim"]);
-  const sundayRate = sundayAmounts.length >= 2 && isPlausibleSundayRate(Math.abs(sundayAmounts[0]))
-    ? Math.abs(sundayAmounts[0])
-    : 54.93;
-  // Fériés travaillés (rappels compris) et forfait des dimanches : chaque
-  // ligne présente compte, comme sur un PDF.
-  const holidayLines = lines.flatMap((line, index) =>
-    /(?:^| )(?:INDEM TRAV J FERIE|FERIES? D(?:ES|U) )/.test(normalized(line)) ? [index] : [],
-  );
-  // Une année (« MAI 2026 », « 5/2026 R ») se collerait au montant qui la
-  // suit, lu alors comme « 2 026 131,02 » : on l'écarte avant la lecture.
-  const sumLast = (indexes: number[]) => {
-    const amounts = indexes
-      .map((index) => rowAmounts(lines[index].replace(/\b(?:\d{1,2}\/)?(?:19|20)\d{2}\b(?![,.]\d)/g, " ")).at(-1))
-      .filter((amount): amount is number => amount !== undefined);
-    return amounts.length
-      ? Math.round(amounts.reduce((sum, amount) => sum + amount, 0) * 100) / 100
-      : undefined;
-  };
-
-  // « PAS prélèvement à la source » : assiette, taux, montant.
-  const pasLine = (() => {
-    const index = matchingLineIndexes(lines, ["PAS prélèvement à la source"])[0];
-    const amounts = index === undefined ? [] : rowAmounts(lines[index]);
-    const [base, rate, paid] = amounts.slice(-3);
-    if (amounts.length >= 3 && base >= 100 && Math.abs((base * rate) / 100 - paid) < 0.1) return { rate, amount: Math.abs(paid) };
-    const [lineBase, linePaid] = amounts.slice(-2);
-    return amounts.length >= 2 && lineBase >= 100
-      ? { rate: Math.round((Math.abs(linePaid) / lineBase) * 10000) / 100, amount: Math.abs(linePaid) }
-      : undefined;
-  })();
-  return {
-    gross: lastAmountNear(lines, ["CUMUL BRUT", "ICUMUL BRUT"]),
-    netBeforeTax: lastAmountNear(lines, [
-      "NET A PAYER AVANT IMPOT SUR LE REVENU",
-      "NET A PAYER AVANT IMPOT",
-      "NET AVANT IMPOT",
-    ], 3),
-    baseSalary: plausibleBaseSalary(lastAmountNear(lines, ["Traitement de Base"])),
-    residenceAllowance,
-    ifse: lastAmountNear(lines, ["IFSE"]),
-    sundaysBeyondTen:
-      sundayAmount !== undefined && Math.abs(sundayAmount) >= sundayRate
-        ? Math.max(0, Math.round((Math.abs(sundayAmount) / sundayRate) * 2) / 2)
-        : 0,
-    cia: lastAmountNear(lines, ["CIA"]),
-    // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
-    holidayPay: sumLast(holidayLines) ?? 0,
-    sundayFlat: sumLast(matchingLineIndexes(lines, ["Indem trav dominical regulier"])),
-    // « mensuel » ou « annuel » selon le bulletin.
-    navigo: lastAmountNear(lines, ["Forfait Navigo"]),
-    mealVoucherDeduction: (() => {
-      // La première ligne « Titres repas » est la retenue, pas la part patronale.
-      const value = lastAmountNear(lines, ["Titres repas"]);
-      return value === undefined ? undefined : Math.abs(value);
-    })(),
-    carenceDay: carence > 0 ? Math.round(carence * 100) / 100 : undefined,
-    carenceDates: carenceDatesFromLabels(
-      matchingLineIndexes(lines, ["Jour de carence"]).map((index) => lines[index]),
-    ),
-    pasRate: plausiblePasRate(lastAmountNear(lines, ["PAS - Taux", "PAS Taux"]) ?? pasLine?.rate),
-    incomeTax: pasLine?.amount,
-    ...withExtraLines(
-      fixedParts.length
-        ? Math.round(fixedParts.reduce((sum, amount) => sum + amount, 0) * 100) / 100
-        : undefined,
-      ocrExtraLines(lines),
-    ),
-    ...readOcrPeriod(text),
-  };
 }
 
 export function isPayslipImage(file: File) {
@@ -407,7 +42,7 @@ export function missingPayslipPage(reading: PayslipReading | undefined): 1 | 2 {
   return reading && reading.gross !== undefined && reading.baseSalary !== undefined ? 2 : 1;
 }
 
-type OcrWorker = Awaited<ReturnType<(typeof import("tesseract.js"))["createWorker"]>>;
+export type OcrWorker = Awaited<ReturnType<(typeof import("tesseract.js"))["createWorker"]>>;
 
 /** Le moteur reste prêt une minute après la dernière photo : la seconde
  *  page d'un bulletin, photographiée juste après la première, se lit sans
@@ -449,16 +84,17 @@ function keepPayslipOcrWorker(worker: OcrWorker) {
   };
 }
 
-async function createPayslipOcrWorker(
-  onOcrProgress?: (progress: number) => void,
-) {
+/** Qui veut suivre l'avancement de la reconnaissance en cours. */
+let progressListener: ((ratio: number) => void) | null = null;
+
+async function createPayslipOcrWorker() {
   const { createWorker, OEM, PSM } = await import("tesseract.js");
   const workerPromise = createWorker("fra", OEM.LSTM_ONLY, {
     workerPath: "/ocr/worker.min.js",
     langPath: "/ocr/lang",
     corePath: "/ocr/core",
     logger: ({ progress, status }) => {
-      if (status === "recognizing text") onOcrProgress?.(progress);
+      if (status === "recognizing text") progressListener?.(progress);
     },
   });
   try {
@@ -469,7 +105,9 @@ async function createPayslipOcrWorker(
     );
     await withTimeout(
       worker.setParameters({
-        tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+        // Chaque fragment de texte est lu là où il se trouve : les lignes
+        // sont reconstituées ensuite, d'après leur place (payslipPhotoLayout).
+        tessedit_pageseg_mode: PSM.SPARSE_TEXT,
         preserve_interword_spaces: "1",
         user_defined_dpi: "200",
       }),
@@ -492,30 +130,28 @@ async function readPayslipWithWorker(file: File, worker?: OcrWorker) {
   if (file.size > MAX_IMAGE_BYTES)
     throw new Error("Cette photo est trop volumineuse. Choisissez une image de moins de 20 Mo.");
   if (!worker) throw new Error("Le moteur de reconnaissance de la photo n’a pas pu démarrer.");
+  // La préparation de la photo et sa lecture ligne à ligne ne se chargent
+  // qu'ici, avec le moteur : le reste de l'application n'en porte pas le poids.
+  const { readPayslipPhoto } = await import("./payslipPhoto");
+  return (await readPayslipPhoto(file, worker)).reading;
+}
 
-  const preparedImage = await preparePayslipImage(file);
-  const recognize = async (source: File | Blob, rotateAuto: boolean) => {
-    const result = await withTimeout(
-      worker.recognize(source, { rotateAuto }),
-      OCR_RECOGNITION_TIMEOUT_MS,
-      "La photo a pris trop de temps à analyser. Recadrez-la autour du bulletin et réessayez.",
-    );
-    return readPayslipOcrText(result.data.text);
-  };
-  const primary = await recognize(preparedImage.source, preparedImage.rotateAuto);
-  if (
-    primary.gross !== undefined &&
-    primary.netBeforeTax !== undefined &&
-    primary.baseSalary !== undefined
-  ) return primary;
-  if (!preparedImage.fallbackSource) return primary;
+/** La lecture est-elle prouvée par le calcul ? Le brut est la somme des
+ *  lignes de rémunération, et le net se retrouve — par les cotisations, ou
+ *  par les totaux du pied de page. Prouvée, elle s'enregistre sans rien
+ *  demander. */
+export function isProvenPayslipReading(reading: PayslipReading | undefined) {
+  const proof = reading?.proof;
+  return Boolean(proof && proof.gross === true && (proof.net === true || proof.totals === true));
+}
 
-  const fallback = await recognize(preparedImage.fallbackSource, false);
-  const combined = { ...fallback };
-  for (const [key, value] of Object.entries(primary)) {
-    if (value !== undefined) Object.assign(combined, { [key]: value });
-  }
-  return combined;
+/** Met la dernière main aux pages réunies d'un bulletin photographié :
+ *  l'impossible est écarté et la preuve par le calcul se refait sur
+ *  l'ensemble (voir payslipPhotoReading). Un PDF n'en a pas besoin. */
+export async function finishPayslipPages(reading: PayslipReading): Promise<PayslipReading> {
+  if (!reading.rows && reading.totalEarnings === undefined) return reading;
+  const { finishPayslipReading } = await import("./payslipPhoto");
+  return finishPayslipReading(reading);
 }
 
 export type PayslipFileResult = {
@@ -558,6 +194,13 @@ export function mergePayslipPageReadings(
       } else if (key === "carenceDates") {
         // Chaque photo peut porter des arrêts différents : on les réunit.
         merged.carenceDates = [...new Set([...(merged.carenceDates || []), ...(value as string[])])].sort();
+      } else if (key === "rows") {
+        // Les rubriques viennent de la page qui porte le cumul brut.
+        if (!merged.rows || reading.rows!.deductions.length > merged.rows.deductions.length) merged.rows = reading.rows;
+      } else if (key === "otherRows") {
+        if (!merged.otherRows) merged.otherRows = reading.otherRows;
+      } else if (key === "proof") {
+        // Refaite sur les pages réunies (finishPayslipPages).
       } else if (merged[key as keyof PayslipReading] === undefined) {
         Object.assign(merged, { [key]: value });
       }
@@ -569,12 +212,21 @@ export function mergePayslipPageReadings(
 /** Lit tout un lot avec un seul worker OCR, gardé prêt une minute pour la
  * page suivante. Les photos et leur texte ne sont ni téléversés ni
  * conservés. */
-export async function readPayslipFiles(files: File[]): Promise<PayslipFileResult[]> {
+export async function readPayslipFiles(
+  files: File[],
+  /** L'avancement : la page en cours (dès 1), leur nombre, sa part faite. */
+  onProgress?: (page: number, pages: number, ratio: number) => void,
+): Promise<PayslipFileResult[]> {
   let worker: OcrWorker | undefined;
   const results: PayslipFileResult[] = [];
   try {
-    if (files.some(isPayslipImage)) worker = await acquirePayslipOcrWorker();
-    for (const file of files) {
+    if (files.some(isPayslipImage)) {
+      onProgress?.(1, files.length, 0);
+      worker = await acquirePayslipOcrWorker();
+    }
+    for (const [index, file] of files.entries()) {
+      progressListener = onProgress ? (ratio) => onProgress(index + 1, files.length, ratio) : null;
+      progressListener?.(0);
       try {
         results.push({ file, reading: await readPayslipWithWorker(file, worker) });
       } catch (error) {
@@ -591,6 +243,7 @@ export async function readPayslipFiles(files: File[]): Promise<PayslipFileResult
       : "Le moteur de reconnaissance de la photo n’a pas pu démarrer.";
     return files.map((file) => ({ file, error: message }));
   } finally {
+    progressListener = null;
     // Une photo qui a échoué (délai dépassé, moteur en défaut) ne laisse pas
     // un moteur peut-être encore occupé à la page suivante.
     if (worker && results.some((result) => result.error && isPayslipImage(result.file)))

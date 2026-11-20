@@ -117,6 +117,7 @@ export function PaySectionScreen({
               scrollWhenReady("holiday-choices");
             },
             onOpenMealVouchers: () => setPayScreen("meal"),
+            onOpenYear: () => setPayScreen("year"),
             strikeForCurrentPayMonth,
             netCalculation,
             monthNet,

@@ -22,8 +22,10 @@ import {
   type PayslipReading,
 } from "./payslip";
 import {
+  finishPayslipPages,
   isIncompletePayslipReading,
   isPayslipImage,
+  isProvenPayslipReading,
   mergePayslipPageReadings,
   readPayslipFiles,
 } from "./payslipOcr";
@@ -38,6 +40,7 @@ import {
   type PosedAmountField,
 } from "./payslipRateSamples";
 import { inspectPayslipPhotos } from "./payslipImageQuality";
+import { resetPayslipReadStatus, setPayslipReadStatus } from "./payslipReadStatus";
 import { browserConfirm, type ConfirmAction } from "./confirmDialog";
 import {
   MONTHS,
@@ -789,29 +792,22 @@ export function usePayActions(options: PayActionsOptions) {
       );
       return;
     }
-    if (includesPhoto) {
-      const qualityReports = await inspectPayslipPhotos(files);
-      if (qualityReports.length) {
-        const details = qualityReports.flatMap(({ file, issues }) =>
-          issues.map((issue) => `${file.name} : ${issue.label} — ${issue.advice}`),
-        );
-        const continueAnyway = await confirmAction({
-          title: "La lecture risque d’être moins fiable",
-          message: details.join("\n"),
-          confirmLabel: "Analyser quand même",
-          cancelLabel: "Reprendre la photo",
-        });
-        if (!continueAnyway) {
-          setPayslipImportError(`Photo à reprendre. ${details.join(" ")}`);
-          return;
-        }
-      }
-    }
+    // Ce que les photos ont de gênant (floue, sombre, coupée) n'arrête plus
+    // la lecture : une photo lue et prouvée par le calcul n'a rien à se
+    // reprocher. Le conseil ne se dit que si la lecture reste à confirmer.
+    const photoAdvice = includesPhoto && files.length
+      ? [...new Set((await inspectPayslipPhotos(files)).flatMap(({ issues }) => issues.map((issue) => `${issue.label} : ${issue.advice}`)))]
+      : [];
+    resetPayslipReadStatus();
     setPayslipImportBusy(true);
     try {
       let items: PayslipCheck[] = [];
       const failures: string[] = [];
-      for (const result of files.length ? await readPayslipFiles(files) : []) {
+      const read = files.length
+        ? await readPayslipFiles(files, (page, pages, ratio) => setPayslipReadStatus({ progress: { page, pages, ratio } }))
+        : [];
+      setPayslipReadStatus({ progress: null });
+      for (const result of read) {
         if (result.reading) {
           items.push({
             name: result.file.name,
@@ -835,7 +831,8 @@ export function usePayActions(options: PayActionsOptions) {
         try {
           items = [{
             name: `Bulletin (${pages.length} page${s(pages.length)})`,
-            reading: pages.length > 1 ? mergePayslipPageReadings(pages) : pages[0],
+            // Les pages réunies, puis la preuve par le calcul sur l'ensemble.
+            reading: await finishPayslipPages(pages.length > 1 ? mergePayslipPageReadings(pages) : pages[0]),
           }];
         } catch (error) {
           setPayslipImportError(
@@ -981,9 +978,12 @@ export function usePayActions(options: PayActionsOptions) {
       );
       // Dès le premier bulletin, les taux de départ du statut se calent sur
       // le net réel ; des bulletins aux primes différentes les séparent.
+      // Le statut que dit le bulletin (cotisation IRCANTEC, pension civile)
+      // devient celui du profil tant qu'aucun n'y est enregistré.
+      const bulletinStatus = formProfile?.status === undefined ? profileSource?.reading.status : undefined;
       const calculatedRates = calculateNetRatios(
         compatibleRateReadings,
-        defaultNetRatiosForPeriod(Number(targetPayYear), targetPayMonth, formProfile?.status === "contractuel"),
+        defaultNetRatiosForPeriod(Number(targetPayYear), targetPayMonth, (formProfile?.status ?? bulletinStatus) === "contractuel"),
       );
       const ignoredRateSampleCount =
         nextRateSamples.length - compatibleRateReadings.length;
@@ -1046,7 +1046,11 @@ export function usePayActions(options: PayActionsOptions) {
         return;
       }
       setPayslipPhotoPending(false);
-      if (includesPhoto) {
+      // Prouvée par le calcul (le brut est la somme des lignes, le net se
+      // retrouve au centime), la lecture s'enregistre sans rien demander.
+      const proven = isProvenPayslipReading(bestForCheck?.reading);
+      if (includesPhoto && !proven) {
+        setPayslipReadStatus({ advice: photoAdvice });
         const detected = [
           ...applied.map((field) => {
             const value = found[field.key];
@@ -1056,7 +1060,7 @@ export function usePayActions(options: PayActionsOptions) {
         ];
         const confirmed = await confirmAction({
           title: "Valeurs lues sur la photo",
-          message: `Photo analysée sur cet appareil. Vérifiez :\n${detected.join("\n")}`,
+          message: `Le calcul n’a pas pu confirmer cette lecture. Comparez ces valeurs à votre bulletin :\n${detected.join("\n")}`,
           confirmLabel: "Enregistrer dans mon profil",
           cancelLabel: "Ne pas enregistrer",
         });
@@ -1079,6 +1083,7 @@ export function usePayActions(options: PayActionsOptions) {
       );
       const nextProfile: FormProfile = {
         ...payProfileBase(formProfile, group),
+        ...(bulletinStatus ? { status: bulletinStatus } : {}),
         deductionPayMonths,
         baseSalary:
           found.baseSalary ??
@@ -1161,6 +1166,7 @@ export function usePayActions(options: PayActionsOptions) {
           fullName: nextProfile.fullName,
           group: nextProfile.group,
           signature: nextProfile.signature,
+          ...(bulletinStatus ? { status: bulletinStatus } : {}),
         };
         if (found.baseSalary !== undefined)
           body.baseSalaryCents = Math.round(found.baseSalary * 100);
@@ -1308,6 +1314,7 @@ export function usePayActions(options: PayActionsOptions) {
         "La mise à jour n’a pas pu être enregistrée. Réessayez.",
       );
     } finally {
+      setPayslipReadStatus({ progress: null });
       setPayslipImportBusy(false);
     }
   }

@@ -88,6 +88,8 @@ export type PayslipCheckSectionProps = {
   onChangeStatus?: (status: "fonctionnaire" | "contractuel") => void;
   onOpenHolidayChoices?: () => void;
   onOpenMealVouchers?: () => void;
+  /** Les prochaines paies, mois par mois : l'année en un coup d'œil. */
+  onOpenYear?: () => void;
   /** Fériés travaillés dont la compensation reste à décider. */
   holidayPending?: number;
   onReportMissingSundays: (year: number, month: number, missing: number) => void;
@@ -166,6 +168,7 @@ export function PayslipCheckSection({
   onChangeStatus,
   onOpenHolidayChoices,
   onOpenMealVouchers,
+  onOpenYear,
   holidayPending,
   onReportMissingSundays: reportMissingSundays,
   nextSundayPayout: nextSundayPayoutSlot,
@@ -251,6 +254,8 @@ export function PayslipCheckSection({
       rateCalibration={payslipRateCalibration}
       netRatioFixed={netRatioFixed}
       netRatioVariable={netRatioVariable}
+      isContractuel={isContractuel}
+      onOpenYear={onOpenYear}
     />
   );
 

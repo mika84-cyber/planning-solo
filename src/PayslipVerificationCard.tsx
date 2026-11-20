@@ -10,9 +10,12 @@ import { payslipGapRecord, type PayslipGapLine } from "./payslipGapExplanation";
 import { PayslipDecisionOptions, PayslipGapResult, signedEuros } from "./PayslipGapResult";
 import { PayslipLetterSheet } from "./PayslipLetterSheet";
 import { isComputedVariableLabel, isMecenatLabel, isOvertimeLabel, usesAverageNetRatios } from "./payslip";
+import { auditPayslip } from "./payslipAudit";
+import { usePayslipReadStatus } from "./payslipReadStatus";
 import type { PayslipCheckSectionProps } from "./PayslipCheckSection";
 import {
   isPayslipImage,
+  isProvenPayslipReading,
   missingPayslipPage,
   PAYSLIP_FILE_ACCEPT,
   PAYSLIP_PHOTO_ACCEPT,
@@ -54,7 +57,8 @@ type Props = Pick<
   "overtime" |
   "mecenatEntries" | "onMarkMecenatsPaidEarly" | "overtimeEarlyCandidates" |
   "onMarkOvertimePaidEarly" | "onReportMissingSundays" | "nextSundayPayout" | "sundayCarryover" |
-  "sundayCarryoverMonth" | "sundayCarryoverYear" | "onClearSundayCarryover"
+  "sundayCarryoverMonth" | "sundayCarryoverYear" | "onClearSundayCarryover" |
+  "isContractuel" | "onOpenYear"
 >;
 
 /** « 19:00 » devient « 19 h », « 09:30 » devient « 9 h 30 ». */
@@ -210,8 +214,17 @@ export function PayslipVerificationCard({
   sundayCarryoverMonth,
   sundayCarryoverYear,
   onClearSundayCarryover: clearSundayCarryover,
+  isContractuel,
+  onOpenYear,
 }: Props) {
-  const [activeImportSource, setActiveImportSource] = useState<"file" | "photo">("file");
+  // D'où vient le bulletin en cours de lecture : un PDF, des photos
+  // choisies, ou l'appareil photo.
+  const [activeImportSource, setActiveImportSource] = useState<"file" | "photo" | "camera">("file");
+  // Où en est la lecture d'une photo : la page en cours et sa part faite.
+  const readStatus = usePayslipReadStatus();
+  const readingLabel = readStatus.progress
+    ? `Lecture de la photo${readStatus.progress.pages > 1 ? ` ${readStatus.progress.page} sur ${readStatus.progress.pages}` : ""}… ${Math.round(readStatus.progress.ratio * 100)} %`
+    : "Lecture de la photo…";
   /** Le choix d'un PDF ou de photos, pour ajouter une page au bulletin lu ou
    *  en vérifier un autre : un seul champ, deux usages. */
   const payslipFileInput = (mode: "add-page" | "verify") => (
@@ -242,12 +255,12 @@ export function PayslipVerificationCard({
           const files = Array.from(event.target.files || []);
           event.target.value = "";
           if (!files.length) return;
-          setActiveImportSource("photo");
+          setActiveImportSource("camera");
           void importPayslips(files, mode);
         }}
       />
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3.5l2-3h5l2 3H20v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
-      <span>{payslipImportBusy && activeImportSource === "photo" ? "Reconnaissance de la photo…" : label}</span>
+      <span>{payslipImportBusy && activeImportSource === "camera" ? readingLabel : label}</span>
     </label>
   );
   /** La page qui manque au bulletin photographié : la seconde (le net) ou
@@ -343,6 +356,23 @@ export function PayslipVerificationCard({
       : `${monthName} prend le brut du bulletin : ${euros(payslipGapExplanation.actual.gross ?? 0)}.`;
   const unknownLines = (payslipCheck?.reading.extraLines || []).filter((line) => !line.sick && !isComputedVariableLabel(line.label));
   // Ce que le bulletin apprend d'autre, avant de conclure.
+  const audit = checkMatchesDisplayedPeriod && payslipCheck ? auditPayslip(payslipCheck.reading) : [];
+  const proven = isProvenPayslipReading(payslipCheck?.reading);
+  const bulletinStatus = payslipCheck?.reading.status;
+  const statusDiffers = bulletinStatus !== undefined && isContractuel !== undefined && (bulletinStatus === "contractuel") !== isContractuel;
+  // Un bulletin de contractuel sur un profil de fonctionnaire (ou
+  // l'inverse) : l'estimation n'attend pas les mêmes lignes ni les mêmes
+  // cotisations. Dit avant l'écart, qu'il explique le plus souvent.
+  const statusNotice = statusDiffers && onChangeStatus ? (
+    <p className="allowance-note warn">
+      {bulletinStatus === "contractuel"
+        ? "Ce bulletin est celui d’un contractuel (il porte une cotisation IRCANTEC), mais votre profil dit « Fonctionnaire » : l’estimation attend une IFSE et d’autres cotisations."
+        : "Ce bulletin est celui d’un fonctionnaire (il porte une pension civile), mais votre profil dit « Contractuel » : l’estimation n’attend ni IFSE ni pension civile."}{" "}
+      <button type="button" className="text-button" onClick={() => onChangeStatus(bulletinStatus)}>
+        Passer mon statut en {bulletinStatus === "contractuel" ? "Contractuel" : "Fonctionnaire"}
+      </button>
+    </p>
+  ) : null;
   const resultNotices = payslipCheck ? (
     <>
       {unplannedPayslipCarence && !payslipGapExplanation ? (
@@ -432,7 +462,7 @@ export function PayslipVerificationCard({
               <span className="payslip-guide-number">1</span>
               <div>
                 <strong>Choisir le bulletin à vérifier</strong>
-                <small>Un bulletin fait deux pages : photographiez-les l’une après l’autre, ou choisissez les deux photos ensemble. Netteté, lumière, cadrage et inclinaison sont contrôlés avant la lecture.</small>
+                <small>Un bulletin fait deux pages : photographiez-les l’une après l’autre, ou choisissez les deux photos ensemble, dans n’importe quel ordre. Tout est lu sur cet appareil : rien n’est envoyé.</small>
               </div>
               <div className="payslip-import-actions">
                 <label className="payslip-drop payslip-file-drop">
@@ -450,14 +480,14 @@ export function PayslipVerificationCard({
                     }}
                   />
                   <span>
-                    {payslipImportBusy && payslipImportMode === "verify"
+                    {payslipImportBusy && payslipImportMode === "verify" && activeImportSource !== "camera"
                       ? activeImportSource === "photo"
-                        ? "Reconnaissance des photos…"
+                        ? readingLabel
                         : "Lecture en cours…"
-                      : "Choisir PDF ou photo"}
+                      : "Choisir des photos ou un PDF"}
                   </span>
                 </label>
-                {payslipPhotoButton("verify", "Photographier la page 1")}
+                {payslipPhotoButton("verify", "Prendre le bulletin en photo")}
               </div>
             </div>
             {/* Une page lue, l'autre attendue : la suite du parcours, sans
@@ -466,11 +496,11 @@ export function PayslipVerificationCard({
               <div className="payslip-guide-step active payslip-page-step" role="status" aria-label={`Page ${missingPage} du bulletin`}>
                 <span className="payslip-guide-number">2</span>
                 <div>
-                  <strong>{missingPage === 2 ? "Page 1 lue · photographiez la page 2" : "Page 2 lue · photographiez la page 1"}</strong>
-                  <small>{missingPage === 2 ? "Le bas du bulletin, avec le net à payer." : "Le haut du bulletin, avec les rubriques et le cumul brut."}</small>
+                  <strong>{missingPage === 2 ? "Rubriques lues · il manque la page du net" : "Net lu · il manque la page des rubriques"}</strong>
+                  <small>{missingPage === 2 ? "L’autre page : le bas du bulletin, avec le net à payer." : "L’autre page : le tableau des rubriques, avec le cumul brut."}</small>
                 </div>
                 <div className="payslip-import-actions">
-                  {payslipPhotoButton("add-page", `Photographier la page ${missingPage}`)}
+                  {payslipPhotoButton("add-page", "Prendre l’autre page en photo")}
                   <label className="payslip-second-button">
                     {payslipFileInput("add-page")}
                     Choisir dans la galerie
@@ -496,6 +526,25 @@ export function PayslipVerificationCard({
                       payslipCheck.reading.gross !== undefined ? `brut ${euros(payslipCheck.reading.gross)}` : "",
                       payslipCheck.reading.netBeforeTax !== undefined ? `net avant impôt ${euros(payslipCheck.reading.netBeforeTax)}` : "",
                     ].filter(Boolean).join(" · ")}
+                  </p>
+                ) : null}
+                {/* Le contrôle : la preuve par le calcul, ce qu'il a corrigé,
+                    les taux légaux, la résidence, le temps partiel. */}
+                {audit.length && !photoPending ? (
+                  <ul className="payslip-audit" aria-label="Contrôle du bulletin">
+                    {audit.map((finding) => (
+                      <li key={finding.key} className={finding.tone}>
+                        <b>{finding.title}</b>
+                        {finding.detail ? <span>{finding.detail}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {photoPending ? null : statusNotice}
+                {/* La photo n'a pas pu être prouvée : ce qu'elle a de gênant. */}
+                {readStatus.advice.length && !proven ? (
+                  <p className="allowance-note payslip-import-note">
+                    Pour une lecture plus sûre, reprenez la photo : {readStatus.advice.join(" ; ")}.
                   </p>
                 ) : null}
               </>
@@ -586,6 +635,14 @@ export function PayslipVerificationCard({
                   />
                 </>
               ) : resultNotices}
+              {/* Le bulletin lu règle aussi les prochaines paies : elles se
+                  voient mois par mois dans l'année en un coup d'œil. */}
+              {onOpenYear ? (
+                <p className="allowance-note payslip-import-note">
+                  Ce bulletin règle aussi l’estimation de vos prochaines paies.{" "}
+                  <button type="button" className="text-button" onClick={onOpenYear}>Voir mes prochaines paies</button>
+                </p>
+              ) : null}
               {/* Après le détail, ce qu'on peut encore faire — une page, un autre
                   bulletin — puis la conclusion, une fois tout vu. */}
               {/* Une autre photo ou page du même bulletin, prise après coup :

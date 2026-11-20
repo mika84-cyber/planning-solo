@@ -878,10 +878,51 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   (`isIncompletePayslipReading`) attend l'autre page sans rien demander ni
   enregistrer (`payslipPhotoPending`, « Il n'y a pas d'autre page » →
   `finishPayslipPhotos`), et le moteur reste prêt une minute pour la page
-  suivante. La feuille
-  est d'abord redressée (inclinaison mesurée par `payslipSkewDegrees` de
-  `src/payslipImageQuality.ts`), et le code de rubrique (« 641.28 ») n'est
-  jamais lu comme un montant.
+  suivante. Les deux pages se lisent dans n'importe quel ordre. Le code de
+  rubrique (« 641.28 ») n'est jamais lu comme un montant.
+- Lecture d'une photo, chargée à la demande avec le moteur
+  (`src/payslipPhoto.ts`, `readPayslipPhoto`) :
+  - `src/payslipPhotoImage.ts` prépare la photo : sens de lecture (feuille
+    couchée), redressement au quart de degré, mise à 2 200 px de large,
+    canal le plus clair (le filigrane bleu s'efface) et fond retiré
+    (`flattenBackground`) ; une feuille tête en bas, qui ne donne rien, est
+    retournée et relue ; une lecture pas sûre est refaite contours renforcés
+    (`sharpen`), et `betterPageReading` garde la meilleure ;
+  - le moteur lit par fragments (`PSM.SPARSE_TEXT`) et rend leur place ;
+    `src/payslipPhotoLayout.ts` (`photoRows`) reconstitue les lignes en
+    suivant la pente de chacune (feuille pliée, tenue à la main), écarte les
+    taches et recolle les montants séparés de leur rubrique ;
+  - `src/payslipRows.ts` lit chaque rubrique (code, libellé, base, taux,
+    montant ; libellé rétabli par son code, `KNOWN_RUBRICS`), range
+    rémunérations, cotisations, remboursements, titres repas, et fait la
+    preuve par le calcul (`provePayslip`) : brut = somme des lignes
+    (`repairEarningLines` corrige une ligne mal lue), net = brut −
+    cotisations + remboursements − titres repas ; une cotisation mal lue se
+    corrige par base × taux quand le total tombe alors juste ; taux légaux
+    dans `LEGAL_DEDUCTION_RATES` ;
+  - `src/payslipPhotoReading.ts` (`readPayslipPhotoLayout`) réunit le tout :
+    cases du pied de page retrouvées par leur place sous leur libellé (net
+    avant impôt, net à payer, net imposable, totaux « à payer » / « à
+    déduire »), statut (IRCANTEC ou « CDI » : contractuel ; pension civile :
+    fonctionnaire), temps de travail (taux payé du traitement, 6/7 pour
+    80 %), valeurs impossibles écartées (`withoutImpossibleValues`) ;
+    `finishPayslipReading` refait la preuve sur les pages réunies
+    (`finishPayslipPages` dans `payslipOcr.ts`).
+  - `src/payslipOcrText.ts` : lecture du texte ligne à ligne (photos simples,
+    repli) ; le net avant impôt n'est jamais un montant écrit avant son
+    libellé.
+  Une lecture prouvée (`isProvenPayslipReading`) s'enregistre sans fenêtre
+  de confirmation ; sinon « Valeurs lues sur la photo » la demande, et les
+  conseils de `src/payslipImageQuality.ts` (photo petite, sombre, floue,
+  coupée) ne s'affichent qu'alors. Le statut lu devient celui du profil
+  quand aucun n'est enregistré ; différent, il se propose (« Passer mon
+  statut en Contractuel »). `src/payslipAudit.ts` (`auditPayslip`) liste le
+  contrôle affiché sous la lecture (`.payslip-audit`) : preuve, montants
+  corrigés, taux légaux, résidence à 3 %, temps partiel.
+  `src/payslipReadStatus.ts` porte l'avancement de la lecture (page en
+  cours, pourcentage) hors de l'état de l'application.
+  Données de test : `src/payslipPhotoFixture.ts` (géométrie de deux vraies
+  photos, identité retirée, montants fictifs).
 - `src/leaveRequest.ts` : préparation des demandes de congés.
 - `src/cet.ts` : barèmes Centre Pompidou, plafonds, éligibilité et calculs CET.
 - `src/cetFormsPdf.ts` : génération différée des demandes CET à vérifier, signer et envoyer à la RH.

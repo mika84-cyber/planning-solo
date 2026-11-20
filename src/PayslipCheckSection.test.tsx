@@ -97,7 +97,7 @@ describe("PayslipCheckSection", () => {
     expect(html).not.toContain("Comparer avec le bulletin réel");
     expect(html).not.toContain("Un seul PDF suffit");
     expect(html).toContain("Choisir le bulletin à vérifier");
-    expect(html).toContain("Choisir PDF ou photo");
+    expect(html).toContain("Choisir des photos ou un PDF");
     expect(html).not.toContain("choisissez les 2 photos ensemble");
     expect(html).toMatch(/payslip-file-drop[\s\S]*?<input[^>]*multiple=""/);
     expect(html).not.toContain("Prendre une photo");
@@ -142,7 +142,7 @@ describe("PayslipCheckSection", () => {
     const html = renderToStaticMarkup(<PayslipCheckSection {...baseProps} />);
     expect(html).toContain("Un bulletin fait deux pages");
     expect(html).toMatch(/payslip-photo-drop[\s\S]*?<input[^>]*accept="image\/jpeg,image\/png,image\/webp"[^>]*capture="environment"/);
-    expect(html).toContain("Photographier la page 1");
+    expect(html).toContain("Prendre le bulletin en photo");
     expect(html).not.toContain("Il n’y a pas d’autre page");
     // La page 1 lue (rubriques et brut), le net attendu sur la page 2.
     const pending = renderToStaticMarkup(
@@ -153,9 +153,9 @@ describe("PayslipCheckSection", () => {
         review={{ verdict: "1 point à vérifier", tone: "warning", issues: [], verified: [], unavailable: [] }}
       />,
     );
-    expect(pending).toContain("Page 1 lue · photographiez la page 2");
-    expect(pending).toContain("Le bas du bulletin, avec le net à payer.");
-    expect(pending).toContain("Photographier la page 2");
+    expect(pending).toContain("Rubriques lues · il manque la page du net");
+    expect(pending).toContain("L’autre page : le bas du bulletin, avec le net à payer.");
+    expect(pending).toContain("Prendre l’autre page en photo");
     expect(pending).toContain("Choisir dans la galerie");
     expect(pending).toContain("Il n’y a pas d’autre page");
     expect(pending).toContain("Période reconnue");
@@ -165,8 +165,8 @@ describe("PayslipCheckSection", () => {
     const reversed = renderToStaticMarkup(
       <PayslipCheckSection {...baseProps} photoPending check={{ name: "IMG_2.jpg", reading: { sundaysBeyondTen: 0, month: 7, year: 2026, netBeforeTax: 1990 } }} />,
     );
-    expect(reversed).toContain("Page 2 lue · photographiez la page 1");
-    expect(reversed).toContain("rubriques et le cumul brut");
+    expect(reversed).toContain("Net lu · il manque la page des rubriques");
+    expect(reversed).toContain("L’autre page : le tableau des rubriques, avec le cumul brut.");
   });
 
   it("propose, devant chaque cause de l’écart, le geste qui l’explique", () => {
@@ -276,7 +276,7 @@ describe("PayslipCheckSection", () => {
       />,
     );
 
-    expect(html).toContain("Choisir PDF ou photo");
+    expect(html).toContain("Choisir des photos ou un PDF");
     expect(html).not.toContain("Période reconnue");
     expect(html).not.toContain("bulletin-aout.pdf");
     expect(html).not.toContain("champ rempli");

@@ -4,8 +4,8 @@ import {
   isPayslipImage,
   mergePayslipPageReadings,
   missingPayslipPage,
-  readPayslipOcrText,
 } from "./payslipOcr";
+import { readPayslipOcrText } from "./payslipOcrText";
 
 describe("lecture locale d’une photo de bulletin", () => {
   it("reconnaît les principales lignes OCR sans confondre les codes", () => {

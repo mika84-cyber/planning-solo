@@ -85,6 +85,7 @@ export type PayContentInput = {
   onChangeStatus: PayslipCheckSectionProps["onChangeStatus"];
   onOpenHolidayChoices: PayslipCheckSectionProps["onOpenHolidayChoices"];
   onOpenMealVouchers: PayslipCheckSectionProps["onOpenMealVouchers"];
+  onOpenYear: PayslipCheckSectionProps["onOpenYear"];
   strikeForCurrentPayMonth: StrikePayEstimate;
   netCalculation: NetCalculation | null;
   monthNet: number | null;
@@ -144,6 +145,7 @@ export function buildPayContent({
   onChangeStatus,
   onOpenHolidayChoices,
   onOpenMealVouchers,
+  onOpenYear,
   strikeForCurrentPayMonth,
   netCalculation,
   monthNet,
@@ -834,6 +836,7 @@ export function buildPayContent({
     onChangeStatus,
     onOpenHolidayChoices,
     onOpenMealVouchers,
+    onOpenYear,
     onApplyPayslipValue: (field, value) => void savePayAmount(field, value),
     holidayPending: allowances.holidayPending,
     onReportMissingSundays: (year, month, missingSundays) =>

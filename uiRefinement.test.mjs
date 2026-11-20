@@ -319,8 +319,8 @@ describe("finitions d’interface", () => {
 
   // Le titre des sous-écrans et l'état du profil : voir PayPage.test.tsx.
   it("garde le titre des catégories de paie collant et permet de revenir aujourd’hui", () => {
-    // « Revenir à aujourd’hui » vit dans le navigateur commun, une seule fois.
-    expect((payMonthNav.match(/className="pay-bulletin-today"/g) || []).length).toBe(1);
+    // « Revenir à aujourd’hui » vit dans le navigateur commun, une seule
+    // fois : voir PayMonthNav.test.tsx (test de rendu).
     expect(payDashboard).not.toContain("pay-bulletin-today");
     expect(payEstimateDetails).not.toContain("pay-today-button");
     expect(app).toContain("Aucun dimanche versé sur cette paie");
