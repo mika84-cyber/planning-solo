@@ -20,6 +20,9 @@ describe("nettoyage du planning", () => {
     expect(html.indexOf("Effacer les absences")).toBeLessThan(
       html.indexOf("Effacer les notes"),
     );
+    // Les deux actions portent les classes qui leur donnent la même taille.
+    expect(html).toContain('<button class="danger-button delete-absences-button" type="button">Effacer les absences</button>');
+    expect(html).toContain('<button class="warning-button delete-notes-button" type="button">Effacer les notes</button>');
   });
 
   it("désactive les suppressions quand aucune date n’est choisie", () => {

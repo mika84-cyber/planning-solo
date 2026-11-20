@@ -525,7 +525,8 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   Comme `UsefulContactsSection.tsx`, l’en-tête se limite au surtitre et au
   titre (phrases d’explication retirées le 4 novembre 2026). Une recherche
   sans résultat le dit (« Aucun document ne porte ce nom. »). Les documents
-  d'un dossier se lisent en sommaire numéroté, pour tous les comptes : un
+  d'un dossier se lisent en sommaire numéroté, sauf pour le compte
+  administrateur (voir plus bas) : un
   grand chiffre (`.useful-form-number`) à la couleur du dossier
   (`FOLDER_TONES`, posée en `--contact-category-accent` sur
   `.useful-form-download-list`), le titre et son format, puis « Télécharger »
@@ -535,7 +536,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   format, avec leurs deux boutons sous le titre. `--doc-fill` colore les
   boutons pleins et `--doc-ink` les textes ; le premier garde un nom sans
   « text » ni « ink » pour échapper à l'éclaircissement des textes du mode
-  sombre (`darkStyles.ts`). L'écran
+  sombre (`darkStyles.ts`). Le compte administrateur garde, lui, ses fiches
+  d'avant le sommaire (sa demande, le 20 novembre 2026) : `isAdmin` pose
+  `doc-cards` sur la liste (et `cards` sur `VisitorQrLinks`), le composant
+  rend une icône, le rang et le format au-dessus du titre et masque le libellé
+  du téléchargement ; les règles de ces fiches sont dans
+  `usefulDocumentAdmin.css` et l'emportent sur le sommaire. Pour voir ce que
+  voient les autres comptes : `/?local-test=1&preview-feedback-role=user`.
+  L'écran
   `.useful-resources-screen` n'a plus de fond : blanc, il dépassait en bande
   à angles droits sous la carte arrondie.
 - `src/AbsenceFormReminder.tsx` : dans Formulaire SAP, « Télécharger » une

@@ -273,6 +273,9 @@
   font: inherit;
 }
 
+/* Même tracé pour l'icône des fiches du compte administrateur
+  (usefulDocumentAdmin.css). */
+.useful-form-file-icon svg,
 .useful-form-download-card>a svg {
   width: 17px;
   fill: none;

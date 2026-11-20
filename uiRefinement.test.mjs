@@ -90,7 +90,6 @@ const leaveForm = [
 const main = readFileSync(new URL("./src/main.tsx", import.meta.url), "utf8");
 const serviceWorker = readFileSync(new URL("./public/sw.js", import.meta.url), "utf8");
 const appUpdate = readFileSync(new URL("./src/appUpdate.ts", import.meta.url), "utf8");
-const calendarCleanup = readFileSync(new URL("./src/CalendarCleanup.tsx", import.meta.url), "utf8");
 const leaveBalancesSection = readFileSync(new URL("./src/LeaveBalancesSection.tsx", import.meta.url), "utf8");
 const payEstimateDetails = readFileSync(new URL("./src/PayEstimateDetails.tsx", import.meta.url), "utf8");
 const payMonthNav = readFileSync(new URL("./src/PayMonthNav.tsx", import.meta.url), "utf8");
@@ -370,7 +369,6 @@ describe("finitions d’interface", () => {
   it("compte Divers comme jour non travaillé et permet les suppressions multiples", () => {
     // Rangé sous « Repères du planning », Divers se dit en trois mots.
     expect(app).toContain('period.leaveType === "recovery"');
-    expect(calendarCleanup).toContain("Effacer plusieurs dates ou notes");
     expect(app).toContain('className={`holiday-pay-amount');
   });
 
@@ -466,7 +464,6 @@ describe("finitions d’interface", () => {
   });
 
   it("place les absences avant les notes avec deux actions de même taille", () => {
-    expect(calendarCleanup.indexOf("Effacer les absences")).toBeLessThan(calendarCleanup.indexOf("Effacer les notes"));
     expect(css.hasRuleWithSelectors([".calendar-delete-actions .delete-absences-button", ".calendar-delete-actions .delete-notes-button"])).toBe(true);
     expect(css.declares("min-height", "46px")).toBe(true);
   });

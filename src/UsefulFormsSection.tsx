@@ -341,7 +341,7 @@ export function UsefulFormsSection({
             />
           </figure>
         ) : folder.documents.length || folder.audioguides?.length ? (
-          <div className="useful-form-download-list" style={{ "--contact-category-accent": FOLDER_TONES[folder.key] ?? DEFAULT_TONE } as CSSProperties}>
+          <div className={`useful-form-download-list${isAdmin ? " doc-cards" : ""}`} style={{ "--contact-category-accent": FOLDER_TONES[folder.key] ?? DEFAULT_TONE } as CSSProperties}>
             {!secureContext ? (
               <p className="useful-form-local-notice">
                 Mode de test local : les PDF s’ouvrent dans le lecteur du navigateur. Utilisez ensuite son bouton Enregistrer. Le téléchargement direct sans alerte sera disponible sur la version sécurisée.
@@ -352,11 +352,18 @@ export function UsefulFormsSection({
               const action = getUsefulFormAction(document.format, secureContext);
               return (
               <article key={document.file} className="useful-form-download-card">
-                {/* Un sommaire : le rang du document, son titre, puis l'action. */}
-                <span className="useful-form-number" aria-hidden="true">{index + 1}</span>
+                {/* Un sommaire : le rang du document, son titre, puis l'action.
+                    L'administrateur garde ses fiches (usefulDocumentAdmin.css) :
+                    une icône, le rang et le format au-dessus du titre. */}
+                {isAdmin ? (
+                  <span className="useful-form-file-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v5h5M9 13h6M9 17h6" /></svg>
+                  </span>
+                ) : <span className="useful-form-number" aria-hidden="true">{index + 1}</span>}
                 <span className="useful-form-file-copy">
+                  {isAdmin ? <small>{index + 1}. {document.format}</small> : null}
                   <strong>{document.title}</strong>
-                  <small>{document.format}</small>
+                  {isAdmin ? null : <small>{document.format}</small>}
                   {"sendTo" in document && document.sendTo ? <small className="useful-form-send-to">À envoyer à <a href={`mailto:${document.sendTo}`}>{document.sendTo.split("@")[0]}<wbr />@{document.sendTo.split("@")[1]}</a></small> : null}
                   {isAdmin && document.publishAt && Date.parse(document.publishAt) > Date.now() && <small>{document.publishAt.startsWith('9999') ? 'Brouillon · À reprogrammer' : `Publication le ${new Date(document.publishAt).toLocaleString('fr-FR')}`}</small>}
                   {isAdmin && <button className="document-edit-button" type="button" aria-label={`Modifier ${document.title}`} onClick={() => setEditDocument(document)}>Modifier</button>}
@@ -376,7 +383,7 @@ export function UsefulFormsSection({
                     else void downloadForm(href, document.file, action);
                   }}
                 >
-                  <span className="useful-form-download-label">
+                  <span className={`useful-form-download-label${isAdmin ? " visually-hidden" : ""}`}>
                     {downloadingFile === document.file
                       ? "Préparation…"
                       : action === "preview" ? "Ouvrir le PDF" : "Télécharger"}
@@ -394,8 +401,13 @@ export function UsefulFormsSection({
             {headings ? <h3 className="useful-form-list-heading">{headings.audioguides}</h3> : null}
             {folder.audioguides?.map((guide, index) => (
               <article key={guide.title} className="useful-form-download-card useful-audioguide-card">
-                <span className="useful-form-number" aria-hidden="true">{index + 1}</span>
+                {isAdmin ? (
+                  <span className="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
+                  </span>
+                ) : <span className="useful-form-number" aria-hidden="true">{index + 1}</span>}
                 <span className="useful-form-file-copy">
+                  {isAdmin ? <small>{index + 1}. AUDIOGUIDE</small> : null}
                   <strong>Audioguide {guide.title}</strong>
                   <small className="useful-audioguide-code">{guide.languages}</small>
                   <small className="useful-audioguide-code">Code d’accès <b>{guide.code}</b></small>

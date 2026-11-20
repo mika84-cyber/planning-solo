@@ -169,6 +169,9 @@ html[data-theme="dark"] .useful-resource-tab.resource-pdf { --tile-tint: #3a2620
    dossier, éclaircie. */
 html[data-theme="dark"] .useful-form-download-list { --doc-ink: color-mix(in srgb, var(--contact-category-accent) 50%, #fff); }
 html[data-theme="dark"] .useful-form-number { color: var(--doc-ink); }
+/* Fiches du compte administrateur : le bouton de téléchargement garde la
+   couleur foncée du dossier. */
+html[data-theme="dark"] .doc-cards article > a { background: color-mix(in srgb, var(--contact-category-accent) 72%, #000); color: #fff; }
 /* Rappel du formulaire (Formulaire SAP) : « Remplir dans l'appli » garde le
    bleu du dossier, la vignette passe en bleu nuit. */
 html[data-theme="dark"] .absence-form-reminder-actions > a { border-color: #5368a8; background: #5368a8; color: #fff; }

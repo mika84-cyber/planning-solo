@@ -2638,15 +2638,21 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(sapLinks.first()).toHaveAttribute("download", "");
   await expect(sapLinks).toHaveText(["Télécharger", "Télécharger", "Télécharger"]);
   const downloadIconBox = (await sapLinks.first().boundingBox())!;
-  // 44 px : la cible tactile minimale recommandée. Vérifier le plancher
-  // plutôt qu'une valeur exacte laisse la place à un lien plus grand, jamais
-  // plus petit.
+  // 44 px : la cible tactile minimale recommandée, portée à cette taille
+  // par usefulDocumentAdmin.css. Vérifier le plancher plutôt qu'une valeur
+  // exacte laisse la place à un bouton plus grand, jamais plus petit.
   expect(downloadIconBox.width).toBeGreaterThanOrEqual(44);
   expect(downloadIconBox.height).toBeGreaterThanOrEqual(44);
-  // Un sommaire numéroté : « Télécharger » s'écrit en toutes lettres, et
-  // chaque document porte son rang.
-  await expect(sapLinks.first().locator(".useful-form-download-label")).toBeVisible();
-  await expect(page.locator(".useful-form-number")).toHaveText(["1", "2", "3"]);
+  // Le compte administrateur garde ses fiches d'avant le sommaire numéroté :
+  // une icône, le rang et le format au-dessus du titre, le téléchargement
+  // réduit à son icône, un liseré et un fond à la couleur du dossier.
+  await expect(sapLinks.first().locator(".useful-form-download-label")).toHaveCSS("width", "1px");
+  await expect(page.locator(".useful-form-number")).toHaveCount(0);
+  await expect(page.locator(".useful-form-file-icon")).toHaveCount(3);
+  await expect(page.locator(".useful-form-file-copy > small:first-child")).toHaveText(["1. PDF", "2. PDF", "3. PDF"]);
+  const firstCard = page.locator(".useful-form-download-card").first();
+  await expect(firstCard).toHaveCSS("border-left-width", "6px");
+  await expect(firstCard).not.toHaveCSS("background-image", "none");
   await expect(page.locator(".useful-form-file-copy strong")).toHaveText([
     "Demande de congés",
     "Demande de récupérations",
@@ -2933,17 +2939,24 @@ test("les titres repas de Ma paie et ceux de Docs renvoient l’un à l’autre"
 
 test("les documents d’un dossier portent tous la couleur du dossier", async ({ page }) => {
   await prepareDemo(page);
-  await openUsefulResource(page, "Formulaires");
-  for (const [folder, tone] of [["Formulaire SAP", "rgb(83, 104, 168)"], ["Formulaire Brantôme", "rgb(185, 120, 30)"]] as const) {
-    await page.getByRole("button", { name: new RegExp(folder) }).click();
-    const numbers = page.locator(".useful-form-download-list > .useful-form-download-card > .useful-form-number");
-    await expect(numbers.first()).toBeVisible();
-    // Jusqu'au 12 novembre 2026 : six teintes en boucle, sans signification.
-    // La couleur du dossier se lit désormais sur le rang de chaque document.
-    const colors = await numbers.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).color));
-    expect(colors.length).toBeGreaterThan(1);
-    expect(new Set(colors)).toEqual(new Set([tone]));
-    await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+  // Jusqu'au 12 novembre 2026 : six teintes en boucle, sans signification.
+  // L'administrateur lit la couleur du dossier sur le liseré de ses fiches,
+  // les autres comptes sur le rang de chaque document.
+  for (const [address, marks, property] of [
+    ["/?local-test=1", ".useful-form-download-list > .useful-form-download-card", "borderLeftColor"],
+    ["/?local-test=1&preview-feedback-role=user", ".useful-form-download-list > .useful-form-download-card > .useful-form-number", "color"],
+  ] as const) {
+    await page.goto(address);
+    await openUsefulResource(page, "Formulaires");
+    for (const [folder, tone] of [["Formulaire SAP", "rgb(83, 104, 168)"], ["Formulaire Brantôme", "rgb(185, 120, 30)"]] as const) {
+      await page.getByRole("button", { name: new RegExp(folder) }).click();
+      const nodes = page.locator(marks);
+      await expect(nodes.first()).toBeVisible();
+      const colors = await nodes.evaluateAll((items, name) => items.map((item) => getComputedStyle(item)[name]), property);
+      expect(colors.length).toBeGreaterThan(1);
+      expect(new Set(colors)).toEqual(new Set([tone]));
+      await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+    }
   }
 });
 
