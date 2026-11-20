@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { CET_RECIPIENT } from "./cet";
 
 export type CetFormKind = "opening" | "funding";
 
@@ -14,7 +15,6 @@ type CetFormDialogProps = {
   onClose: () => void;
 };
 
-const RECIPIENT = "clothilde.letourneur@centrepompidou.fr";
 const DIRECTION = "Direction des publics - Service de l'accueil des publics";
 
 function splitName(value: string) {
@@ -330,8 +330,8 @@ export function CetFormDialog({
         </section>
 
         <aside className="cet-recipient">
-          <strong>À envoyer à Clothilde Letourneur</strong>
-          <a href={`mailto:${RECIPIENT}?subject=${encodeURIComponent(subject)}`}>{RECIPIENT}</a>
+          <strong>À envoyer à la DRH-CET</strong>
+          <a href={`mailto:${CET_RECIPIENT}?subject=${encodeURIComponent(subject)}`}>{CET_RECIPIENT}</a>
           <small>Téléchargez d’abord le PDF, puis joignez-le au courriel. Une pièce jointe ne peut pas être ajoutée automatiquement par le navigateur.</small>
         </aside>
         {error ? <p className="cet-error" role="alert">{error}</p> : null}

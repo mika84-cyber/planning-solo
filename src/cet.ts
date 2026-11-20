@@ -1,5 +1,9 @@
 import type { PayStatus } from "./appModel";
 
+/** Où envoyer les formulaires du CET : la boîte de la DRH prévue pour cela,
+ *  et non une personne (indiqué par l'administrateur le 20 novembre 2026). */
+export const CET_RECIPIENT = "DRH-CET@centrepompidou.fr";
+
 export type CetCategory = "A" | "B" | "C";
 export type CetEmployer = "ministry" | "public-establishment";
 export type CetWorkRule =

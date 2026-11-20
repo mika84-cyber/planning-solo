@@ -25,6 +25,14 @@ describe("formulaires CET", () => {
     },
   );
 
+  it.each(["opening", "funding"] as const)("adresse le formulaire %s à la boîte CET de la DRH", (kind) => {
+    const html = renderToStaticMarkup(<CetFormDialog {...common} kind={kind} />);
+    expect(html).toContain("<strong>À envoyer à la DRH-CET</strong>");
+    expect(html).toMatch(/<a href="mailto:DRH-CET@centrepompidou\.fr\?subject=[^"]+">DRH-CET@centrepompidou\.fr<\/a>/);
+    // L'ancienne destinataire, une personne, n'est plus proposée.
+    expect(html).not.toContain("letourneur");
+  });
+
   it("préremplit la direction et laisse le choix du groupe ou de la catégorie", () => {
     const html = renderToStaticMarkup(<CetFormDialog {...common} kind="opening" />);
     expect(html).toContain("Direction des publics - Service de l&#x27;accueil des publics");
