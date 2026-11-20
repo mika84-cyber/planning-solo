@@ -92,7 +92,6 @@ const serviceWorker = readFileSync(new URL("./public/sw.js", import.meta.url), "
 const appUpdate = readFileSync(new URL("./src/appUpdate.ts", import.meta.url), "utf8");
 const leaveBalancesSection = readFileSync(new URL("./src/LeaveBalancesSection.tsx", import.meta.url), "utf8");
 const payEstimateDetails = readFileSync(new URL("./src/PayEstimateDetails.tsx", import.meta.url), "utf8");
-const payMonthNav = readFileSync(new URL("./src/PayMonthNav.tsx", import.meta.url), "utf8");
 const appSections = readFileSync(new URL("./src/appSections.ts", import.meta.url), "utf8");
 const leaveDialogs = readFileSync(new URL("./src/LeaveDialogs.tsx", import.meta.url), "utf8");
 const workTimeDialogs = readFileSync(new URL("./src/WorkTimeDialogs.tsx", import.meta.url), "utf8");
@@ -693,9 +692,9 @@ describe("finitions d’interface", () => {
     expect(app).toContain("<ThemeSwitch />");
     expect(main).toContain("initTheme();");
     expect(css.anywhere("html[data-theme=\"dark\"]")).toBe(false);
-    // Le téléchargement d'un formulaire n'est plus réduit à son icône : le
-    // sommaire numéroté écrit « Télécharger » (scénario e2e « un invité voit
-    // les documents d’un dossier en sommaire numéroté »).
+    // Le téléchargement d'un formulaire est un bouton réduit à son icône pour
+    // tous les comptes ; il garde son nom pour les lecteurs d'écran (scénario
+    // e2e « un invité voit les documents d’un dossier en sommaire numéroté »).
   });
 
   it("renforce les contours des commandes de l’en-tête", () => {
@@ -777,8 +776,8 @@ describe("finitions d’interface", () => {
   });
 
   it("organise l’accueil de Ma paie autour du mois et des accès directs", () => {
-    // Le contenu de l'accueil se vérifie sur son rendu (PayDashboard.test.tsx).
-    expect(payMonthNav).toContain('className="pay-bulletin-month pay-bulletin-month-nav"');
+    // Le contenu de l'accueil se vérifie sur son rendu (PayDashboard.test.tsx),
+    // la navigation entre les mois aussi (PayMonthNav.test.tsx).
     expect(appRoot).not.toContain("Bulletin du mois non vérifié");
     expect(appRoot).not.toContain('actionLabel: "Choisir le PDF"');
     expect(app).not.toContain("Affiner les valeurs manuellement si besoin");

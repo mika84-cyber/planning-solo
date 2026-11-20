@@ -529,9 +529,16 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   administrateur (voir plus bas) : un
   grand chiffre (`.useful-form-number`) à la couleur du dossier
   (`FOLDER_TONES`, posée en `--contact-category-accent` sur
-  `.useful-form-download-list`), le titre et son format, puis « Télécharger »
-  en toutes lettres ; un filet sépare les lignes, sans case ni fond, et toute
-  la ligne se touche (lien étiré). Les audioguides d'un dossier et les QR
+  `.useful-form-download-list`), le titre et son format, puis un bouton rond
+  cerclé, réduit à l'icône de téléchargement (libellé masqué ; le lien garde
+  son nom, « Télécharger » suivi du titre, pour les lecteurs d'écran) ; le tout sur un fond à la couleur du dossier, à 18 %
+  (choix de l'administrateur sur maquette, le 20 novembre 2026 : il a
+  trouvé 10 % trop pâle ; à 18 %, « PDF » garde un contraste de 4,5). Un filet sépare les
+  lignes, sauf sous le dernier rang : chaque ligne déborde d'un pixel
+  (`margin-bottom: -1px`) et le fond (`overflow: hidden`, bordure basse
+  transparente en guise de marge) rogne le dernier filet, sur une colonne
+  comme sur deux, sans compter les rangs. Toute la ligne se touche (lien
+  étiré). Les audioguides d'un dossier et les QR
   codes des visiteurs (`VisitorQrLinks.tsx`, dans Contacts) suivent le même
   format, avec leurs deux boutons sous le titre. `--doc-fill` colore les
   boutons pleins et `--doc-ink` les textes ; le premier garde un nom sans
@@ -539,9 +546,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   sombre (`darkStyles.ts`). Le compte administrateur garde, lui, ses fiches
   d'avant le sommaire (sa demande, le 20 novembre 2026) : `isAdmin` pose
   `doc-cards` sur la liste (et `cards` sur `VisitorQrLinks`), le composant
-  rend une icône, le rang et le format au-dessus du titre et masque le libellé
-  du téléchargement ; les règles de ces fiches sont dans
-  `usefulDocumentAdmin.css` et l'emportent sur le sommaire. Pour voir ce que
+  rend une icône, le rang et le format au-dessus du titre ; les règles de ces
+  fiches sont dans `usefulDocumentAdmin.css` et l'emportent sur le sommaire.
+  Une règle réservée au sommaire se cible par `.useful-form-number~a` (le
+  chiffre n'existe que là) ou par `.useful-form-download-list:not(.doc-cards)`.
+  Pour voir ce que
   voient les autres comptes : `/?local-test=1&preview-feedback-role=user`.
   L'écran
   `.useful-resources-screen` n'a plus de fond : blanc, il dépassait en bande

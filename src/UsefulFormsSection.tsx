@@ -383,7 +383,7 @@ export function UsefulFormsSection({
                     else void downloadForm(href, document.file, action);
                   }}
                 >
-                  <span className={`useful-form-download-label${isAdmin ? " visually-hidden" : ""}`}>
+                  <span className="useful-form-download-label visually-hidden">
                     {downloadingFile === document.file
                       ? "Préparation…"
                       : action === "preview" ? "Ouvrir le PDF" : "Télécharger"}

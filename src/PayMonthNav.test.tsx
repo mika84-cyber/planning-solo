@@ -8,6 +8,8 @@ describe("PayMonthNav", () => {
       <PayMonthNav month={9} year={2026} onPreviousMonth={vi.fn()} onNextMonth={vi.fn()} onToday={vi.fn()} titleId="pay-dashboard-title" />,
     );
     expect(html).toContain('class="pay-bulletin-month pay-bulletin-month-nav" role="group" aria-label="Choisir le mois de paie"');
+    // Deux flèches, une de chaque côté du mois.
+    expect((html.match(/class="pay-bulletin-month-arrow"/g) || []).length).toBe(2);
     expect(html).toMatch(/aria-label="Mois précédent"[\s\S]*Paie de[\s\S]*<h2 id="pay-dashboard-title">Octobre 2026<\/h2>[\s\S]*aria-label="Mois suivant"/);
   });
 

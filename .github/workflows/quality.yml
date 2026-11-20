@@ -52,7 +52,11 @@ jobs:
     name: Parcours ordinateur, mobile, iPhone et Z Fold
     needs: unit-build-security
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 45 minutes, avec l'accord de l'administrateur le 21 novembre 2026 : à
+    # 30, la tâche a été coupée le 20 novembre une seconde après la fin des
+    # 601 parcours, tous réussis (26,8 min, plus 3 min d'installation), et sa
+    # relance n'est passée qu'à 81 secondes de la limite.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
