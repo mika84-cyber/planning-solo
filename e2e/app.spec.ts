@@ -2702,6 +2702,17 @@ test("un invité voit les documents d’un dossier en sommaire numéroté, sur u
   await prepareDemo(page);
   await page.goto("/?local-test=1&preview-feedback-role=user");
   await openUsefulResource(page, "Formulaires");
+  // La case d'un document à renvoyer par courriel tient en trois lignes : le
+  // titre, « PDF · À envoyer à », puis l'adresse (demande de l'administrateur,
+  // le 21 novembre 2026 ; elle en faisait quatre sur téléphone).
+  await page.getByRole("button", { name: /Formulaire Brantôme/ }).click();
+  const mailRow = page.locator(".useful-form-download-card").filter({ hasText: "Formulaire d’adhésion carte POP" });
+  await expect(mailRow.locator("small").first()).toHaveText("PDF · À envoyer à");
+  await expect(mailRow.locator(".useful-form-send-to")).toHaveText("collectivites@centrepompidou.fr");
+  const mailLines = await mailRow.locator(".useful-form-file-copy").evaluate((node) => [...node.children].map((child) => child.getBoundingClientRect().height));
+  expect(mailLines).toHaveLength(3);
+  for (const height of mailLines) expect(height).toBeLessThan(24);
+  await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
   await page.getByRole("button", { name: /Formulaire SAP/ }).click();
   const list = page.locator(".useful-form-download-list");
   const rows = list.locator(":scope > .useful-form-download-card");
@@ -2729,21 +2740,23 @@ test("un invité voit les documents d’un dossier en sommaire numéroté, sur u
   expect(linkBox!.width).toBeGreaterThanOrEqual(44);
   expect(linkBox!.height).toBeGreaterThanOrEqual(44);
   await expect(row.locator("small").first()).toHaveText("PDF");
-  // Le sommaire repose sur un fond à la couleur du dossier ; un filet sépare
-  // les lignes, sans case autour de chacune.
+  // Le sommaire repose sur un fond à la couleur du dossier ; un filet blanc
+  // de 2 px, du blanc du bouton, sépare les lignes, sans case autour de
+  // chacune (choix de l'administrateur sur maquette, le 21 novembre 2026).
   await expect(list).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect(row).toHaveCSS("border-bottom-width", "1px");
-  // Le dernier rang n'est pas souligné : son filet dépasse d'un pixel sous le
-  // fond, qui le rogne, sur une colonne comme sur deux.
+  await expect(row).toHaveCSS("border-bottom-width", "2px");
+  await expect(row).toHaveCSS("border-bottom-color", await link.evaluate((node) => getComputedStyle(node).backgroundColor));
+  // Le dernier rang n'est pas souligné : son filet dépasse de deux pixels
+  // sous le fond, qui le rogne, sur une colonne comme sur deux.
   await expect(list).toHaveCSS("overflow", "hidden");
   const hiddenLine = await list.evaluate((node) => {
     const last = node.querySelector(":scope > .useful-form-download-card:last-of-type")!;
     const visibleBottom = node.getBoundingClientRect().bottom - parseFloat(getComputedStyle(node).borderBottomWidth);
     return last.getBoundingClientRect().bottom - visibleBottom;
   });
-  expect(hiddenLine).toBeGreaterThan(0.4);
-  expect(hiddenLine).toBeLessThan(1.6);
+  expect(hiddenLine).toBeGreaterThan(1.4);
+  expect(hiddenLine).toBeLessThan(2.6);
   // Toute la ligne se touche : un toucher sur le titre atteint le lien, étiré
   // sur la ligne, et ouvre aussi le téléchargement.
   await row.click({ position: { x: titleBox!.x - rowBox!.x + 12, y: titleBox!.y - rowBox!.y + titleBox!.height / 2 } });
@@ -2751,6 +2764,10 @@ test("un invité voit les documents d’un dossier en sommaire numéroté, sur u
 });
 
 test("l’administrateur partage un document et l’alerte invitée ouvre la bonne rubrique", async ({ page }) => {
+  // Long parcours (ajout, renommage, suppression, partage, puis deux
+  // ouvertures en invité) : 48 à 50 s seul sur l'iPhone, trop près des 60 s
+  // par défaut dès que la machine est chargée.
+  test.setTimeout(120_000);
   await prepareDemo(page);
   await openUsefulResource(page, "Formulaires");
   await expect(page.locator(".useful-document-admin-panel")).toHaveCount(0);

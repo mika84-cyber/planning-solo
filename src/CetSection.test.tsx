@@ -54,4 +54,15 @@ describe("CetSection", () => {
     );
     expect(tracked).toContain("Solde suivi : 18 jours · alimentation du 15 novembre au 31 décembre");
   });
+
+  it("dit où envoyer les formulaires : l'adresse de la DRH-CET, en lien", () => {
+    const account = emptyCetAccount();
+    account.initialBalance = 18;
+    const html = renderToStaticMarkup(
+      <CetSection account={account} status="contractuel" fullName="" signature="" annualDaysTaken={20} plannedLeaveDays={0} remaining={{ annual: 9, rtt: 4, fraction: 2 }} saving={false} onSave={vi.fn()} onRequestLeave={vi.fn()} />,
+    );
+    // Phrase demandée par l'administrateur, le 21 novembre 2026 : l'adresse
+    // seule, sans « la DRH-CET » ni parenthèses.
+    expect(html).toContain('<p class="cet-form-note">Les formulaires reprennent exactement les modèles fournis. Après téléchargement, envoyez-les à <a href="mailto:DRH-CET@centrepompidou.fr">DRH-CET@centrepompidou.fr</a>. Pour utiliser des jours CET, le bouton ci-dessus ouvre le formulaire de congé classique.</p>');
+  });
 });

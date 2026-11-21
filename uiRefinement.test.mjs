@@ -156,8 +156,8 @@ describe("finitions d’interface", () => {
   });
 
   it("conserve le profil et la période de paie repliables", () => {
-    expect(app).toContain('className="pay-profile-summary"');
-    expect(app).toContain("aria-expanded={profileOpen}");
+    // Le résumé du profil, bouton replié ou ouvert : test de rendu dans
+    // src/PayPage.test.tsx.
     // Les primes du mois en pastilles : un appui en montre le détail.
     expect(app).toContain('className="variable-pay-pills"');
     expect(app).toContain('className="variable-pay-pill-detail"');

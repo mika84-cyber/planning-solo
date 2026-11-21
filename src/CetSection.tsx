@@ -305,7 +305,7 @@ export function CetSection({
                     </div>
                   </div>
                 ) : null}
-                <p className="cet-form-note">Les formulaires reprennent exactement les modèles fournis. Après téléchargement, envoyez-les à la DRH-CET ({CET_RECIPIENT}). Pour utiliser des jours CET, le bouton ci-dessus ouvre le formulaire de congé classique.</p>
+                <p className="cet-form-note">Les formulaires reprennent exactement les modèles fournis. Après téléchargement, envoyez-les à <a href={`mailto:${CET_RECIPIENT}`}>{CET_RECIPIENT}</a>. Pour utiliser des jours CET, le bouton ci-dessus ouvre le formulaire de congé classique.</p>
                 {operationOpen ? (
                   <div className="cet-operation-form">
                   <label><span>Opération</span><select value={operationKind} onChange={(event) => setOperationKind(event.target.value as CetOperationKind)}>{Object.entries(CET_OPERATION_LABELS).filter(([kind]) => status === "fonctionnaire" || kind !== "rafp").map(([kind, label]) => <option key={kind} value={kind}>{label}</option>)}</select></label>

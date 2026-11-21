@@ -233,8 +233,8 @@
 .useful-forms-folder-header small { color: var(--folder-accent); font-weight: 850; }
 
 /* Documents d'un dossier : un sommaire numéroté. Un grand chiffre à la couleur
-  du dossier, le titre, puis un bouton rond de téléchargement ; un filet sépare
-  les lignes. Les colonnes sont posées ici, pour tous les comptes : jusqu'au
+  du dossier, le titre, puis un bouton rond de téléchargement ; un filet blanc
+  sépare les lignes. Les colonnes sont posées ici, pour tous les comptes : jusqu'au
   20 novembre 2026 elles ne l'étaient que dans la feuille de l'administrateur,
   et un invité voyait tout empilé. */
 .useful-form-download-list { display: grid; }
@@ -243,13 +243,15 @@
   soutenu pour se voir, assez clair pour les textes (choix de
   l'administrateur sur maquette, le 20 novembre 2026, qui a écarté 10 %). Le compte administrateur
   garde ses fiches (`doc-cards`, usefulDocumentAdmin.css), sans ce fond. Le
-  fond rogne le filet du dernier rang, qui dépasse d'un pixel (voir la ligne) :
-  la bordure transparente tient lieu de marge basse. */
+  fond rogne le filet du dernier rang, qui dépasse de deux pixels (voir la
+  ligne) : la bordure transparente tient lieu de marge basse. */
 .useful-form-download-list:not(.doc-cards) {
   overflow: hidden;
   border-bottom: 3px solid #0000;
   border-radius: 16px;
-  padding: 3px 12px 0;
+  /* 10 px sur les côtés : à 12, l'adresse « À envoyer à » passait à la ligne
+    pour 0,3 px sur un écran de 344 px. */
+  padding: 1px 10px 0;
   background: color-mix(in srgb, var(--contact-category-accent) 18%, var(--surface));
 }
 
@@ -259,9 +261,12 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 10px;
-  margin-bottom: -1px;
-  border-bottom: 1px solid color-mix(in srgb, var(--contact-category-accent) 28%, transparent);
-  padding: 9px 0;
+  /* Un filet blanc de 2 px (choix de l'administrateur sur maquette, le
+    21 novembre 2026, parmi cinq séparations) ; il recouvre le haut de la ligne
+    suivante, d'où les 11 px en haut pour 9 en bas : 9 px de part et d'autre. */
+  margin-bottom: -2px;
+  border-bottom: 2px solid var(--surface);
+  padding: 11px 0 9px;
 }
 
 .useful-form-download-card:has(+ .useful-form-list-heading) { border-bottom-width: 0; }

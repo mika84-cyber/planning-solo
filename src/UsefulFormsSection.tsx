@@ -350,6 +350,7 @@ export function UsefulFormsSection({
             {headings ? <h3 className="useful-form-list-heading">{headings.documents}</h3> : null}
             {folder.documents.map((document, index) => {
               const action = getUsefulFormAction(document.format, secureContext);
+              const sendTo = "sendTo" in document ? document.sendTo : undefined;
               return (
               <article key={document.file} className="useful-form-download-card">
                 {/* Un sommaire : le rang du document, son titre, puis l'action.
@@ -363,8 +364,11 @@ export function UsefulFormsSection({
                 <span className="useful-form-file-copy">
                   {isAdmin ? <small>{index + 1}. {document.format}</small> : null}
                   <strong>{document.title}</strong>
-                  {isAdmin ? null : <small>{document.format}</small>}
-                  {"sendTo" in document && document.sendTo ? <small className="useful-form-send-to">À envoyer à <a href={`mailto:${document.sendTo}`}>{document.sendTo.split("@")[0]}<wbr />@{document.sendTo.split("@")[1]}</a></small> : null}
+                  {/* Sommaire : « PDF · À envoyer à » tient sur la ligne du format et
+                      l'adresse sur la suivante, soit trois lignes avec le titre
+                      (demande de l'administrateur, le 21 novembre 2026). */}
+                  {isAdmin ? null : <small>{document.format}{sendTo ? " · À envoyer à" : null}</small>}
+                  {sendTo ? <small className="useful-form-send-to">{isAdmin ? "À envoyer à " : null}<a href={`mailto:${sendTo}`}>{sendTo.split("@")[0]}<wbr />@{sendTo.split("@")[1]}</a></small> : null}
                   {isAdmin && document.publishAt && Date.parse(document.publishAt) > Date.now() && <small>{document.publishAt.startsWith('9999') ? 'Brouillon · À reprogrammer' : `Publication le ${new Date(document.publishAt).toLocaleString('fr-FR')}`}</small>}
                   {isAdmin && <button className="document-edit-button" type="button" aria-label={`Modifier ${document.title}`} onClick={() => setEditDocument(document)}>Modifier</button>}
                 </span>

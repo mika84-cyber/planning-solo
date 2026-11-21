@@ -382,6 +382,10 @@
      téléphone, elle élargissait toute la rubrique, coupée à droite. */
   overflow-wrap: anywhere;
 }
+/* L'adresse, en lien bleu (demande de l'administrateur, le 21 novembre 2026).
+   D'un bloc : elle passe entière à la ligne au lieu de se couper après
+   « DRH- », et ne se replie que si elle est plus large que la note. */
+.cet-form-note a { display: inline-block; color: #5368a8; font-weight: 800; }
 .cet-operation-form > button { grid-column: 1 / -1; justify-self: end; }
 .cet-history { display: grid; gap: 7px; }
 .cet-history article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid var(--border-control); border-radius: 11px; background: var(--surface); }

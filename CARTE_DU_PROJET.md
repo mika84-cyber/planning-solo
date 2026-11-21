@@ -533,12 +533,17 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   cerclé, réduit à l'icône de téléchargement (libellé masqué ; le lien garde
   son nom, « Télécharger » suivi du titre, pour les lecteurs d'écran) ; le tout sur un fond à la couleur du dossier, à 18 %
   (choix de l'administrateur sur maquette, le 20 novembre 2026 : il a
-  trouvé 10 % trop pâle ; à 18 %, « PDF » garde un contraste de 4,5). Un filet sépare les
-  lignes, sauf sous le dernier rang : chaque ligne déborde d'un pixel
-  (`margin-bottom: -1px`) et le fond (`overflow: hidden`, bordure basse
-  transparente en guise de marge) rogne le dernier filet, sur une colonne
-  comme sur deux, sans compter les rangs. Toute la ligne se touche (lien
-  étiré). Les audioguides d'un dossier et les QR
+  trouvé 10 % trop pâle ; à 18 %, « PDF » garde un contraste de 4,5). Un filet blanc
+  de 2 px, du blanc du bouton (`var(--surface)`, donc sombre en mode
+  sombre), sépare les lignes (son choix parmi cinq séparations, le
+  21 novembre 2026), sauf sous le dernier rang : chaque ligne déborde de
+  deux pixels (`margin-bottom: -2px`) et le fond (`overflow: hidden`, bordure
+  basse transparente en guise de marge) rogne le dernier filet, sur une
+  colonne comme sur deux, sans compter les rangs. Toute la ligne se touche
+  (lien étiré). Un document à renvoyer par courriel (`sendTo`) tient en trois
+  lignes : le titre, « PDF · À envoyer à », puis l'adresse (sa demande du
+  même jour ; l'administrateur garde « À envoyer à » devant l'adresse, dans
+  sa fiche). Les audioguides d'un dossier et les QR
   codes des visiteurs (`VisitorQrLinks.tsx`, dans Contacts) suivent le même
   format, avec leurs deux boutons sous le titre. `--doc-fill` colore les
   boutons pleins et `--doc-ink` les textes ; le premier garde un nom sans

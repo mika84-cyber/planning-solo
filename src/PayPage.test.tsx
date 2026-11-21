@@ -73,7 +73,11 @@ describe("PayPage", () => {
     expect(complete).toContain('<span class="pay-profile-open-copy complete">Profil complet</span>');
     const missing = renderPage("overview", { settingsOpen: true, netEstimateComplete: false });
     expect(missing).toContain('<span class="pay-profile-open-copy missing">À compléter</span>');
+    // Ancien contrôle textuel d'uiRefinement.test.mjs : le résumé du profil est
+    // un bouton qui dit s'il est replié ou ouvert.
+    expect(complete).toContain('<button type="button" class="pay-profile-summary" aria-expanded="false">');
     const open = renderPage("overview", { profileOpen: true });
+    expect(open).toContain('<button type="button" class="pay-profile-summary" aria-expanded="true">');
     expect(open).not.toContain("pay-profile-open-copy");
     expect(open).not.toContain("Replier");
   });
