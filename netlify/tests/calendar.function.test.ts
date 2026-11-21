@@ -1428,6 +1428,27 @@ describe("API principale du calendrier", () => {
     expect(data.get("user/user-a/form-profile")).toMatchObject({ payslip_verifications: {} });
   });
 
+  it("retient sur le compte les annonces d'exposition lues, d'un appareil à l'autre", async () => {
+    mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "2", signature: "" }));
+    const first = "opening:gallery7:2099-12-02:musee imaginaire oli";
+    const second = "closing:other:galerie-6-1:2099-07-24:gilles caron j ai voulu voir";
+    const response = await calendarHandler(request({
+      action: "save-form-profile",
+      // Un repère mal formé, un autre périmé depuis plus de deux semaines : écartés.
+      expoNoticesSeen: [first, "opening:gallery7:demain:x", 12, "closing:gallery8:2020-03-21:girl adolescence mode rebellion"],
+    }));
+    expect(response.status).toBe(200);
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ group: "2", expo_notices_seen: [first] });
+    // Un « Compris » venu d'un autre appareil s'ajoute, sans doublon.
+    await calendarHandler(request({ action: "save-form-profile", expoNoticesSeen: [second, first] }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ expo_notices_seen: [first, second] });
+    // Un autre écran qui enregistre le profil sans la liste ne l'efface pas.
+    await calendarHandler(request({ action: "save-form-profile", fullName: "Mika", group: "3", signature: "" }));
+    expect(data.get("user/user-a/form-profile")).toMatchObject({ group: "3", expo_notices_seen: [first, second] });
+    expect((await calendarHandler(request({ action: "save-form-profile", expoNoticesSeen: "tout" }))).status).toBe(400);
+  });
+
   it("garde dans le compte les titres repas de chaque année, s'ils respectent les droits", async () => {
     mockedGetUser.mockResolvedValue({ id: "user-a", email: "a@example.test" } as never);
     const counts = [18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 20, 20];

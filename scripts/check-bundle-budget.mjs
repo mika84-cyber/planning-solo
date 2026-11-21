@@ -173,7 +173,12 @@ const budgets = {
   // calcul, contrôle du bulletin). Ce code ne se charge qu'avec le moteur de
   // lecture, au choix d'une photo : le chargement initial, lui, baisse
   // (551,4 Kio au lieu de 557,3) ; 2 163,2 / 718,4 Kio mesurés.
-  totalJavaScript: { raw: 2_164 * KIB, gzip: 719 * KIB },
+  // Relevé le 21 novembre 2026 à 2 168 / 722 Kio, avec l'accord de
+  // l'administrateur (« Oui, relève-les ») : la fenêtre qui annonce les
+  // expositions à l'ouverture de l'accueil (règles, programme validé dans la
+  // veille, « Compris » retenu sur le compte). Elle se charge à part : le
+  // chargement initial reste à 550,7 Kio ; 2 166,8 / 721,1 Kio mesurés.
+  totalJavaScript: { raw: 2_168 * KIB, gzip: 722 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -225,7 +230,10 @@ const budgets = {
   // Relevé le 20 novembre 2026 à 544 Kio brut, avec l'accord de
   // l'administrateur : la liste « Contrôle du bulletin » sous la lecture
   // d'une photo (543,4 Kio mesurés).
-  totalCss: { raw: 544 * KIB, gzip: 106 * KIB },
+  // Relevé le 21 novembre 2026 à 546 / 107 Kio, avec l'accord de
+  // l'administrateur (« Oui, relève-les ») : la fenêtre qui annonce les
+  // expositions à l'ouverture de l'accueil (544,9 / 106,3 Kio mesurés).
+  totalCss: { raw: 546 * KIB, gzip: 107 * KIB },
 };
 
 async function filesUnder(directory) {

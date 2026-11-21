@@ -1,0 +1,18 @@
+/* Annonce d'une exposition qui ouvre ou qui ferme : une fenêtre de l'appli
+   (.modal-card) à l'ouverture de l'accueil, avec un seul bouton. Une pastille
+   verte pour une ouverture, brique pour une fermeture. */
+.expo-notices { display: grid; gap: 14px; color: var(--text); }
+.expo-notices .step-label { margin: 0; }
+.expo-notices ul { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.expo-notices li { --tone: var(--accent); position: relative; display: grid; gap: 3px; min-width: 0; padding-left: 20px; }
+.expo-notices li.opening { --tone: var(--sage); }
+.expo-notices li::before { position: absolute; top: 8px; left: 2px; width: 9px; height: 9px; border-radius: 50%; background: var(--tone); content: ""; }
+.expo-notices li + li { border-top: 1px solid var(--border-soft); padding-top: 14px; }
+.expo-notices li + li::before { top: 22px; }
+.expo-notices strong { font-family: var(--font-display); font-size: 1.3rem; line-height: 1.2; }
+.expo-notices li span { font-size: 15px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.expo-notices small { color: var(--muted); font-size: 13px; line-height: 1.4; }
+/* « Compris » : toute la largeur de la fenêtre, sous le pouce (sur téléphone,
+   les boutons d'une fenêtre se rangent sur deux colonnes : il prend les deux). */
+.expo-notices .modal-actions { margin-top: 6px; }
+.expo-notices .primary-action { flex: 1; grid-column: 1 / -1; min-height: 46px; margin: 0; }

@@ -693,6 +693,7 @@ export default function Home() {
     openManualAdjustments,
     saveManualAdjustments,
     saveCetAccount,
+    saveExpoNoticesSeen,
   } = useProfileAdjustmentActions({
     demoMode,
     group,
@@ -940,7 +941,7 @@ export default function Home() {
         notify={notify}
         showSuccess={confirm}
         help={{ openPlanningPdf: () => setPdfDialogOpen(true), openBlankForm, requestLeave: () => { openRequestChooser("planning"); requestFromHelp.current = true; }, openExchange: () => openWorkExchange() }}
-        actions={{ navigateFromShell, checkForAppUpdate, disconnect, saveCetAccount }}
+        actions={{ navigateFromShell, checkForAppUpdate, disconnect, saveCetAccount, saveExpoNoticesSeen }}
       />
 
       {feedbackMessaging.resolutionNotice ? (

@@ -3,6 +3,7 @@ import type { CalendarActionContext } from "./context.mts";
 import { sanitizeDeductionPayMonths } from "../calendarValidation.mts";
 import { sanitizePayslipVerifications } from "../../../src/payslipVerificationRecords.ts";
 import { sanitizeMealVoucherPlans } from "../../../src/mealVouchers.ts";
+import { sanitizeExpoNoticesSeen } from "../../../src/expoNoticesSeen.ts";
 import { mergePayslipRateSamples } from "../../../src/payslipRateSamples.ts";
 import { isWorkQuota } from "../../../src/overtime.ts";
 import { readAtomic, writeAtomic } from "../calendarAtomic.mts";
@@ -199,8 +200,20 @@ export async function handleSaveFormProfile(
     payslip_verifications: previousProfile?.payslip_verifications,
     meal_voucher_plans: previousProfile?.meal_voucher_plans,
     payslip_rate_samples: previousProfile?.payslip_rate_samples,
+    expo_notices_seen: previousProfile?.expo_notices_seen,
     updated_at: new Date().toISOString(),
   };
+  // « Compris » sur une annonce d'exposition de l'accueil : les repères lus
+  // s'ajoutent à ceux du compte, pour qu'un autre appareil ne perde pas les
+  // siens ; ceux d'une annonce passée depuis deux semaines sont oubliés.
+  if (body.expoNoticesSeen !== undefined) {
+    if (!Array.isArray(body.expoNoticesSeen))
+      return json({ error: "Annonces lues invalides" }, 400);
+    formProfile.expo_notices_seen = sanitizeExpoNoticesSeen(
+      [...(previousProfile?.expo_notices_seen ?? []), ...body.expoNoticesSeen],
+      new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10),
+    );
+  }
   // La table est renvoyée entière par l'écran qui la modifie ; les autres
   // appels ne l'envoient pas et la laissent intacte.
   if (body.deductionPayMonths !== undefined) {

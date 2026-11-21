@@ -28,6 +28,9 @@ import type { useShellEffects } from "./useShellEffects";
 import type { useToast } from "./useToast";
 
 const HelpSheet = lazy(() => import("./HelpSheet"));
+// Les annonces d'exposition lisent le programme du Grand Palais : chargées à
+// part, pour ne pas l'ajouter au démarrage.
+const ExpoHomeNotices = lazy(() => import("./ExpoHomeNotices"));
 const ProfileSheet = lazy(() => import("./HelpSheet").then((module) => ({ default: module.ProfileSheet })));
 const AdminToolsPanel = lazy(() => import('./AdminToolsPanel').then(module => ({ default: module.AdminToolsPanel })));
 
@@ -54,12 +57,13 @@ type Props = {
     | "homeSection" | "setHomeSection" | "accountMenuOpen" | "setAccountMenuOpen"
     | "checkingAppUpdate" | "appUpdateAvailable" | "appUpdatePromptOpen" | "accountMenuRef" | "accountButtonRef"
     | "setDataManagementOpen" | "setFeedbackOpen" | "setGroupChooserOpen" | "showSchoolVacations" | "schoolZone"
+    | "approvedGrandPalaisUpdates"
   >;
   pay: Pick<
     ReturnType<typeof usePayUiState>,
     "payScreen" | "setPayScreen" | "setPayView" | "setPayVerificationRequested" | "setPayProfileOpen" | "setPayAdvancedOpen" | "setPayProfileFocusRequested"
   >;
-  calendar: Pick<ReturnType<typeof useCalendarDataState>, "entries" | "periods" | "formProfile" | "recoveryUses">;
+  calendar: Pick<ReturnType<typeof useCalendarDataState>, "entries" | "periods" | "formProfile" | "recoveryUses" | "calendarSettled">;
   /** Ce que le rappel des fériés recalcule pour une année : salaire de base
    *  et reports de dimanches. */
   allowanceValues: Pick<
@@ -75,7 +79,7 @@ type Props = {
   actions: Pick<ReturnType<typeof useSectionNavigation>, "navigateFromShell">
     & Pick<ReturnType<typeof useShellEffects>, "checkForAppUpdate">
     & Pick<ReturnType<typeof useAuthenticationActions>, "disconnect">
-    & Pick<ReturnType<typeof useProfileAdjustmentActions>, "saveCetAccount">;
+    & Pick<ReturnType<typeof useProfileAdjustmentActions>, "saveCetAccount" | "saveExpoNoticesSeen">;
 };
 
 /**
@@ -94,9 +98,10 @@ export function AppShellChrome({
     homeSection, setHomeSection, accountMenuOpen, setAccountMenuOpen,
     checkingAppUpdate, appUpdateAvailable, appUpdatePromptOpen, accountMenuRef, accountButtonRef,
     setDataManagementOpen, setFeedbackOpen, setGroupChooserOpen, showSchoolVacations, schoolZone,
+    approvedGrandPalaisUpdates,
   } = shell;
   const { payScreen, setPayScreen, setPayView } = pay;
-  const { entries, periods, formProfile, recoveryUses } = calendar;
+  const { entries, periods, formProfile, recoveryUses, calendarSettled } = calendar;
   const {
     baseSalary, sundayCarryover, sundayCarryoverYear, sundayCarryoverMonth, sundayCarryoverFromYear, sundayCarryoverFromMonth,
   } = allowanceValues;
@@ -222,6 +227,20 @@ export function AppShellChrome({
   };
   const demoCetDay = demoMode && typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("date-cet") : null;
   const cetReminderDay = demoCetDay && /^\d{4}-\d{2}-\d{2}$/.test(demoCetDay) ? demoCetDay : dateKey(now);
+  // Les annonces d'exposition, dans une fenêtre à l'ouverture de l'accueil.
+  // En démo, « ?date-expo=2026-12-01 » montre celles d'un autre jour. Sur le
+  // serveur des parcours e2e, la fenêtre ne s'ouvre que si le parcours la
+  // demande (ce réglage, ou « planning:e2e-expo-notices ») : elle couvrirait
+  // sinon l'accueil de tous les parcours, et seulement certains jours.
+  const demoExpoDay = demoMode && typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("date-expo") : null;
+  const expoNoticeDay = demoExpoDay && /^\d{4}-\d{2}-\d{2}$/.test(demoExpoDay) ? demoExpoDay : dateKey(now);
+  const expoNoticesMuted = import.meta.env.VITE_E2E_DEMO === "true" && !demoExpoDay
+    && localStorage.getItem("planning:e2e-expo-notices") !== "1";
+  // La fenêtre attend ce que le serveur sait : les annonces déjà lues depuis
+  // un autre appareil (`calendarSettled`) et le programme validé dans la
+  // veille (`programAdminKnown` : sa lecture a abouti ou échoué). Ouverte sur
+  // la copie gardée, elle se refermait seule une seconde plus tard.
+  const expoNoticesReady = calendarSettled && programAdminKnown && !expoNoticesMuted;
   return (
     <>
       <AppHeader
@@ -319,6 +338,14 @@ export function AppShellChrome({
           scrollWhenReady("holiday-choices");
         }}
       />}
+      {/* Après la fenêtre de mise à jour, jamais par-dessus. */}
+      {homeSection === "home" && !appUpdatePromptOpen && expoNoticesReady && <Suspense fallback={null}><ExpoHomeNotices
+        todayKey={expoNoticeDay}
+        storageKey={`planning:expo-notices-seen-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
+        approved={approvedGrandPalaisUpdates}
+        accountSeen={!demoMode && formProfile ? formProfile.expoNoticesSeen ?? [] : undefined}
+        onSeen={actions.saveExpoNoticesSeen}
+      /></Suspense>}
       {homeSection === "home" && <CetWindowReminder
         todayKey={cetReminderDay}
         account={formProfile?.cetAccount}

@@ -176,6 +176,8 @@ export type FormProfile = {
   payslipRateSamples?: PayslipRateSamples;
   /** Valeur du titre et nombre de titres par mois, année par année. */
   mealVoucherPlans?: MealVoucherPlans;
+  /** Annonces d'exposition lues sur l'accueil (voir expoNoticesSeen.ts). */
+  expoNoticesSeen?: string[];
 };
 export type SelectedDay = {
   date: string;

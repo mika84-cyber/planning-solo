@@ -3,6 +3,7 @@ import { EMPTY_MANUAL_ADJUSTMENTS } from "./payAllowances";
 import type { CetAccount } from "./cet";
 import type { FormProfile, ManualYearAdjustments } from "./appModel";
 import { LEAVE_ALLOWANCES } from "./planningLogic";
+import { sanitizeExpoNoticesSeen } from "./expoNoticesSeen";
 
 type ProfileAdjustmentOptions = {
   demoMode: boolean;
@@ -161,5 +162,18 @@ export function useProfileAdjustmentActions({
     }
   }
 
-  return { openManualAdjustments, saveManualAdjustments, saveCetAccount };
+  /** « Compris » sur une annonce d'exposition de l'accueil : retenu sur le
+   *  compte, pour le téléphone comme pour l'ordinateur. Un compte sans profil
+   *  n'en reçoit pas un pour si peu (le serveur lui donnerait un statut par
+   *  défaut) : sa réponse reste sur l'appareil. Sans message en cas d'échec :
+   *  l'appareil garde la réponse et la renvoie à la prochaine ouverture. */
+  async function saveExpoNoticesSeen(ids: string[]) {
+    if (demoMode || !formProfile) return;
+    try {
+      await postCalendar({ action: "save-form-profile", expoNoticesSeen: ids });
+      setFormProfile({ ...formProfile, expoNoticesSeen: sanitizeExpoNoticesSeen([...(formProfile.expoNoticesSeen ?? []), ...ids]) });
+    } catch { /* Gardé sur l'appareil. */ }
+  }
+
+  return { openManualAdjustments, saveManualAdjustments, saveCetAccount, saveExpoNoticesSeen };
 }

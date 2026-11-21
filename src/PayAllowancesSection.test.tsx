@@ -113,6 +113,13 @@ describe("PayAllowancesSection", () => {
     expect(html).toMatch(/variable-pay-pill positive"[^>]*><span>Forfait<\/span>/);
     // Une pastille par prime, grise quand elle est à zéro.
     expect(html).toMatch(/variable-pay-pill zero"[^>]*><span>Heures sup<\/span>/);
+    // Les pastilles forment un groupe nommé ; chacune est un bouton, relâché
+    // tant qu'on n'a pas demandé son détail.
+    expect(html).toContain('<div class="variable-pay-pills" role="group" aria-label="Primes de cette paie">');
+    const pills = html.match(/<button type="button" class="variable-pay-pill [a-z]+" aria-pressed="(?:true|false)">/g) ?? [];
+    expect(pills.length).toBeGreaterThan(2);
+    expect(pills.every((pill) => pill.includes('aria-pressed="false"'))).toBe(true);
+    expect(html).not.toContain("variable-pay-pill-detail");
   });
 });
 

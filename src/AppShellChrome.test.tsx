@@ -24,6 +24,7 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
   },
   installation: { enabled: false, installPrompt: null, installApp: noop },
   shell: {
+    approvedGrandPalaisUpdates: [],
     homeSection: "home",
     setHomeSection: noop,
     accountMenuOpen: false,
@@ -43,7 +44,7 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
     payScreen: "overview", setPayScreen: noop, setPayView: noop, setPayVerificationRequested: noop,
     setPayProfileOpen: noop, setPayAdvancedOpen: noop, setPayProfileFocusRequested: noop,
   },
-  calendar: { entries: {}, periods: [], formProfile: null, recoveryUses: [] },
+  calendar: { entries: {}, periods: [], formProfile: null, recoveryUses: [], calendarSettled: true },
   allowanceValues: {
     baseSalary: 1800,
     sundayCarryover: 0,
@@ -56,7 +57,7 @@ const baseProps: ComponentProps<typeof AppShellChrome> = {
   notify: noop,
   showSuccess: noop,
   help: { openPlanningPdf: noop, openBlankForm: noop, requestLeave: noop, openExchange: noop },
-  actions: { navigateFromShell: noop, checkForAppUpdate: noop, disconnect: noop, saveCetAccount: vi.fn(async () => true) },
+  actions: { navigateFromShell: noop, checkForAppUpdate: noop, disconnect: noop, saveCetAccount: vi.fn(async () => true), saveExpoNoticesSeen: vi.fn(async () => undefined) },
 };
 
 describe("AppShellChrome", () => {

@@ -50,6 +50,7 @@ type ApplicationStartupOptions = {
     CalendarDataState,
     "setEntries" | "setPeriods" | "setFormProfile" | "setPayProfiles" | "setOvertimeEntries"
     | "setRecoveryUses" | "setMecenatEntries" | "setMecenatSignups" | "setPartnerEntries" | "setPartnerPeriods" | "setPartnerSharingStatus"
+    | "setCalendarSettled"
   >;
   setNow: Dispatch<SetStateAction<Date>>;
   setView: Dispatch<SetStateAction<Date>>;
@@ -81,6 +82,7 @@ export function useApplicationStartup({
   const {
     setEntries, setPeriods, setFormProfile, setPayProfiles, setOvertimeEntries,
     setRecoveryUses, setMecenatEntries, setMecenatSignups, setPartnerEntries, setPartnerPeriods, setPartnerSharingStatus,
+    setCalendarSettled,
   } = calendarData;
 
   const initializeApplication = useEffectEvent(async () => {
@@ -207,6 +209,7 @@ export function useApplicationStartup({
           });
         setUserEmail("demo@demo.local");
         setIsProgramAdmin(import.meta.env.DEV && localDemoAdmin);
+        setCalendarSettled(true);
         setAuthStatus("ready");
         if (new URLSearchParams(location.search).get("request") === "saved")
           confirm("La demande est enregistrée : le planning et les soldes sont à jour.");
@@ -282,7 +285,10 @@ export function useApplicationStartup({
         }
       } catch {
         // Sans réseau, le planning gardé reste affiché.
-        if (showingSnapshot && !lienAuthentification) return;
+        if (showingSnapshot && !lienAuthentification) {
+          setCalendarSettled(true);
+          return;
+        }
         nettoyerLien();
         setAuthStatus("guest");
         setAuthError(
@@ -316,6 +322,7 @@ export function useApplicationStartup({
     const data = parseCalendarSnapshot(raw);
     void notifyGuestSession().catch(() => undefined);
     applyCalendarData(data);
+    setCalendarSettled(true);
     saveCalendarSnapshot(raw);
   }
   /** Affiche un planning lu sur le serveur ou gardé sur l'appareil. */
@@ -349,6 +356,7 @@ export function useApplicationStartup({
     setPartnerEntries({});
     setPartnerPeriods([]);
     setPartnerSharingStatus("disabled");
+    setCalendarSettled(false);
   }
   const reloadCalendar = useEffectEvent(() => loadCalendar());
   useEffect(() => {

@@ -8483,3 +8483,148 @@ test("sans CET, l’accueil repose la question chaque année et mène à la dema
   await page.reload();
   await expect(reminder.getByRole("button", { name: "Demander l’ouverture" })).toBeVisible();
 });
+
+test("l’accueil annonce une exposition la veille de son ouverture, puis une semaine avant sa fin", async ({ page }) => {
+  // Demandes de l'administrateur, le 21 novembre 2026 : pour tous les comptes,
+  // dans les galeries, au Palais des enfants et dans la Nef ; un simple
+  // « Compris » fait disparaître le message. En démo, « ?date-expo= » fixe le
+  // jour.
+  await prepareDemo(page);
+  await page.goto("/?local-test=1&date-expo=2026-12-01");
+  // Une fenêtre, qui s'ouvre sur l'accueil et prend la main.
+  const notice = page.getByRole("dialog", { name: "Expositions" });
+  await expect(notice.locator("strong")).toHaveText(["Ouverture demain"]);
+  await expect(notice.locator("li span")).toHaveText(["Galerie 7 · Le Musée Imaginaire d’Oli"]);
+  await expect(notice.locator("small")).toHaveText(["Jusqu’au 21 février 2027"]);
+  // La fenêtre tient dans l'écran ; son seul bouton, sous le doigt, a la main.
+  const understood = notice.getByRole("button", { name: "Compris" });
+  await expect(understood).toBeFocused();
+  await expect(notice.getByRole("button")).toHaveCount(1);
+  const [noticeBox, buttonBox] = await Promise.all([notice.boundingBox(), understood.boundingBox()]);
+  expect(noticeBox!.x).toBeGreaterThanOrEqual(0);
+  expect(noticeBox!.x + noticeBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  expect(noticeBox!.y + noticeBox!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  expect(buttonBox!.height).toBeGreaterThanOrEqual(44);
+  await understood.click();
+  await expect(notice).toHaveCount(0);
+  // La fenêtre refermée, l'accueil reprend la main.
+  await page.getByRole("button", { name: "Congés", exact: true }).first().click({ trial: true });
+  // « Compris » est retenu : le jour de l'ouverture, la Galerie 7 ne revient
+  // pas. Seule s'annonce la Nef, qui ouvre le lendemain pour deux jours : un
+  // salon d'une semaine ou moins dit combien de jours il reste ouvert.
+  expect(await page.evaluate(() => localStorage.getItem("planning:expo-notices-seen-v1:demo")))
+    .toBe('["opening:gallery7:2026-12-02:musee imaginaire oli"]');
+  await page.goto("/?local-test=1&date-expo=2026-12-02");
+  await expect(notice.locator("strong")).toHaveText(["Ouverture demain"]);
+  await expect(notice.locator("li span")).toHaveText(["Nef · Adopt AI"]);
+  await expect(notice.locator("small")).toHaveText(["Ouvert 2 jours, jusqu’au vendredi 4 décembre"]);
+  // Ce salon n'a pas de message de fin : son dernier jour, rien.
+  await page.goto("/?local-test=1&date-expo=2026-12-04");
+  await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  await expect(notice).toHaveCount(0);
+  // La fin des Galeries 3 et 4 s'annonce sept jours avant ; un compte invité
+  // la voit aussi.
+  await page.goto("/?local-test=1&preview-feedback-role=user&date-expo=2027-01-10");
+  await expect(notice.locator("strong")).toHaveText(["Fermeture dans 7 jours"]);
+  await expect(notice.locator("li span")).toHaveText(["Galeries 3 et 4 · Cezanne et nous"]);
+  await expect(notice.locator("small")).toHaveText(["Dernier jour : dimanche 17 janvier"]);
+  // Non lu, le message revient chaque jour, avec le nombre de jours restants
+  // recalculé.
+  await page.goto("/?local-test=1&date-expo=2027-01-11");
+  await expect(notice.locator("strong")).toHaveText(["Fermeture dans 6 jours"]);
+  await page.goto("/?local-test=1&date-expo=2027-01-13");
+  await expect(notice.locator("strong")).toHaveText(["Fermeture dans 4 jours"]);
+  // Dès « Compris », il n'apparaît plus : ni le lendemain, ni la veille de la
+  // fin, ni le dernier jour. Échap presse le bouton.
+  await expect(understood).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(notice).toHaveCount(0);
+  for (const day of ["2027-01-14", "2027-01-16", "2027-01-17"]) {
+    await page.goto(`/?local-test=1&date-expo=${day}`);
+    await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    await expect(notice).toHaveCount(0);
+  }
+  // La Galerie 6.1 n'existe que dans ce que l'administrateur a validé dans la
+  // veille du site officiel : le message lit ce programme-là.
+  await page.route("**/api/gp-program", (route) => route.fulfill({ json: {
+    approved: [{ id: "gp-61", title: "Gilles Caron. J’ai voulu voir", startDate: "2027-05-11", endDate: "2027-07-24", url: "https://www.grandpalais.fr/fr/programme/gilles-caron", venueKey: "other:galerie-6-1", venueLabel: "Galerie 6.1" }],
+    pending: [],
+    isAdmin: false,
+  } }));
+  await page.goto("/?local-test=1&date-expo=2027-05-10");
+  await expect(notice.locator("li span")).toHaveText(["Galerie 6.1 · Gilles Caron. J’ai voulu voir"]);
+  await expect(notice.locator("strong")).toHaveText(["Ouverture demain"]);
+  await expect(notice.locator("small")).toHaveText(["Jusqu’au 24 juillet 2027"]);
+});
+
+test("« Compris » sur une annonce d’exposition est retenu par le compte, d’un appareil à l’autre", async ({ page }) => {
+  // Un vrai compte (hors démo), la veille de l'ouverture de la Galerie 7 ; le
+  // serveur simulé garde la réponse d'une visite à l'autre.
+  const today = new Date("2026-12-01T10:00:00");
+  await page.clock.setFixedTime(today);
+  const exp = Math.floor(today.getTime() / 1000) + 3600;
+  const base64url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const token = `${base64url({ alg: "HS256", typ: "JWT" })}.${base64url({ sub: "u-expo", email: "agent@example.test", exp })}.signature`;
+  await page.addInitScript(({ accessToken, expiresAt }) => {
+    localStorage.setItem("gotrue.user", JSON.stringify({
+      id: "u-expo",
+      email: "agent@example.test",
+      url: `${location.origin}/.netlify/identity`,
+      audience: "",
+      token: { access_token: accessToken, token_type: "bearer", expires_in: 3600, refresh_token: "r1", expires_at: expiresAt * 1000 },
+    }));
+    localStorage.setItem("planning:install-notice-dismissed-v1", "1");
+    // Sur le serveur des parcours, la fenêtre ne s'ouvre qu'à la demande.
+    localStorage.setItem("planning:e2e-expo-notices", "1");
+    document.cookie = `nf_jwt=${accessToken}; path=/`;
+  }, { accessToken: token, expiresAt: exp });
+  let profile: Record<string, unknown> = { full_name: "Agent", group: "2", signature: "", status: "fonctionnaire", work_quota: "full" };
+  const saves: unknown[] = [];
+  let slowServer = false;
+  await page.route("**/api/**", (route) => route.fulfill({ status: 503, json: { error: "Indisponible" } }));
+  await page.route("**/api/calendar", async (route) => {
+    const request = route.request();
+    if (request.method() !== "POST") {
+      if (slowServer) await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.fulfill({ json: { email: "agent@example.test", entries: [], form_profile: profile } });
+      return;
+    }
+    const body = request.postDataJSON() as Record<string, unknown>;
+    if (body.action === "save-form-profile" && body.expoNoticesSeen) {
+      saves.push(body.expoNoticesSeen);
+      profile = { ...profile, expo_notices_seen: body.expoNoticesSeen };
+    }
+    await route.fulfill({ json: { ok: true, form_profile: profile } });
+  });
+  await page.goto("/");
+  const notice = page.locator(".expo-notices");
+  await expect(notice.locator("strong")).toHaveText(["Ouverture demain"]);
+  await expect(notice.locator("li span")).toHaveText(["Galerie 7 · Le Musée Imaginaire d’Oli"]);
+  await notice.getByRole("button", { name: "Compris" }).click();
+  await expect(notice).toHaveCount(0);
+  await expect.poll(() => saves).toEqual([["opening:gallery7:2026-12-02:musee imaginaire oli"]]);
+  // Sur un autre appareil, qui n'a rien retenu lui-même, le compte suffit : le
+  // message ne revient pas, et rien n'est renvoyé au serveur. Cet appareil
+  // ouvre sur sa copie gardée, d'avant « Compris », et le serveur tarde : la
+  // fenêtre attend sa réponse au lieu de s'ouvrir pour se refermer seule.
+  await page.evaluate(() => {
+    localStorage.removeItem("planning:expo-notices-seen-v1:agent@example.test");
+    const snapshot = JSON.parse(localStorage.getItem("planning:calendar-snapshot-v1")!);
+    delete snapshot.data.form_profile.expo_notices_seen;
+    localStorage.setItem("planning:calendar-snapshot-v1", JSON.stringify(snapshot));
+  });
+  slowServer = true;
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
+  // Un relevé sur l'instant, sans attendre : une fenêtre ouverte puis
+  // refermée passerait sinon inaperçue.
+  for (let check = 0; check < 4; check++) {
+    await page.waitForTimeout(250);
+    expect(await notice.count()).toBe(0);
+  }
+  await page.waitForLoadState("networkidle");
+  await expect(notice).toHaveCount(0);
+  expect(saves).toHaveLength(1);
+});

@@ -1,5 +1,6 @@
 import { isValidDateKey, sanitizeDeductionPayMonths } from "./calendarValidation.mts";
 import { sanitizePayslipVerifications } from "../../src/payslipVerificationRecords.ts";
+import { sanitizeExpoNoticesSeen } from "../../src/expoNoticesSeen.ts";
 import { sanitizeMealVoucherPlans } from "../../src/mealVouchers.ts";
 import { sanitizePayslipRateSamples } from "../../src/payslipRateSamples.ts";
 import { workQuotaFrom } from "../../src/overtime.ts";
@@ -383,6 +384,7 @@ export function sanitizeCalendarBackup(value: unknown) {
       payslip_verifications: sanitizePayslipVerifications(raw.payslip_verifications),
       meal_voucher_plans: sanitizeMealVoucherPlans(raw.meal_voucher_plans),
       payslip_rate_samples: sanitizePayslipRateSamples(raw.payslip_rate_samples),
+      ...(raw.expo_notices_seen === undefined ? {} : { expo_notices_seen: sanitizeExpoNoticesSeen(raw.expo_notices_seen) }),
       sunday_carryover: optionalNumber(raw.sunday_carryover, 100),
       sunday_carryover_year: optionalNumber(raw.sunday_carryover_year, 2100),
       sunday_carryover_month: optionalNumber(raw.sunday_carryover_month, 11),

@@ -192,6 +192,8 @@ export type FormProfile = {
   /** Montants des bulletins vérifiés (jamais le fichier), sous « AAAA-MM »,
    *  qui affinent les deux taux net avant impôt d'une visite à l'autre. */
   payslip_rate_samples?: PayslipRateSamples;
+  /** Annonces d'exposition lues sur l'accueil (« Compris ») : leurs repères. */
+  expo_notices_seen?: string[];
   updated_at: string;
 };
 

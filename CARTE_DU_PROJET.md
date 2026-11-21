@@ -105,6 +105,42 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   `LeaveManagementPage` ouvre la fenêtre, `CetSection` le formulaire). En démo, `?date-cet=2026-12-26`
   la montre à une autre date. Styles dans `adminHomeMessage.css`, sombre dans
   `darkTheme.css`.
+- `src/ExpoHomeNotices.tsx` (`expoHomeNotices.css`, chargé à part) : à
+  l’ouverture de l’accueil, pour tous les comptes, l’annonce des expositions
+  dans une fenêtre (`.modal-card`, posée par `AppShellChrome.tsx` ; d’abord
+  une carte en haut de l’accueil, l’administrateur a préféré une fenêtre le
+  21 novembre 2026), avec un seul bouton « Compris », qu’Échap presse ; elle
+  attend que la fenêtre de mise à jour soit refermée, et que le serveur ait
+  répondu ou soit hors d’atteinte (`calendarSettled` de
+  `useCalendarDataState`, posé par `useApplicationStartup` ;
+  `programAdminKnown` pour le programme) : ouverte sur la copie gardée de
+  l’appareil, elle se refermait seule quand le message avait déjà été lu
+  ailleurs. Les règles sont dans
+  `src/expoNotices.ts`
+  (`computeExpoNotices`) : les Galeries 3 et 4, 7, 8, 9 et 10, la
+  Galerie 6.1, le Palais des enfants et la Nef, pas les salons ; un message
+  la veille de l’ouverture (encore affiché le jour même s’il n’a pas été
+  lu), un autre sept jours avant la fin, qui revient chaque jour jusqu’au
+  dernier avec le nombre de jours restants recalculé ; une exposition d’une
+  semaine ou moins (un salon de la Nef) n’a que le message de la veille, qui
+  dit combien de jours elle reste ouverte ; une exposition « à confirmer »
+  ne s’annonce pas. Le programme lu est celui des Expos : le programme
+  livré, mis à jour par ce que l’administrateur a validé dans la veille du
+  site (`mergeSharedGrandPalaisProgram`, sorti dans
+  `src/grandPalaisProgramMerge.ts` pour ne pas charger tout l’écran des
+  Expos) ; la Galerie 6.1 n’existe que par là. « Compris » retient le repère
+  de chaque annonce (sens, espace, date, titre) sur l’appareil, puis sur le
+  compte (`expoNoticesSeen` du profil, `save-form-profile` ; le serveur
+  ajoute les repères à ceux déjà gardés et oublie ceux de plus de deux
+  semaines, `src/expoNoticesSeen.ts`) : le message se tait alors sur le
+  téléphone comme sur l’ordinateur. Un compte sans profil n’a que
+  l’appareil. En démo, `?date-expo=2026-12-01` montre un autre jour. Sur le
+  serveur des parcours e2e (`VITE_E2E_DEMO`), la fenêtre ne s’ouvre que si le
+  parcours la demande (`?date-expo=` ou `planning:e2e-expo-notices`) : elle
+  couvrirait sinon l’accueil de tous les parcours, certains jours. Tests :
+  `expoNotices.test.ts`, `ExpoHomeNotices.test.tsx`, deux scénarios e2e
+  (« l’accueil annonce une exposition… », « « Compris » sur une annonce
+  d’exposition est retenu par le compte… »).
 - `src/grandPalaisProposalChanges.ts` : ce qui a changé entre la version
   gardée d'une exposition et celle lue par la veille (titre, précision,
   dates, espace, chaque tarif ajouté, retiré ou modifié) ; une proposition
