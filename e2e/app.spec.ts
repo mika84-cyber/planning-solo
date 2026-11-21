@@ -2711,7 +2711,12 @@ test("un invité voit les documents d’un dossier en sommaire numéroté, sur u
   await expect(mailRow.locator(".useful-form-send-to")).toHaveText("collectivites@centrepompidou.fr");
   const mailLines = await mailRow.locator(".useful-form-file-copy").evaluate((node) => [...node.children].map((child) => child.getBoundingClientRect().height));
   expect(mailLines).toHaveLength(3);
-  for (const height of mailLines) expect(height).toBeLessThan(24);
+  // « PDF · À envoyer à » tient sur une ligne partout. Le titre et l'adresse
+  // dépendent de la police du système (plus large sous Linux, en CI, où le
+  // titre passe sur deux lignes à largeur de téléphone) : on ne les compte
+  // que sur ordinateur, où la place ne manque dans aucune police.
+  expect(mailLines[1]).toBeLessThan(24);
+  if (page.viewportSize()!.width >= 1000) for (const height of mailLines) expect(height).toBeLessThan(24);
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
   await page.getByRole("button", { name: /Formulaire SAP/ }).click();
   const list = page.locator(".useful-form-download-list");
@@ -4320,8 +4325,15 @@ test("le Grand Palais de Glace n’a qu’une carte, avec ses trois grilles, sa 
   // Sur grand écran, les infos (et les liens dessous) à gauche, les tarifs à
   // droite ; le côté le plus court se centre en hauteur face à l'autre. Sur
   // téléphone, les tarifs sous les infos, les liens à la fin.
-  const [glaceInfo, glacePrice, glaceLinks] = await Promise.all(
-    [".expo-card-info", ".expo-price", ".expo-card-links"].map((selector) => glace.locator(selector).boundingBox()),
+  // Les trois boîtes sont relevées d'un seul coup : relevées l'une après
+  // l'autre pendant que la page finissait de se placer, elles se
+  // contredisaient de quelques pixels (échec au premier essai en CI, les 20
+  // et 21 novembre 2026, réussi au second).
+  const [glaceInfo, glacePrice, glaceLinks] = await glace.evaluate((card) =>
+    [".expo-card-info", ".expo-price", ".expo-card-links"].map((selector) => {
+      const box = card.querySelector(selector)!.getBoundingClientRect();
+      return { x: box.x, y: box.y, width: box.width, height: box.height };
+    }),
   );
   if ((page.viewportSize()?.width ?? 0) >= 1000) {
     expect(glacePrice!.x).toBeGreaterThan(glaceInfo!.x + glaceInfo!.width);
