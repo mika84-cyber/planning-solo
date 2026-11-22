@@ -181,6 +181,9 @@ type UsefulFormsSectionProps = {
   accountId?: string;
   isAdmin?: boolean;
   demoMode?: boolean;
+  /** Reçoit le nombre de documents de tous les dossiers, à chaque fois qu'il
+   *  change : la tuile « Formulaires » l'annonce. */
+  onDocumentCount?: (count: number) => void;
 };
 
 /** Quand un dossier réunit des documents et des audioguides, un intitulé
@@ -200,6 +203,7 @@ export function UsefulFormsSection({
   onDeleteWorkAccident = async () => false,
   isAdmin = false,
   demoMode = false,
+  onDocumentCount,
 }: UsefulFormsSectionProps = {}) {
   const [activeFolder, setActiveFolder] = useState<UsefulFormsFolderKey | null>(null);
   // Arrivé depuis Ma paie › Titres repas : la flèche ← y ramène.
@@ -237,6 +241,10 @@ export function UsefulFormsSection({
     ].filter(document => !documentEdits.find(edit => edit.id === document.file)?.deleted)
       .map(document => ({ ...document, href: documentEdits.find(edit => edit.id === document.file)?.href || document.href, title: documentEdits.find(edit => edit.id === document.file)?.title || document.title })),
   })), [sharedDocuments, today, documentEdits, isAdmin]);
+  // Le nombre de documents, tous dossiers confondus (les audioguides n'en
+  // sont pas), comme l'additionnent les lignes des dossiers.
+  const documentTotal = allFolders.reduce((sum, item) => sum + item.documents.length, 0);
+  useEffect(() => { onDocumentCount?.(documentTotal); }, [documentTotal, onDocumentCount]);
   const normalizedSearch = searchQuery.trim();
   const visibleFolders = useMemo(() => allFolders.filter((item) => matchesSearch(item.title, normalizedSearch)
     || item.documents.some((document) => matchesSearch(document.title, normalizedSearch))

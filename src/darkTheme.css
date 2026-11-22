@@ -174,7 +174,6 @@ html[data-theme="dark"] .colleague-week-cell.half-marked.base-training .half-cod
 html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
 html[data-theme="dark"] .colleague-sharing-page button.colleague-today-step { border-color: #9b84d6; background: transparent; color: #cbbcf3; }
 html[data-theme="dark"] .colleague-sharing-page button.colleague-today-step:hover { background: rgba(155, 132, 214, 0.16); }
-html[data-theme="dark"] .useful-resource-tab.resource-pdf { --tile-tint: #3a2620; --tile-ink: #f0a988; }
 /* Fiches des documents : le bouton de téléchargement garde la couleur foncée
    du dossier. */
 html[data-theme="dark"] .doc-cards article > a { background: color-mix(in srgb, var(--contact-category-accent) 72%, #000); color: #fff; }
@@ -196,7 +195,6 @@ html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #1
 html[data-theme="dark"] .resource-folder-row :is(.resource-folder-row-icon, .resource-folder-row-go) { color: color-mix(in srgb, var(--row-tone) 55%, #fff); }
 html[data-theme="dark"] .resource-folder-row .resource-folder-row-icon svg { stroke: currentColor; }
 html[data-theme="dark"] .useful-forms-folder-header small { color: color-mix(in srgb, var(--folder-accent) 50%, #fff); }
-html[data-theme="dark"] .useful-resources-screen:not(.has-active-resource) .useful-resource-tab { border-color: color-mix(in srgb, var(--tile-ink) 40%, rgba(0, 0, 0, .5)); background: color-mix(in srgb, var(--tile-tint) 45%, #29231f); }
 /* Notes du compte principal : le vert de Mika et le rose d'Agnès restent
    reconnaissables sur fond sombre. */
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-mika { background: #29321b; }

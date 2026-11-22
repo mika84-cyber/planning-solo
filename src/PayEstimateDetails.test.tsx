@@ -99,6 +99,11 @@ describe("détail mensuel de la paie", () => {
     expect(html).toContain("1 980,00 €");
     expect(html).toContain('aria-label="Mois précédent"');
     expect(html).toContain('aria-label="Mois suivant"');
+    // Le navigateur de mois commun, une seule fois : ni l'ancienne barre du
+    // détail, ni un second « Revenir à aujourd’hui ».
+    expect(html.match(/aria-label="Mois précédent"/g)).toHaveLength(1);
+    expect(html).not.toContain("pay-detail-month-bar");
+    expect(html).not.toContain("pay-today-button");
     expect(html).toContain("Valeurs vérifiées avec le bulletin");
     // Sous la cascade, plus de tableaux qui répètent ses montants avec un
     // autre vocabulaire : la composition du brut et le passage au net sont

@@ -42,3 +42,9 @@ export type UsefulContactsPayload = {
   /** Ajoutés par le serveur à chaque réponse, jamais enregistrés. */
   radioCodes?: UsefulRadioCode[];
 };
+
+/** Le nombre de contacts des deux annuaires (Pompidou, toutes rubriques, et
+ *  GP-RMN), comme sur leurs lignes : c'est ce qu'annonce la tuile Contacts. */
+export function countUsefulContacts(payload: Pick<UsefulContactsPayload, "pompidou" | "gprmn">) {
+  return payload.pompidou.reduce((sum, section) => sum + section.contacts.length, 0) + payload.gprmn.length;
+}

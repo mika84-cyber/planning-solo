@@ -1134,12 +1134,29 @@ test("les documents s’ouvrent directement sur les formulaires, Contacts à cô
   await expect(page.getByRole("tabpanel", { name: "Formulaires" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Formulaire SAP/ })).toBeVisible();
   await expect(page.getByText("Choisir une rubrique")).toHaveCount(0);
-  // Un sélecteur segmenté : seul l'onglet choisi est coloré, pas de vignette.
-  await expect(page.getByRole("tab", { name: "Formulaires" })).toHaveCSS("background-color", await cssTokenRgb(page, "--accent"));
-  await expect(page.getByRole("tab", { name: "Contacts" })).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  // Deux tuiles côte à côte (choix de l'administrateur parmi quatre
+  // propositions, le 22 novembre 2026) : la tuile choisie en couleur pleine,
+  // écrite en blanc, l'autre blanche ; chacune avec son dessin.
+  const formsTab = page.getByRole("tab", { name: /^Formulaires/ });
+  const contactsTab = page.getByRole("tab", { name: /^Contacts/ });
+  await expect(formsTab).toHaveCSS("background-color", "rgb(47, 122, 82)");
+  await expect(formsTab.locator("strong")).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(contactsTab).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(page.locator(".useful-resource-tab-mark svg")).toHaveCount(2);
   await expect(page.locator(".useful-resource-tab-art")).toHaveCount(0);
   const tabs = await page.locator(".useful-resource-tab").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
   expect(Math.abs(tabs[0].y - tabs[1].y)).toBeLessThan(2);
+  expect(Math.abs(tabs[0].height - tabs[1].height)).toBeLessThan(1);
+  // Chaque tuile dit ce qu'elle contient : le nombre de documents est la
+  // somme de ceux des dossiers.
+  const rowTotal = (word: string) => page.locator(".useful-resource-panel .resource-folder-row").evaluateAll(
+    (rows, pattern) => rows.reduce((sum, row) => sum + Number(((row as HTMLElement).innerText.match(new RegExp(pattern)) ?? [0, 0])[1]), 0),
+    `(\\d+) ${word}`,
+  );
+  const documents = await rowTotal("documents?");
+  expect(documents).toBeGreaterThan(0);
+  await expect(formsTab.locator("small")).toHaveText(`${documents} documents`);
+  await expect(formsTab).toHaveAccessibleName(`Formulaires, ${documents} documents`);
   await expect(page.locator(".resource-folder-list > button i")).toHaveCount(0);
   await page.getByRole("button", { name: /Formulaire Expo/ }).click();
   await expect(page.locator(".useful-forms-folder-header")).toHaveCSS("background-image", "none");
@@ -1147,6 +1164,17 @@ test("les documents s’ouvrent directement sur les formulaires, Contacts à cô
   await page.getByRole("tab", { name: "Contacts" }).click();
   await expect(page.getByRole("tabpanel", { name: "Contacts" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Contacts Pompidou/ })).toBeVisible();
+  // Contacts choisi : sa tuile en bleu plein, Formulaires redevenue blanche ;
+  // son nombre est la somme des contacts des deux annuaires, et celui des
+  // documents est gardé.
+  await expect(contactsTab).toHaveCSS("background-color", "rgb(58, 95, 143)");
+  await expect(formsTab).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  const contacts = await rowTotal("contacts?");
+  expect(contacts).toBeGreaterThan(0);
+  await expect(contactsTab.locator("small")).toHaveText(`${contacts} contacts`);
+  await expect(formsTab.locator("small")).toHaveText(`${documents} documents`);
+  // Aucun libellé coupé, même sur petit écran.
+  expect(await page.locator(".useful-resource-tab-copy :is(strong, small)").evaluateAll((nodes) => nodes.filter((node) => node.scrollWidth > node.clientWidth + 1).length)).toBe(0);
 });
 
 async function swipeMainSection(page: Page, fromX: number, toX: number) {

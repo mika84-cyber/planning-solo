@@ -320,7 +320,6 @@ describe("finitions d’interface", () => {
     // « Revenir à aujourd’hui » vit dans le navigateur commun, une seule
     // fois : voir PayMonthNav.test.tsx (test de rendu).
     expect(payDashboard).not.toContain("pay-bulletin-today");
-    expect(payEstimateDetails).not.toContain("pay-today-button");
     expect(app).toContain("Aucun dimanche versé sur cette paie");
     expect(css.mentions(".pay-detail-sticky-header")).toBe(true);
     expect(css.declares("position", "sticky")).toBe(true);
@@ -481,9 +480,8 @@ describe("finitions d’interface", () => {
     expect(payAllowancesSection).toContain("holiday-pay-options");
     expect(payAllowancesSection).toContain("<span>Échanger</span>");
     expect((payAllowancesSection.match(/holidayChoice\(item\)/g) || []).length).toBe(2);
-    // Le détail du calcul : le même navigateur de mois que la page principale.
-    expect(payEstimateDetails).toContain("<PayMonthNav");
-    expect(payEstimateDetails).not.toContain("pay-detail-month-bar");
+    // Le détail du calcul : le même navigateur de mois que la page principale,
+    // une seule fois (vérifié par le rendu dans PayEstimateDetails.test.tsx).
     expect(css.mentions(".pay-detail-month-bar")).toBe(false);
     expect(css.anyRuleDeclares(".holiday-pay-amount", { width: "fit-content" })).toBe(true);
   });

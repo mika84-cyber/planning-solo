@@ -3,12 +3,13 @@ import { returnsToMeal, useHelpTarget } from "./helpTargets";
 import "./resourceFolderList.css";
 import { changeUsefulContact, getUsefulContacts } from "./contactsApi";
 import { ContactEditDialog } from "./ContactEditDialog";
-import type {
-  PompidouContactSectionKey,
-  UsefulContact,
-  UsefulContactPhone,
-  UsefulContactsPayload,
-  UsefulRadioCode,
+import {
+  countUsefulContacts,
+  type PompidouContactSectionKey,
+  type UsefulContact,
+  type UsefulContactPhone,
+  type UsefulContactsPayload,
+  type UsefulRadioCode,
 } from "./usefulContactsTypes";
 import { matchesSearch } from "./searchMatching";
 import "./usefulDocumentAdmin.css";
@@ -247,9 +248,12 @@ type UsefulContactsSectionProps = {
   accountId?: string;
   isAdmin?: boolean;
   demoMode?: boolean;
+  /** Reçoit le nombre de contacts des deux annuaires, à chaque fois qu'il
+   *  change : la tuile « Contacts » l'annonce. */
+  onContactCount?: (count: number) => void;
 };
 
-export function UsefulContactsSection({ initialData, isAdmin = false, demoMode = false }: UsefulContactsSectionProps) {
+export function UsefulContactsSection({ initialData, isAdmin = false, demoMode = false, onContactCount }: UsefulContactsSectionProps) {
   const [directory, setDirectory] = useState<"pompidou" | "gprmn" | "visitors" | "radio" | null>(null);
   const [pompidouSection, setPompidouSection] = useState<PompidouContactSectionKey | null>(null);
   // Arrivé depuis Ma paie › Titres repas : la flèche ← y ramène.
@@ -292,6 +296,9 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
       active = false;
     };
   }, [initialData, loadAttempt]);
+
+  // La tuile « Contacts » annonce ce nombre ; il suit un ajout ou un retrait.
+  useEffect(() => { if (contacts) onContactCount?.(countUsefulContacts(contacts)); }, [contacts, onContactCount]);
 
   const activePompidouSection = contacts?.pompidou.find(
     (section) => section.key === pompidouSection,

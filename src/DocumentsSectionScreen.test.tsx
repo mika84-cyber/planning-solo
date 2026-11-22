@@ -54,11 +54,34 @@ describe("DocumentsSectionScreen", () => {
       expect(html).toContain("useful-resources-screen");
       // Les deux onglets de la rubrique, Formulaires ouvert d'abord.
       expect(html).toContain('<div class="useful-resource-tabs" role="tablist" aria-label="Documents et contacts">');
-      expect(html.match(/role="tab"[^>]*aria-label="([^"]+)"/g)?.map((tab) => tab.replace(/.*aria-label="([^"]+)"/, "$1"))).toEqual(["Formulaires", "Contacts"]);
+      expect(html.match(/role="tab"[^>]*aria-label="([^"]+)"/g)?.map((tab) => tab.replace(/.*aria-label="([^"]+)"/, "$1"))).toEqual(["Formulaires, Dossiers", "Contacts, Annuaires"]);
       expect(html).toContain("Formulaires du 2026-09-03");
       expect(html).not.toContain("Programmation GP");
       expect(html).not.toContain("Plannings des collègues");
     }
+  });
+
+  it("annonce le nombre de contacts dès l’arrivée, grâce aux contacts préchargés", () => {
+    const contact = (name: string) => ({ name });
+    const html = renderToStaticMarkup(
+      <DocumentsSectionScreen
+        {...baseProps}
+        shell={{
+          homeSection: "forms",
+          prefetchedContacts: {
+            pompidou: [
+              { key: "ras", title: "RAS", contacts: [contact("A"), contact("B")] },
+              { key: "rh", title: "RH", contacts: [contact("C")] },
+            ],
+            gprmn: [contact("D"), contact("E")],
+          },
+        }}
+      />,
+    );
+    // Deux rubriques Pompidou (2 + 1) et l'annuaire GP-RMN (2), comme sur leurs lignes.
+    expect(html).toContain("<strong>Contacts</strong><small>5 contacts</small>");
+    // Le nombre de documents vient de la rubrique Formulaires, une fois montée.
+    expect(html).toContain("<strong>Formulaires</strong><small>Dossiers</small>");
   });
 
   it("transmet le rôle d’administrateur et l’aperçu invité", () => {

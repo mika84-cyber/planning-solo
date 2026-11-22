@@ -556,6 +556,20 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   se choisit en pastilles (l'année en cours et les deux suivantes,
   `pdfYears`), « Plus » ouvre les années suivantes ; les vacances en
   pastilles Non / Oui, tuile rose.
+- `src/UsefulResourcesHub.tsx` : Documents et contacts. Deux tuiles côte à
+  côte, Formulaires et Contacts (choix de l'administrateur le 22 novembre
+  2026, parmi quatre propositions ; auparavant, un sélecteur segmenté) : un
+  dessin dans une case à la couleur de la rubrique (`--tile-tint`,
+  `--tile-ink`), son nom et ce qu'elle contient, « 11 documents »,
+  « 46 contacts » (`resourceTabDetail`) ; la tuile choisie est en couleur
+  pleine (`--tile-fill`, qui reste foncée en mode sombre). Les nombres
+  viennent des rubriques elles-mêmes, dont une seule est montée à la fois :
+  `UsefulFormsSection` dit le total de ses dossiers (`onDocumentCount`),
+  `UsefulContactsSection` celui de ses deux annuaires (`onContactCount`,
+  `countUsefulContacts`) ; `DocumentsSectionScreen`, qui reste monté, les
+  garde d'une visite à l'autre, et les contacts préchargés au démarrage
+  donnent le leur d'avance. Tant qu'un nombre n'est pas connu, la tuile dit
+  « Dossiers » ou « Annuaires ».
 - `src/UsefulFormsSection.tsx` : dossiers de formulaires et information tickets repas.
   L’encadré « Déclarer un accident de travail » porte une croix de secours.
   Comme `UsefulContactsSection.tsx`, l’en-tête se limite au surtitre et au

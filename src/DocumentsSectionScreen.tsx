@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import {
   ColleaguePlanningPage,
   GrandPalaisProgramSection,
@@ -10,6 +10,7 @@ import { DeferredSection } from "./DeferredSection";
 import { usableWorkSchedule } from "./overtime";
 import { dateKey } from "./planningLogic";
 import { UsefulResourcesHub } from "./UsefulResourcesHub";
+import { countUsefulContacts } from "./usefulContactsTypes";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { useCalendarDataState } from "./useCalendarDataState";
 import type { usePayProfileValues } from "./usePayProfileValues";
@@ -48,11 +49,22 @@ export function DocumentsSectionScreen({
   const { homeSection, prefetchedContacts } = shell;
   const { periods, entries, recoveryUses, formProfile } = calendar;
   const { saveWorkAccident, deleteWorkAccident } = workAccident;
+  // Ce qu'annoncent les deux tuiles de Documents et contacts. Chaque rubrique
+  // dit son nombre dès qu'elle le connaît (une seule est montée à la fois, et
+  // ce composant reste monté : le nombre est gardé d'une visite à l'autre) ;
+  // les contacts préchargés au démarrage donnent le leur d'avance.
+  const [documentCount, setDocumentCount] = useState<number | null>(null);
+  const [contactCount, setContactCount] = useState<number | null>(null);
+  const resourceCounts = {
+    forms: documentCount,
+    contacts: contactCount ?? (prefetchedContacts ? countUsefulContacts(prefetchedContacts) : null),
+  };
   return (
     <>
       {homeSection === "pdf" || homeSection === "forms" ? (
         <Suspense fallback={<DeferredSection label="vos contacts et formulaires" />}>
         <UsefulResourcesHub
+          counts={resourceCounts}
           forms={(
             <UsefulFormsSection
               key={adminRevision}
@@ -63,9 +75,10 @@ export function DocumentsSectionScreen({
               periods={periods}
               onSaveWorkAccident={saveWorkAccident}
               onDeleteWorkAccident={deleteWorkAccident}
+              onDocumentCount={setDocumentCount}
             />
           )}
-          contacts={<UsefulContactsSection key={adminRevision} accountId={userEmail} initialData={adminRevision ? undefined : prefetchedContacts || undefined} isAdmin={isProgramAdmin} demoMode={demoMode} />}
+          contacts={<UsefulContactsSection key={adminRevision} accountId={userEmail} initialData={adminRevision ? undefined : prefetchedContacts || undefined} onContactCount={setContactCount} isAdmin={isProgramAdmin} demoMode={demoMode} />}
         />
         </Suspense>
       ) : null}

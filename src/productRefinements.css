@@ -325,7 +325,7 @@ html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 /* Lisibilité : aucun texte à lire sous 11 px. Les repères décoratifs (petites
    capitales des en-têtes, numéros du calendrier, pastilles) restent compacts.
    `:root` place ces règles au-dessus des réglages mobiles plus anciens. */
-:root .leave-balance-grid > button :is(span, small, em), :root :is(.manual-adjustments-copy small, .manual-adjustments-summary, .request-archive-summary small), :root :is(.pay-profile-summary-copy small), :root .has-active-resource .useful-resource-tab-copy small, :root :is(.overtime-balance-summary, .mecenat-rate-summary) article > :is(small, span), :root :is(.leave-tool-tile b, .leave-year-tools label > span), :root :is(.payslip-guide-step small) { font-size: 11px; }
+:root .leave-balance-grid > button :is(span, small, em), :root :is(.manual-adjustments-copy small, .manual-adjustments-summary, .request-archive-summary small), :root :is(.pay-profile-summary-copy small), :root :is(.overtime-balance-summary, .mecenat-rate-summary) article > :is(small, span), :root :is(.leave-tool-tile b, .leave-year-tools label > span), :root :is(.payslip-guide-step small) { font-size: 11px; }
 :root .leave-balance-grid > button > span:first-child { font-size: 11.5px; }
 
 /* Moins de cadres emboîtés : les soldes de congés se posent directement
