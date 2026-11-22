@@ -652,14 +652,19 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   souples `1fr auto auto 1fr`). Téléphone et Z Fold ouvert gardent l’encadré
   empilé (variante A1 retenue le 4 novembre 2026).
   Sous la recherche, les quatre vues (En ce moment, À venir, Par espace,
-  Inter-expos) sont des intercalaires de classeur posés sur la carte qu’ils
-  affichent : chacune a sa couleur (`data-view` : vert, bleu, ocre,
-  terracotta) en liseré, dessin et teinte pâle ; la vue choisie, plus haute,
-  prend la teinte de l’en-tête de la carte et s’y ouvre sans filet. Le bloc
-  mord sur l’espacement de la page (même `clamp`, 12 px sur téléphone) :
-  changer l’un oblige à changer l’autre. Les enfants de la grille de la page
+  Inter-expos) forment une bande de quatre cases, détachée de la carte
+  qu’elle commande : chacune a sa couleur (`data-view` : vert, bleu, ocre,
+  terracotta) en teinte pâle, sur son dessin et son libellé ; la vue choisie
+  est en couleur pleine, écrite en blanc, et une pointe (`::after`, un carré
+  tourné) la relie à la carte. Choix de l’administrateur le 22 novembre 2026,
+  parmi douze propositions rendues dans la démo (huit habillages de la
+  rangée, puis quatre idées sans rangée : liste, titre défilant, bouton et
+  fenêtre, volets — les volets ont été essayés dans la démo puis écartés) ;
+  auparavant, des intercalaires de classeur posés sur la carte. La bande
+  garde 7 px sous elle pour la pointe ; l’espacement de la page fait le
+  reste. Les enfants de la grille de la page
   ont `min-width: 0` (titres d’exposition en `nowrap`, quatre libellés
-  d’onglets qui passent à la ligne si la place manque) : sans cela, sur
+  de vues qui passent à la ligne si la place manque) : sans cela, sur
   téléphone à police agrandie, la colonne s’élargissait et tout l’écran
   Inter-expos était coupé à droite. Le scénario e2e « aucun écran ne déborde
   à droite sur un petit téléphone » (projet mobile, 360 px, racine à 100 % et

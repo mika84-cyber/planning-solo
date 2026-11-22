@@ -3485,26 +3485,47 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(lastProgramme.locator(".grand-palais-interexpo-cut")).toHaveCount(0);
 });
 
-test("les vues des Expos sont des intercalaires posés sur la carte qu’elles affichent", async ({ page }) => {
+test("les vues des Expos forment une bande de couleurs, la vue choisie en plein", async ({ page }) => {
+  // Choix de l'administrateur parmi douze propositions, le 22 novembre 2026 ;
+  // auparavant, des intercalaires de classeur posés sur la carte.
   await prepareDemo(page);
   await goToSection(page, "program");
   const tabs = page.getByRole("tablist", { name: "Vue de la programmation" });
-  // La recherche est au-dessus des intercalaires.
+  // La recherche est au-dessus de la bande.
   const [searchBox, tabsBox] = await Promise.all([page.getByLabel("Rechercher une exposition").boundingBox(), tabs.boundingBox()]);
   expect(searchBox!.y + searchBox!.height).toBeLessThan(tabsBox!.y);
-  for (const name of ["En ce moment", "À venir", "Par espace", "Inter-expos"]) {
+  const tones: Record<string, string> = {
+    "En ce moment": "rgb(47, 122, 82)",
+    "À venir": "rgb(47, 106, 149)",
+    "Par espace": "rgb(133, 99, 26)",
+    "Inter-expos": "rgb(138, 61, 34)",
+  };
+  const pointOf = (name: string) => tabs.getByRole("tab", { name }).evaluate((node) => {
+    const style = getComputedStyle(node, "::after");
+    return { content: style.content, color: style.backgroundColor };
+  });
+  for (const [name, tone] of Object.entries(tones)) {
     const tab = tabs.getByRole("tab", { name });
     await tab.click();
     await expect(tab).toHaveAttribute("aria-selected", "true");
-    // L'onglet choisi prend la teinte de l'en-tête de la carte qu'il affiche
-    // (une fois sa transition finie) et se pose sur son filet, sans trait
-    // entre les deux.
-    const card = page.locator(".grand-palais-view-tools + *");
-    const heading = await card.locator("> :first-child").evaluate((element) => getComputedStyle(element).backgroundColor);
-    await expect(tab).toHaveCSS("background-color", heading);
-    const [tabBox, cardBox] = await Promise.all([tab.boundingBox(), card.boundingBox()]);
-    expect(tabBox!.y + tabBox!.height - cardBox!.y).toBeCloseTo(1, 0);
+    // La vue choisie prend sa couleur pleine (une fois sa transition finie),
+    // s'écrit en blanc, et une pointe à sa couleur la relie à la carte.
+    await expect(tab).toHaveCSS("background-color", tone);
+    await expect(tab).toHaveCSS("color", "rgb(255, 255, 255)");
+    expect(await pointOf(name)).toEqual({ content: '""', color: tone });
+    // La bande est détachée de la carte qu'elle commande : la pointe, qui
+    // dépasse de moins de 10 px, ne la touche pas.
+    const [tabBox, cardBox] = await Promise.all([tab.boundingBox(), page.locator(".grand-palais-view-tools + *").boundingBox()]);
+    expect(cardBox!.y - (tabBox!.y + tabBox!.height)).toBeGreaterThan(12);
+    // Les autres cases restent en teinte pâle, sans pointe.
+    for (const other of Object.keys(tones).filter((item) => item !== name)) {
+      await expect(tabs.getByRole("tab", { name: other })).not.toHaveCSS("background-color", tones[other]);
+      expect((await pointOf(other)).content).toBe("none");
+    }
   }
+  // Les quatre cases ont la même hauteur, quel que soit le libellé.
+  const heights = await tabs.getByRole("tab").evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().height)));
+  expect(new Set(heights).size).toBe(1);
 });
 
 test("pendant le choix des dates, une barre ramène à l’enregistrement resté hors de l’écran", async ({ page }) => {

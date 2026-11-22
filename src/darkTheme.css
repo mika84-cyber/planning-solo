@@ -67,10 +67,12 @@ html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-pic
 /* L'espace choisi, plus teinté que les autres : il l'était moins. */
 html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button.active { background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 34%, #1d1916); }
 html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button.active > span { color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 35%, #fff); }
-/* Les onglets des vues et les noms de salle (tarifs, inter-expos) : la couleur
-   de chacun, éclaircie pour rester lisible sur le sombre. */
-html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button:not(.active) { background: color-mix(in srgb, var(--tab) 16%, #1f1d1b); color: color-mix(in srgb, var(--tab) 40%, #f3eee8); }
-html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button svg { color: color-mix(in srgb, var(--tab) 55%, #fff); }
+/* La bande des vues et les noms de salle (tarifs, inter-expos) : la couleur
+   de chacun, éclaircie pour rester lisible sur le sombre ; la vue choisie
+   garde sa couleur pleine et son blanc. */
+html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button:not(.active) { background: color-mix(in srgb, var(--tab) 20%, #1f1d1b); color: color-mix(in srgb, var(--tab) 40%, #f3eee8); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tab) 42%, #1f1d1b); }
+html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button:not(.active):hover { background: color-mix(in srgb, var(--tab) 30%, #1f1d1b); }
+html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button:not(.active) svg { color: color-mix(in srgb, var(--tab) 55%, #fff); }
 html[data-theme="dark"] :is(.expo-price-group, .grand-palais-interexpo-open li b) { color: color-mix(in srgb, var(--venue-accent, #c9754f) 50%, #fff); }
 
 /* Les illustrations dessinées sur fond clair gardent leur fond, sans éblouir. */

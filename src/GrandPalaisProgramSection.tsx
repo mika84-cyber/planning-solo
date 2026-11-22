@@ -1008,8 +1008,9 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
         </section>
       ) : null}
 
-      {/* La recherche, puis les quatre vues en intercalaires posés sur la
-          carte qu'elles affichent (data-view : la couleur de chacune). */}
+      {/* La recherche, puis les quatre vues en bande de couleurs (data-view :
+          la couleur de chacune) ; la vue choisie, en plein, pointe vers la
+          carte qu'elle affiche. */}
       <div className="grand-palais-view-tools">
         <label className="grand-palais-search"><span>Rechercher une exposition</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Titre de l’exposition" /></label>
         <div className="grand-palais-view-picker" role="tablist" aria-label="Vue de la programmation">

@@ -95,7 +95,6 @@ const payEstimateDetails = readFileSync(new URL("./src/PayEstimateDetails.tsx", 
 const appSections = readFileSync(new URL("./src/appSections.ts", import.meta.url), "utf8");
 const leaveDialogs = readFileSync(new URL("./src/LeaveDialogs.tsx", import.meta.url), "utf8");
 const workTimeDialogs = readFileSync(new URL("./src/WorkTimeDialogs.tsx", import.meta.url), "utf8");
-const requestValidationSummary = readFileSync(new URL("./src/RequestValidationSummary.tsx", import.meta.url), "utf8");
 const planningDialogs = readFileSync(new URL("./src/PlanningDialogs.tsx", import.meta.url), "utf8");
 
 describe("finitions d’interface", () => {
@@ -611,8 +610,8 @@ describe("finitions d’interface", () => {
 
   it("affiche un résumé des dates avant la validation", () => {
     expect(app).toContain("<RequestValidationSummary");
-    expect(requestValidationSummary).toContain("Résumé avant validation");
-    expect(requestValidationSummary).toContain("Effet de la validation");
+    // Son titre et « Effet de la validation » : vérifiés par le rendu dans
+    // RequestValidationSummary.test.tsx.
   });
 
   it("ne garde plus de menu principal : la barre du bas mène aux pages", () => {

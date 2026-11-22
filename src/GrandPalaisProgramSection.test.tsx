@@ -102,8 +102,8 @@ describe("programmation du Grand Palais", () => {
     expect(html).toContain("À venir");
     expect(html).toContain("Par espace");
     expect(html).toContain("Inter-expos");
-    // Quatre intercalaires, chacun à sa couleur (data-view), sous la
-    // recherche ; la vue choisie avec son dessin et son libellé.
+    // Quatre cases d'une même bande, chacune à sa couleur (data-view), sous
+    // la recherche ; la vue choisie avec son dessin et son libellé.
     expect(html).toMatch(/role="tab" data-view="now" aria-selected="true" class="active"><svg[^]*?<span>En ce moment<\/span>/);
     expect([...html.matchAll(/data-view="([a-z]+)"/g)].map((match) => match[1])).toEqual(["now", "upcoming", "space", "interexpo"]);
     expect(html.indexOf("Rechercher une exposition")).toBeLessThan(html.indexOf('aria-label="Vue de la programmation"'));

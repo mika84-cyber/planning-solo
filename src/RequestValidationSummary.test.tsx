@@ -33,7 +33,9 @@ describe("résumé avant validation", () => {
       />,
     );
 
-    expect(html).toContain("Résumé avant validation");
+    expect(html).toContain('<section class="request-validation-summary" aria-label="Résumé avant validation">');
+    expect(html).toContain("<span>Résumé avant validation</span>");
+    expect(html).toContain("<strong>Effet de la validation</strong>");
     expect(html).toContain("2 dates");
     expect(html).toContain("mardi 11 août 2026");
     expect(html).not.toContain("09:00");
