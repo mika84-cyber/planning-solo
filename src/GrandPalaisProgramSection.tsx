@@ -22,7 +22,6 @@ import type {
   GrandPalaisProgramEntry,
   GrandPalaisProgramYear,
   GrandPalaisVenue,
-  GrandPalaisVenueKey,
 } from "./grandPalaisProgramData";
 import type {
   BoundaryReport,
@@ -149,7 +148,6 @@ export function currentVenueRank(venueKey: string) {
   return venueKey === "nef" ? PRIMARY_VENUES.length : PRIMARY_VENUES.length + 1;
 }
 
-type PrimaryChoice = GrandPalaisVenueKey | "other";
 type ProgramView = "now" | "upcoming" | "space" | "interexpo";
 
 export type InterExhibitionPeriod = {
@@ -413,9 +411,10 @@ function venueYears(
     .sort((left, right) => left - right) as GrandPalaisProgramYear[];
 }
 
-/** Les espaces de « Autres » qui ont encore une exposition au programme. Un
- *  espace vide en disparaît, et y revient seul dès qu'une exposition détectée
- *  sur le site du Grand Palais y est acceptée par l'administrateur. */
+/** Les espaces qui suivent les quatre grands (la Nef, les Galeries 9 et 10,
+ *  ceux que la veille ajoute) et qui ont encore une exposition au programme.
+ *  Un espace vide en disparaît, et y revient seul dès qu'une exposition
+ *  détectée sur le site du Grand Palais y est acceptée par l'administrateur. */
 export function otherGrandPalaisVenueKeys(program: GrandPalaisProgramData, today: string) {
   return [
     ...OTHER_VENUES,
@@ -423,6 +422,40 @@ export function otherGrandPalaisVenueKeys(program: GrandPalaisProgramData, today
       .filter((key) => key.startsWith("other:") && !OTHER_VENUES.includes(key as never))
       .sort((first, second) => program[first].label.length - program[second].label.length),
   ].filter((key) => venueYears(key, today, program).length > 0);
+}
+
+/** Ce qu'on voit dans un espace, dit en une ligne sous son nom : l'exposition
+ *  en cours et le temps qu'il lui reste (« et 1 autre » s'il y en a
+ *  plusieurs ; le temps est celui de la première à fermer), sinon la
+ *  prochaine avec son délai, sinon rien d'annoncé. Une exposition datée mais
+ *  « à confirmer » le dit à la place du délai. Le temps est rendu à part
+ *  (`detail`), dans une pastille : sur un petit écran, c'est le titre qui se
+ *  coupe, pas lui. */
+export function venueHeadline(venue: GrandPalaisVenue | undefined, today: string, openingReady = true) {
+  const seen = new Set<string>();
+  const entries = Object.values(venue?.schedule ?? {})
+    .flatMap((scheduled) => scheduled ?? [])
+    .filter((entry) => {
+      if (!isGrandPalaisEntryVisible(entry, today) || seen.has(entry.title)) return false;
+      seen.add(entry.title);
+      return true;
+    });
+  const current = entries
+    .filter((entry) => isGrandPalaisEntryCurrent(entry, today, openingReady))
+    .sort((left, right) => (left.endsOn ?? "9999").localeCompare(right.endsOn ?? "9999"));
+  if (current.length) {
+    const others = current.length - 1;
+    const left = current[0].endsOn ? dayDistance(today, current[0].endsOn) : null;
+    const detail = left === null ? "" : left <= 0 ? "dernier jour" : `encore ${shortDelayLabel(today, current[0].endsOn!)}`;
+    return { kind: "now" as const, label: "En ce moment", title: others ? `${current[0].title} et ${others} autre${others > 1 ? "s" : ""}` : current[0].title, detail };
+  }
+  const next = entries
+    .filter((entry) => Boolean(entry.startsOn && entry.startsOn >= today))
+    .sort((left, right) => left.startsOn!.localeCompare(right.startsOn!))[0];
+  if (!next) return { kind: "none" as const, label: "", title: "Rien d’annoncé pour l’instant", detail: "" };
+  const days = dayDistance(today, next.startsOn!);
+  const detail = next.uncertain ? "à confirmer" : days <= 0 ? "aujourd’hui" : days === 1 ? "demain" : `dans ${shortDelayLabel(today, next.startsOn!)}`;
+  return { kind: "next" as const, label: "Prochaine", title: next.title, detail };
 }
 
 export function grandPalaisClock(now = new Date()) {
@@ -766,11 +799,13 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
     ),
     [sharedPayload?.approved, sharedPayload?.sitePrices],
   );
-  const [primaryChoice, setPrimaryChoice] = useState<PrimaryChoice>("galleries34");
-  const [otherVenue, setOtherVenue] = useState<string>("nef");
+  // Tous les espaces se choisissent au même niveau : les quatre grands, puis
+  // la Nef et les autres galeries, sans passer par un choix « Autres ».
+  const [venueChoice, setVenueChoice] = useState<string>("galleries34");
   const otherVenueKeys = useMemo(() => otherGrandPalaisVenueKeys(program, today), [program, today]);
-  const activeOtherVenue = otherVenueKeys.includes(otherVenue) ? otherVenue : otherVenueKeys[0] ?? "nef";
-  const selectedVenueKey = primaryChoice === "other" ? activeOtherVenue : primaryChoice;
+  const venueKeys = useMemo(() => [...PRIMARY_VENUES, ...otherVenueKeys], [otherVenueKeys]);
+  // Un espace qui se vide quitte la liste : le premier reprend la main.
+  const selectedVenueKey = venueKeys.includes(venueChoice) ? venueChoice : PRIMARY_VENUES[0];
   const venue = program[selectedVenueKey] ?? program.nef;
   const years = useMemo(() => venueYears(selectedVenueKey, today, program), [selectedVenueKey, today, program]);
   const normalizedSearch = searchQuery.trim();
@@ -844,7 +879,6 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
     .flatMap((scheduled) => scheduled ?? [])
     .filter((entry) => isGrandPalaisEntryVisible(entry, today))
     .map((entry) => entry.title)).size;
-  const otherEntryCount = otherVenueKeys.reduce((total, venueKey) => total + venueEntryCount(venueKey), 0);
 
   useEffect(() => {
     let active = true;
@@ -883,28 +917,17 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
     }
   };
 
-  const selectVenue = (venueKey: PrimaryChoice) => {
-    setPrimaryChoice(venueKey);
-    // « Autres » ouvre d'abord le choix de l'espace : on reste dessus.
-    if (venueKey !== "other") setVenueScrollRequest((count) => count + 1);
-  };
-
-  const selectOtherVenue = (venueKey: string) => {
-    setOtherVenue(venueKey);
+  const selectVenue = (venueKey: string) => {
+    setVenueChoice(venueKey);
     setVenueScrollRequest((count) => count + 1);
   };
 
-  // Une galerie d'« Ouvert aujourd'hui » mène à sa programmation : l'onglet
+  // Une galerie d'« Ouvert aujourd'hui » mène à sa programmation : la vue
   // « Par espace », déjà sur elle. Une recherche en cours masquerait ce panneau.
   const openVenueProgram = (venueKey: string) => {
     setSearchQuery("");
     setProgramView("space");
-    if ((PRIMARY_VENUES as readonly string[]).includes(venueKey)) {
-      selectVenue(venueKey as PrimaryChoice);
-    } else {
-      setPrimaryChoice("other");
-      selectOtherVenue(venueKey);
-    }
+    selectVenue(venueKey);
   };
 
   return (
@@ -1028,58 +1051,32 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
           <span className="step-label">Les galeries</span>
           <h3 id="grand-palais-spaces-title">Choisir un espace</h3>
         </div>
-        <div className="grand-palais-primary-picker" role="tablist" aria-label="Espace principal du Grand Palais">
-        {PRIMARY_VENUES.map((venueKey) => (
-          <button
-            key={venueKey}
-            type="button"
-            role="tab"
-            aria-selected={primaryChoice === venueKey}
-            className={primaryChoice === venueKey ? "active" : ""}
-            style={grandPalaisVenueStyle(venueKey)}
-            onClick={() => selectVenue(venueKey)}
-            aria-label={`${program[venueKey].label}, ${venueCountLabel(venueEntryCount(venueKey))}`}
-          >
-            {/* Une ligne par espace : sa couleur, son nom, le nombre d'expositions
-                en grand à droite pour comparer d'un coup d'œil. */}
-            <span>{program[venueKey].label}<small>{venueEntryCount(venueKey)
-              ? `exposition${venueEntryCount(venueKey) > 1 ? "s" : ""} au programme`
-              : "Rien d’annoncé pour l’instant"}</small></span>
-            {venueEntryCount(venueKey) ? <b aria-hidden="true">{venueEntryCount(venueKey)}</b> : null}
-          </button>
-        ))}
-        {otherVenueKeys.length ? (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={primaryChoice === "other"}
-            className={`grand-palais-other-choice${primaryChoice === "other" ? " active" : ""}`}
-            onClick={() => selectVenue("other")}
-            aria-label={`Autres, Nef et autres galeries RMN, ${venueCountLabel(otherEntryCount)}`}
-          >
-            <span>Autres<small>Nef et autres galeries RMN</small></span>
-            {otherEntryCount ? <b aria-hidden="true">{otherEntryCount}</b> : null}
-          </button>
-        ) : null}
+        <div className="grand-palais-primary-picker" role="tablist" aria-label="Espaces du Grand Palais">
+        {venueKeys.map((venueKey) => {
+          const count = venueEntryCount(venueKey);
+          const headline = venueHeadline(program[venueKey], today, openingReady);
+          return (
+            <button
+              key={venueKey}
+              type="button"
+              role="tab"
+              aria-selected={selectedVenueKey === venueKey}
+              className={selectedVenueKey === venueKey ? "active" : ""}
+              style={grandPalaisVenueStyle(venueKey)}
+              onClick={() => selectVenue(venueKey)}
+              aria-label={`${program[venueKey].label}, ${venueCountLabel(count)}. ${headline.label ? `${headline.label} : ` : ""}${headline.title}${headline.detail ? `, ${headline.detail}` : ""}`}
+            >
+              {/* Une ligne par espace : son nom, ce qu'on y voit (l'exposition
+                  en cours, sinon la prochaine) et, dans une pastille, le temps
+                  qui reste ou le délai. Le nombre d'expositions au programme
+                  est dans une case à la couleur de l'espace, que les styles
+                  placent à gauche. */}
+              <span>{program[venueKey].label}<small><span>{headline.label ? <><em data-kind={headline.kind}>{headline.label} :</em>{" "}</> : null}<span>{headline.title}</span></span>{headline.detail ? <>{" "}<i>{headline.detail}</i></> : null}</small></span>
+              <b aria-hidden="true">{count}</b>
+            </button>
+          );
+        })}
         </div>
-
-        {primaryChoice === "other" ? (
-          <div className="grand-palais-other-picker" role="tablist" aria-label="Autres espaces du Grand Palais">
-            {otherVenueKeys.map((venueKey) => (
-              <button
-                key={venueKey}
-                type="button"
-                role="tab"
-                aria-selected={activeOtherVenue === venueKey}
-                className={activeOtherVenue === venueKey ? "active" : ""}
-                style={grandPalaisVenueStyle(venueKey)}
-                onClick={() => selectOtherVenue(venueKey)}
-              >
-                {program[venueKey].label}
-              </button>
-            ))}
-          </div>
-        ) : null}
       </section> : null}
 
       {searchResults ? (

@@ -74,8 +74,7 @@
 
 .grand-palais-primary-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 1.4vw, 14px); margin: 0; }
 
-.grand-palais-primary-picker button,
-.grand-palais-other-picker button {
+.grand-palais-primary-picker button {
   min-width: 0;
   border: 1.5px solid var(--venue-line, var(--section-outline));
   border-left: 5px solid var(--venue-accent, var(--border-card));
@@ -88,16 +87,13 @@
   transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
-/* Nom et légende à gauche, nombre d'expositions dans une pastille à droite ;
-   « Autres » occupe toute la largeur, en bandeau plus bas. */
+/* Nom et légende à gauche, nombre d'expositions dans une pastille à droite. */
 .grand-palais-primary-picker button { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 84px; padding: 14px 16px; font-weight: 700; line-height: 1.25; text-align: left; }
 .grand-palais-primary-picker button > span { display: grid; gap: 4px; font-size: 1rem; }
 .grand-palais-primary-picker button small { color: var(--muted); font-size: 0.76rem; font-weight: 600; }
 .grand-palais-primary-picker button > b { display: grid; place-items: center; min-width: 32px; height: 32px; border: 1px solid var(--venue-line, var(--border-soft)); border-radius: 999px; padding: 0 8px; background: color-mix(in srgb, var(--surface) 78%, transparent); color: var(--venue-accent, var(--text)); font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; line-height: 1; }
-.grand-palais-primary-picker > .grand-palais-other-choice { grid-column: 1 / -1; min-height: 60px; padding-block: 10px; }
 
-.grand-palais-primary-picker button.active,
-.grand-palais-other-picker button.active {
+.grand-palais-primary-picker button.active {
   border-color: var(--accent);
   color: var(--text);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent), 0 6px 14px rgba(44, 38, 33, 0.1);
@@ -107,25 +103,11 @@
   color: var(--text);
 }
 
-.grand-palais-primary-picker button:hover,
-.grand-palais-other-picker button:hover {
+.grand-palais-primary-picker button:hover {
   transform: translateY(-1px);
 }
 
 .grand-palais-primary-picker > button:nth-child(n) { background: var(--venue-bg, var(--surface-high)); }
-
-.grand-palais-other-picker {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 2px 0 0;
-  border-radius: 18px;
-  padding: 10px;
-  background: #fdf8f1;
-}
-
-/* Deux colonnes ; un dernier espace seul prend toute la ligne. */
-.grand-palais-other-picker button:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
 .grand-palais-admin-alerts {
   display: grid;
@@ -218,22 +200,6 @@
 .grand-palais-review-error {
   color: #a32635;
   font-weight: 800;
-}
-
-.grand-palais-other-picker button {
-  min-height: 52px;
-  padding: 9px 14px;
-  font-weight: 700;
-  line-height: 1.3;
-  border-color: var(--section-outline);
-  color: var(--text);
-  background: var(--surface);
-}
-
-.grand-palais-other-picker button.active {
-  border-color: var(--accent);
-  outline-color: var(--accent);
-  background: var(--accent-soft);
 }
 
 .grand-palais-program-screen .grand-palais-program-panel {
@@ -467,9 +433,6 @@
 
   .grand-palais-primary-picker button { min-height: 76px; padding: 12px; }
 
-  .grand-palais-other-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px; }
-  .grand-palais-other-picker button { min-height: 50px; padding: 8px 10px; font-size: .86rem; }
-
   .grand-palais-program-panel {
     padding: 14px;
   }
@@ -622,20 +585,47 @@
 .expo-year-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; border-bottom: 1px solid #ece4d9; padding: 0 2px 6px; color: var(--text); font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; }
 .expo-year-heading small { color: #6b5d50; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: .74rem; font-weight: 700; }
 
-/* Choisir un espace : une ligne blanche par espace, son liseré à gauche, le
-   nom en caractères de titre, le nombre d'expositions dans une pastille
-   pleine à sa couleur. L'espace ouvert prend sa teinte claire et un contour
-   à sa couleur ; aucune flèche ni coche. */
+/* Choisir un espace : une ligne blanche par espace, tous au même niveau (les
+   quatre grands, puis la Nef et les autres galeries ; choix de
+   l'administrateur le 22 novembre 2026, parmi huit propositions — auparavant,
+   un choix « Autres » ouvrait un second rang). Pas de liseré (il les a fait
+   retirer le même jour) : la couleur de l'espace est dans la case de gauche,
+   qui porte le nombre d'expositions au programme. À côté, le nom en
+   caractères de titre et, dessous, ce qu'on y voit : « En ce moment » en vert
+   ou « Prochaine » en bleu (les couleurs des vues du même nom, foncées pour
+   se lire aussi sur la ligne choisie), le titre, puis une pastille : le temps
+   qui reste ou le délai. Sur cette ligne, seul le titre se coupe, par des
+   points de suspension ; si même ainsi la place manque (petit écran, police
+   agrandie), la pastille passe dessous. L'espace ouvert prend sa teinte claire, un contour à
+   sa couleur et une case pleine ; aucune flèche ni coche. Sur ordinateur,
+   deux colonnes. */
 :root .grand-palais-venue-navigation .grand-palais-primary-picker { gap: 8px; }
-:root .grand-palais-venue-navigation .grand-palais-primary-picker > button { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; min-height: 56px; border: 1px solid #e6ddd0; border-left: 4px solid var(--venue-accent, #8a7d6e); border-radius: 12px; padding: 9px 12px 9px 14px; background: #fff; transition: background-color .15s ease, border-color .15s ease; }
+@media (min-width: 721px) {
+  :root .grand-palais-venue-navigation .grand-palais-primary-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button { grid-template-columns: auto minmax(0, 1fr); gap: 11px; min-height: 60px; border: 1px solid #e9e0d4; border-radius: 14px; padding: 9px 12px 9px 9px; background: #fff; transition: background-color .15s ease, border-color .15s ease; }
 :root .grand-palais-venue-navigation .grand-palais-primary-picker > button::before { display: none; }
 :root .grand-palais-venue-navigation .grand-palais-primary-picker > button::after { content: none; }
-:root .grand-palais-venue-navigation .grand-palais-primary-picker > button > span { color: var(--text); font-size: 1.02rem; }
-:root .grand-palais-venue-navigation .grand-palais-primary-picker > button small { color: #7a6f5f; }
-:root .grand-palais-venue-navigation .grand-palais-primary-picker > button > b { min-width: 30px; height: 30px; border-radius: 999px; padding: 0 9px; background: var(--venue-accent, #8a7d6e); color: #fff; font-size: .9rem; box-shadow: none; }
-:root .grand-palais-venue-navigation .grand-palais-primary-picker > button:hover:not(.active) { border-color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 45%, #e6ddd0); background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 6%, #fff); }
-:root .grand-palais-venue-navigation .grand-palais-primary-picker > button.active { border-color: var(--venue-accent, #8a7d6e); background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 12%, #fff); }
+/* La case : écrite après le nom dans la page, placée avant lui. Chiffre en
+   police normale, à la couleur de l'espace sur sa teinte claire. */
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button > b { order: -1; width: 40px; min-width: 40px; height: 40px; border: 0; border-radius: 12px; padding: 0; background: var(--venue-bg, #efe9e1); color: color-mix(in srgb, var(--venue-accent, #6b5d50) 85%, #1a1410); font-family: inherit; font-size: 1rem; font-weight: 800; box-shadow: inset 0 0 0 1px var(--venue-line, #c9bfb2); transition: background-color .15s ease, color .15s ease; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button > span { gap: 3px; min-width: 0; color: var(--text); font-size: 1.04rem; line-height: 1.25; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button small { display: flex; flex-wrap: wrap; align-items: center; gap: 2px .3em; min-width: 0; color: #5e5146; font-size: .78rem; line-height: 1.3; white-space: nowrap; }
+/* « En ce moment : » et le titre : au moins 8 em, sinon la pastille passe
+   dessous ; le titre prend la place qui reste et se coupe. */
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button small > span { display: flex; flex: 1 1 8em; gap: .3em; min-width: 0; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button small > span > span { overflow: hidden; min-width: 0; text-overflow: ellipsis; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button small :is(em, i) { flex: none; font-style: normal; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button small em { font-weight: 800; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button small em[data-kind="now"] { color: #25684a; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button small em[data-kind="next"] { color: #275d88; }
+/* La pastille du temps, poussée au bout de la ligne. */
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button small > i { border-radius: 999px; padding: 1px 8px; background: #f3ece3; color: #4a4036; font-size: .72rem; font-weight: 700; }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button:hover:not(.active) { border-color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 45%, #e9e0d4); background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 5%, #fff); }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button.active { border-color: var(--venue-accent, #6b5d50); background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 10%, #fff); box-shadow: inset 0 0 0 1px var(--venue-accent, #6b5d50); }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button.active > b { background: var(--venue-accent, #6b5d50); color: #fff; box-shadow: none; }
 :root .grand-palais-venue-navigation .grand-palais-primary-picker > button.active > span { color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 75%, #1a1410); }
+:root .grand-palais-venue-navigation .grand-palais-primary-picker > button.active small > i { background: #fff; }
 
 /* Veille du site : lancer un contrôle à la main. */
 /* Compte rendu du dernier contrôle : ce qui a été ajouté, ce qui attend. */

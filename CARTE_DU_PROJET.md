@@ -670,6 +670,25 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   à droite sur un petit téléphone » (projet mobile, 360 px, racine à 100 % et
   125 %) garde les écrans Expos, Congés, Collègues, Contacts et l’année de la
   paie dans l’écran.
+  Dans « Par espace », « Choisir un espace » liste tous les espaces au même
+  niveau, une ligne chacun : les quatre grands (`PRIMARY_VENUES`), puis la
+  Nef, les Galeries 9 et 10 et ceux que la veille ajoute
+  (`otherGrandPalaisVenueKeys`, tant qu'ils ont une exposition). À gauche,
+  une case à la couleur de l'espace porte le nombre d'expositions au
+  programme (elle est écrite après le nom, les styles la placent avant) ;
+  aucun liseré. Sous le nom, la ligne dit ce qu'on y voit (`venueHeadline`) :
+  « En ce moment : » et l'exposition en cours (« et 1 autre » s'il y en a
+  plusieurs), sinon « Prochaine : » et son titre, sinon « Rien d'annoncé pour
+  l'instant » ; puis une pastille donne le temps : ce qu'il reste (« encore
+  ~2 mois », « dernier jour ») ou le délai (« dans 10 jours », « dans
+  ~4 mois », « demain », « à confirmer »). Sur un petit écran, seul le titre
+  se coupe ; si la place manque encore, la pastille passe dessous. L'espace
+  choisi a une teinte claire, un contour à sa couleur et une case pleine.
+  Deux colonnes sur ordinateur. Choix de l'administrateur le 22 novembre
+  2026, parmi huit propositions, puis « enlève les liseré et travail un peu
+  plus l'affichage des espace » ; auparavant, un choix « Autres » ouvrait un
+  second rang pour la Nef et les autres galeries. Dans les parcours, la vue « En ce moment »
+  se désigne par son nom exact : c'est aussi le début du nom lu d'une ligne.
   « Par espace » montre une exposition à cheval sur deux années une seule
   fois (`venueYearGroups`, même titre et mêmes dates) ; une exposition « À
   confirmer » mais datée donne déjà son délai (« Dans 4 mois… »).

@@ -64,6 +64,14 @@ html[data-theme="dark"] .expo-audioguide figure img { border-color: transparent;
 /* Choisir un espace : la teinte de chaque espace, sur fond sombre. */
 html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button { background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 18%, #1d1916); }
 html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button > span { color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 45%, #fff); }
+/* La case du nombre, à la couleur de l'espace sur fond sombre ; pleine pour
+   l'espace choisi. */
+html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button:not(.active) > b { background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 30%, #1d1916); color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 35%, #fff); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--venue-accent, #8a7d6e) 55%, #1d1916); }
+/* Ce qu'on y voit : « En ce moment » et « Prochaine », éclaircis ; la
+   pastille du temps, sombre. */
+html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button small em[data-kind="now"] { color: #86cba4; }
+html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button small em[data-kind="next"] { color: #8fbfe3; }
+html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button small i { background: rgba(255, 255, 255, .12); color: #f1e9df; }
 /* L'espace choisi, plus teinté que les autres : il l'était moins. */
 html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button.active { background: color-mix(in srgb, var(--venue-accent, #8a7d6e) 34%, #1d1916); }
 html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-picker > button.active > span { color: color-mix(in srgb, var(--venue-accent, #8a7d6e) 35%, #fff); }

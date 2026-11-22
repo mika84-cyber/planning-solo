@@ -3287,7 +3287,7 @@ test("Z Fold ouvert : la déclaration d’accident reste lisible sans débordeme
   expect(workAccidentBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.4);
 });
 
-test("la programmation GP suit l’ordre demandé et sépare les autres espaces", async ({ page }, testInfo) => {
+test("la programmation GP suit l’ordre demandé et range tous les espaces au même niveau", async ({ page }, testInfo) => {
   await page.clock.setFixedTime(new Date("2026-08-28T12:00:00"));
   await prepareDemo(page);
   await goToSection(page, "program");
@@ -3296,7 +3296,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
 
   // « En ce moment » se lit toujours dans le même ordre d'espaces : les
   // quatre grands, la Nef, puis tous les autres, quelles que soient les dates.
-  await page.getByRole("tab", { name: "En ce moment" }).click();
+  await page.getByRole("tab", { name: "En ce moment", exact: true }).click();
   const openVenues = await page.locator(".useful-expo-timeline .expo-card").evaluateAll((cards) =>
     cards.map((card) => card.getAttribute("data-venue") ?? ""),
   );
@@ -3334,7 +3334,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await page.locator('.grand-palais-program-panel').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/expos-blue-panel-${testInfo.project.name}.png` });
   await expect(page.locator(".grand-palais-program-intro")).toHaveCSS("border-left-width", accentSpine(page));
-  await expect(page.getByRole("tab", { name: "En ce moment" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "En ce moment", exact: true })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tab", { name: "À venir" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Inter-expos" })).toBeVisible();
   const overviewVenueColors = await page.locator(".grand-palais-program-panel article[data-venue]").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
@@ -3345,28 +3345,58 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(page.getByText(/Programmation prévisionnelle/)).toHaveCount(0);
   await expect(page.locator(".grand-palais-program-panel .useful-expo-timeline-mark").first()).toBeHidden();
   const choices = page.locator(".grand-palais-primary-picker > button");
-  // Une liste blanche : chaque espace a son liseré et son badge plein à sa
-  // couleur (bleu des Galeries 3 et 4) ; seul l'espace ouvert prend sa teinte.
+  // Une liste blanche, sans liseré (l'administrateur les a fait retirer le
+  // 22 novembre 2026) : la couleur de chaque espace est dans la case de
+  // gauche, qui porte son nombre d'expositions ; seul l'espace ouvert prend
+  // sa teinte, un contour à sa couleur et une case pleine (bleu des
+  // Galeries 3 et 4).
   await expect(choices.first().locator("b")).toHaveCSS("background-color", "rgb(50, 111, 168)");
+  await expect(choices.first().locator("b")).toHaveCSS("color", "rgb(255, 255, 255)");
   await expect(choices.first()).toHaveCSS("border-left-color", "rgb(50, 111, 168)");
-  expect(new Set(await choices.locator("b").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor))).size).toBeGreaterThanOrEqual(4);
-  expect(new Set(await choices.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).borderLeftColor))).size).toBeGreaterThanOrEqual(4);
+  expect(new Set(await choices.locator("b").evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor))).size).toBe(6);
+  const edges = await choices.evaluateAll((nodes) => nodes.map((node) => {
+    const style = getComputedStyle(node);
+    return { left: style.borderLeftWidth, top: style.borderTopWidth, color: style.borderLeftColor };
+  }));
+  for (const edge of edges) expect(edge.left).toBe(edge.top);
+  expect(new Set(edges.slice(1).map((edge) => edge.color)).size).toBe(1);
+  // La case est à gauche du nom, et assez grande pour se lire.
+  const [tileBox, nameBox] = await Promise.all([choices.nth(1).locator("b").boundingBox(), choices.nth(1).locator("> span").boundingBox()]);
+  expect(tileBox!.x + tileBox!.width).toBeLessThanOrEqual(nameBox!.x);
+  expect(tileBox!.width).toBeGreaterThanOrEqual(40);
   const rowBackgrounds = await choices.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
   expect(rowBackgrounds[0]).not.toBe(rowBackgrounds[1]);
   expect(new Set(rowBackgrounds.slice(1)).size).toBe(1);
-  await expect(choices).toHaveText([
-    /Galeries 3 et 4.*au programme/,
-    /Galerie 8.*au programme/,
-    /Galerie 7.*au programme/,
-    /Palais des enfants.*au programme/,
-    /Autres.*Nef et autres galeries RMN/,
+  // Tous les espaces au même niveau : les quatre grands, puis la Nef et les
+  // Galeries 9 et 10, sans choix « Autres » (choix de l'administrateur parmi
+  // huit propositions, le 22 novembre 2026).
+  expect(await choices.evaluateAll((buttons) => buttons.map((button) => button.querySelector("span")!.firstChild!.textContent))).toEqual([
+    "Galeries 3 et 4", "Galerie 8", "Galerie 7", "Palais des enfants", "Nef", "Galeries 9 et 10",
   ]);
+  // Chaque ligne dit ce qu'on y voit : l'exposition en cours et le temps
+  // qu'il lui reste, sinon la prochaine avec son délai, dans une pastille.
+  await expect(choices.locator("small")).toHaveText(Array.from({ length: 6 }, () => /^(En ce moment : .+|Prochaine : .+ (dans .+|demain|aujourd’hui|à confirmer))$/));
+  const childrenPalace = choices.filter({ hasText: "Palais des enfants" });
+  await expect(childrenPalace.locator("small > span")).toHaveText("En ce moment : Transparence");
+  await expect(childrenPalace.locator("small > i")).toHaveText("encore ~1 an");
+  await expect(childrenPalace.locator("small em")).toHaveCSS("color", "rgb(37, 104, 74)");
+  await expect(childrenPalace).toHaveAccessibleName("Palais des enfants, 1 exposition au programme. En ce moment : Transparence, encore ~1 an");
+  // Sur une ligne « Prochaine », un titre long se coupe, jamais le délai.
+  const upcoming = choices.filter({ has: page.locator('small em[data-kind="next"]') }).first();
+  await expect(upcoming.locator("small em")).toHaveCSS("color", "rgb(39, 93, 136)");
+  const [delayBox, lineBox] = await Promise.all([upcoming.locator("small i").boundingBox(), upcoming.locator("small").boundingBox()]);
+  expect(delayBox!.x + delayBox!.width).toBeLessThanOrEqual(lineBox!.x + lineBox!.width + 1);
+  expect(await upcoming.locator("small i").evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   const choiceBoxes = await choices.evaluateAll((buttons) =>
     buttons.map((button) => button.getBoundingClientRect().toJSON()),
   );
-  // Une ligne par espace, l'une sous l'autre, sur tous les écrans.
-  for (let index = 1; index < choiceBoxes.length; index++)
-    expect(choiceBoxes[index].y).toBeGreaterThanOrEqual(choiceBoxes[index - 1].y + choiceBoxes[index - 1].height - 1);
+  // Une ligne par espace, l'une sous l'autre sur téléphone ; deux colonnes
+  // sur ordinateur.
+  const columns = (page.viewportSize()?.width ?? 0) > 720 ? 2 : 1;
+  for (let index = 1; index < choiceBoxes.length; index++) {
+    if (index % columns) expect(Math.round(choiceBoxes[index].y)).toBe(Math.round(choiceBoxes[index - 1].y));
+    else expect(choiceBoxes[index].y).toBeGreaterThanOrEqual(choiceBoxes[index - columns].y + choiceBoxes[index - columns].height - 1);
+  }
   await page.mouse.move(0, 0);
   await page.locator('.grand-palais-venue-navigation').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `previews/coherent-expos-${testInfo.project.name}.png` });
@@ -3413,39 +3443,16 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await page.getByRole("tab", { name: /Palais des enfants/ }).click();
   await expect(page.locator(".grand-palais-venue-panel")).toContainText("Transparence");
 
-  await page.getByRole("tab", { name: /Autres/ }).click();
-  await expect(page.getByRole("tab", { name: "Nef", exact: true })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Galeries 9 et 10", exact: true })).toBeVisible();
-  const otherPicker = page.locator(".grand-palais-other-picker");
-  if ((page.viewportSize()?.width ?? 1000) <= 700) {
-    await otherPicker.evaluate((picker) => {
-      while (picker.querySelectorAll("button").length < 5) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.dataset.qaVenue = "true";
-        button.textContent = `Lieu test ${picker.querySelectorAll("button").length + 1}`;
-        picker.append(button);
-      }
-    });
-  }
-  const otherChoiceBoxes = await otherPicker.locator("button").evaluateAll((buttons) =>
-    buttons.map((button) => button.getBoundingClientRect().toJSON()),
-  );
-  if ((page.viewportSize()?.width ?? 1000) <= 700) {
-    expect(Math.round(otherChoiceBoxes[0].y)).toBe(Math.round(otherChoiceBoxes[1].y));
-    expect(Math.round(otherChoiceBoxes[2].y)).toBe(Math.round(otherChoiceBoxes[3].y));
-    expect(otherChoiceBoxes[4].width).toBeGreaterThan(otherChoiceBoxes[0].width * 1.8);
-    expect(Math.abs(otherChoiceBoxes[0].height - otherChoiceBoxes[3].height)).toBeLessThanOrEqual(1);
-    await otherPicker.locator('[data-qa-venue="true"]').evaluateAll((buttons) => buttons.forEach((button) => button.remove()));
-  } else {
-    // Deux colonnes aussi sur ordinateur : un nombre pair d'espaces ne laisse pas de case vide.
-    expect(Math.round(otherChoiceBoxes[0].y)).toBe(Math.round(otherChoiceBoxes[1].y));
-    if (otherChoiceBoxes.length >= 4) expect(Math.round(otherChoiceBoxes[2].y)).toBe(Math.round(otherChoiceBoxes[3].y));
-  }
-  // L'onglet choisi se signale par la couleur d'accent, comme dans le reste
-  // de l'application ; les teintes propres à chaque espace, elles, subsistent.
-  await expect(page.getByRole("tab", { name: "Nef", exact: true }))
-    .toHaveCSS("border-top-color", await cssTokenRgb(page, "--accent"));
+  // La Nef et les Galeries 9 et 10 se choisissent comme les autres espaces.
+  const nefTab = page.getByRole("tab", { name: /^Nef,/ });
+  await expect(page.getByRole("tab", { name: /^Galeries 9 et 10,/ })).toBeVisible();
+  await nefTab.click();
+  await expect(nefTab).toHaveAttribute("aria-selected", "true");
+  // L'espace choisi prend sa teinte claire, une case pleine et un contour de
+  // la même couleur (une fois les transitions finies).
+  await expect(nefTab.locator("b")).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(nefTab).not.toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect.poll(() => nefTab.evaluate((node) => getComputedStyle(node).borderTopColor === getComputedStyle(node.querySelector("b")!).backgroundColor)).toBe(true);
   // Les années se suivent en liste, chacune avec ses expositions.
   const nefYear = (year: number) => page.getByRole("region", { name: `Nef - ${year}` });
   await expect(nefYear(2026).locator("article")).toHaveCount(8);
@@ -3455,7 +3462,7 @@ test("la programmation GP suit l’ordre demandé et sépare les autres espaces"
   await expect(nefYear(2029)).toContainText("Du 17 au 21 octobre 2029");
   await expect(page.locator(".expo-year-heading").first()).toContainText("2026");
 
-  await page.getByRole("tab", { name: "Galeries 9 et 10", exact: true }).click();
+  await page.getByRole("tab", { name: /^Galeries 9 et 10,/ }).click();
   await expect(page.locator(".grand-palais-venue-panel")).toContainText("Leandro Erlich");
   await expect(page.locator(".grand-palais-venue-panel")).toContainText("Mika Ninagawa");
   await expect(page.getByRole("region", { name: "Galeries 9 et 10 - 2029" })).toContainText("Peter Doig");
@@ -4025,7 +4032,7 @@ test("une galerie d’« Ouvert aujourd’hui » affiche sa programmation", asyn
     const panel = page.getByRole("region", { name: `Programmation ${label}` });
     await expect(panel.getByRole("heading", { level: 3 })).toHaveText(label);
     await expect(panel).toBeInViewport();
-    await page.getByRole("tab", { name: "En ce moment" }).click();
+    await page.getByRole("tab", { name: "En ce moment", exact: true }).click();
   }
 });
 
@@ -4275,8 +4282,7 @@ test("le compte administrateur peut valider seul une mise à jour du Grand Palai
   await page.getByRole("button", { name: "Accepter", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Mises à jour détectées" })).toHaveCount(0);
   await page.getByRole("tab", { name: "Par espace" }).click();
-  await page.getByRole("tab", { name: /Autres/ }).click();
-  await expect(page.getByRole("tab", { name: "Salon d’honneur", exact: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /^Salon d’honneur,/ })).toBeVisible();
 });
 
 test("une exposition dont la page a été renommée reste affichée après le retrait de l’ancienne page", async ({ page }) => {
@@ -4301,8 +4307,7 @@ test("une exposition dont la page a été renommée reste affichée après le re
   await prepareDemo(page);
   await goToSection(page, "program");
   await page.getByRole("tab", { name: "Par espace" }).click();
-  await page.getByRole("tab", { name: /Autres/ }).click();
-  await page.getByRole("tab", { name: "Galerie 6.1", exact: true }).click();
+  await page.getByRole("tab", { name: /^Galerie 6\.1,/ }).click();
   await expect(page.locator(".grand-palais-program-screen")).toContainText("Gilles Caron. J'ai voulu voir");
 });
 
@@ -4334,8 +4339,7 @@ test("le Grand Palais de Glace n’a qu’une carte, avec ses trois grilles, sa 
   await prepareDemo(page);
   await goToSection(page, "program");
   await page.getByRole("tab", { name: "Par espace" }).click();
-  await page.getByRole("tab", { name: /Autres/ }).click();
-  await page.getByRole("tab", { name: "Nef", exact: true }).click();
+  await page.getByRole("tab", { name: /^Nef,/ }).click();
   const nef2026 = page.getByRole("region", { name: "Nef - 2026" });
   const glace = nef2026.locator("article").filter({ hasText: /Grand Palais de(?:s)? Glace/ });
   await expect(glace).toHaveCount(1);

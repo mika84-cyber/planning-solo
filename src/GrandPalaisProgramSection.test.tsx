@@ -25,6 +25,7 @@ import {
   proposalPricesLabel,
   safeGrandPalaisUrl,
   safeTicketingUrl,
+  venueHeadline,
   venueYearGroups,
 } from "./GrandPalaisProgramSection";
 
@@ -114,7 +115,7 @@ describe("programmation du Grand Palais", () => {
     expect(html).toMatch(/data-venue="(?:galleries34|gallery8|gallery7|nef|gallery910|childrenPalace)"/);
   });
 
-  it("range la Nef et les galeries 9 et 10 dans les autres espaces", () => {
+  it("garde la Nef et les galeries 9 et 10 parmi les espaces, à la suite des quatre grands", () => {
     expect(GRAND_PALAIS_PROGRAM.nef.label).toBe("Nef");
     expect(JSON.stringify(GRAND_PALAIS_PROGRAM.nef.schedule)).not.toContain("Grand Palais d’été");
     expect(GRAND_PALAIS_PROGRAM.gallery910.label).toBe("Galeries 9 et 10");
@@ -126,7 +127,7 @@ describe("programmation du Grand Palais", () => {
     expect(GRAND_PALAIS_PROGRAM.childrenPalace.schedule[2026]?.[0].title).toBe("Transparence");
   });
 
-  it("attribue une couleur stable à chaque espace, y compris ceux ajoutés dans Autres", () => {
+  it("attribue une couleur stable à chaque espace, y compris ceux que la veille ajoute", () => {
     const currentVenueKeys = [
       ...Object.keys(GRAND_PALAIS_PROGRAM),
       "other:grand-palais",
@@ -180,6 +181,61 @@ describe("programmation du Grand Palais", () => {
     );
     expect(duchamp).toContain("<em>À confirmer</em>");
     expect(duchamp).toContain('class="expo-card-status expo-card-countdown"><em>Dans 4 mois et 25 jours</em>');
+  });
+
+  it("dit en une ligne ce qu’on voit dans un espace : l’exposition en cours, sinon la prochaine", () => {
+    const venue = (...entries: { title: string; startsOn?: string; endsOn?: string; uncertain?: boolean }[]) => ({
+      label: "Espace", heading: "Espace", schedule: { 2026: entries.map((entry) => ({ period: "", ...entry })) },
+    });
+    // En cours : son titre et le temps qu'il lui reste, arrondi au-delà d'un
+    // mois. Une exposition terminée ne compte plus.
+    const cezanne = venue(
+      { title: "Finie", startsOn: "2026-06-01", endsOn: "2026-08-30" },
+      { title: "Cezanne et nous", startsOn: "2026-09-23", endsOn: "2027-01-17" },
+      { title: "Suivante", startsOn: "2027-03-23", endsOn: "2027-08-01" },
+    );
+    expect(venueHeadline(cezanne, "2026-11-22")).toEqual({ kind: "now", label: "En ce moment", title: "Cezanne et nous", detail: "encore ~2 mois" });
+    expect(venueHeadline(cezanne, "2027-01-08").detail).toBe("encore 9 jours");
+    expect(venueHeadline(cezanne, "2027-01-17").detail).toBe("dernier jour");
+    // Sans date de fin connue, pas de temps restant.
+    expect(venueHeadline({ label: "Espace", heading: "Espace", schedule: { 2026: [{ title: "Ouverte", period: "", currentlyOpen: true }] } }, "2026-11-22"))
+      .toEqual({ kind: "now", label: "En ce moment", title: "Ouverte", detail: "" });
+    // Plusieurs en cours : celle qui ferme la première, avec son temps
+    // restant, « et 1 autre », « et 2 autres ».
+    const three = venue(
+      { title: "Longue", startsOn: "2026-09-01", endsOn: "2027-06-01" },
+      { title: "Courte", startsOn: "2026-11-01", endsOn: "2026-12-01" },
+      { title: "Moyenne", startsOn: "2026-10-01", endsOn: "2027-02-01" },
+    );
+    expect(venueHeadline(three, "2026-11-22")).toMatchObject({ title: "Courte et 2 autres", detail: "encore 9 jours" });
+    expect(venueHeadline(three, "2026-12-02").title).toBe("Moyenne et 1 autre");
+    // À venir : la plus proche, et son délai à part (il s'affiche dans une
+    // pastille, et reste lisible quand le titre se coupe).
+    const upcoming = venue(
+      { title: "Plus tard", startsOn: "2027-04-02", endsOn: "2027-06-01" },
+      { title: "Le Musée Imaginaire d’Oli", startsOn: "2026-12-02", endsOn: "2027-02-21" },
+    );
+    expect(venueHeadline(upcoming, "2026-11-22")).toEqual({ kind: "next", label: "Prochaine", title: "Le Musée Imaginaire d’Oli", detail: "dans 10 jours" });
+    expect(venueHeadline(upcoming, "2026-12-01").detail).toBe("demain");
+    // Le jour même avant 00 h 05, elle n'est pas encore « en cours ».
+    expect(venueHeadline(upcoming, "2026-12-02", false)).toMatchObject({ kind: "next", detail: "aujourd’hui" });
+    expect(venueHeadline(upcoming, "2026-12-02")).toMatchObject({ kind: "now", title: "Le Musée Imaginaire d’Oli" });
+    // Au-delà d'un mois, le délai s'arrondit comme ailleurs dans les Expos.
+    expect(venueHeadline(venue({ title: "Lointaine", startsOn: "2027-03-23", endsOn: "2027-08-01" }), "2026-11-22").detail).toBe("dans ~4 mois");
+    // Datée mais à confirmer : on le dit à la place du délai.
+    expect(venueHeadline(venue({ title: "Marcel Duchamp", startsOn: "2027-03-23", endsOn: "2027-08-01", uncertain: true }), "2026-11-22"))
+      .toEqual({ kind: "next", label: "Prochaine", title: "Marcel Duchamp", detail: "à confirmer" });
+    // Une exposition écrite dans deux années ne compte qu'une fois.
+    expect(venueHeadline({ label: "Espace", heading: "Espace", schedule: {
+      2026: [{ title: "À cheval", period: "", startsOn: "2026-10-01", endsOn: "2027-02-01" }],
+      2027: [{ title: "À cheval", period: "", startsOn: "2026-10-01", endsOn: "2027-02-01" }],
+    } }, "2026-11-22").title).toBe("À cheval");
+    // Rien au programme, ou un espace inconnu.
+    expect(venueHeadline(venue(), "2026-11-22")).toEqual({ kind: "none", label: "", title: "Rien d’annoncé pour l’instant", detail: "" });
+    expect(venueHeadline(undefined, "2026-11-22").kind).toBe("none");
+    // Sur le programme livré, le 22 novembre 2026.
+    expect(venueHeadline(GRAND_PALAIS_PROGRAM.childrenPalace, "2026-11-22")).toMatchObject({ kind: "now", title: "Transparence" });
+    expect(venueHeadline(GRAND_PALAIS_PROGRAM.gallery7, "2026-11-22")).toMatchObject({ kind: "next", detail: "dans 10 jours" });
   });
 
   it("retire automatiquement une exposition dont la date de fin est dépassée", () => {
