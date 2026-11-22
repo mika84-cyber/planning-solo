@@ -341,7 +341,7 @@ export function UsefulFormsSection({
             />
           </figure>
         ) : folder.documents.length || folder.audioguides?.length ? (
-          <div className={`useful-form-download-list${isAdmin ? " doc-cards" : ""}`} style={{ "--contact-category-accent": FOLDER_TONES[folder.key] ?? DEFAULT_TONE } as CSSProperties}>
+          <div className="useful-form-download-list doc-cards" style={{ "--contact-category-accent": FOLDER_TONES[folder.key] ?? DEFAULT_TONE } as CSSProperties}>
             {!secureContext ? (
               <p className="useful-form-local-notice">
                 Mode de test local : les PDF s’ouvrent dans le lecteur du navigateur. Utilisez ensuite son bouton Enregistrer. Le téléchargement direct sans alerte sera disponible sur la version sécurisée.
@@ -353,22 +353,18 @@ export function UsefulFormsSection({
               const sendTo = "sendTo" in document ? document.sendTo : undefined;
               return (
               <article key={document.file} className="useful-form-download-card">
-                {/* Un sommaire : le rang du document, son titre, puis l'action.
-                    L'administrateur garde ses fiches (usefulDocumentAdmin.css) :
-                    une icône, le rang et le format au-dessus du titre. */}
-                {isAdmin ? (
-                  <span className="useful-form-file-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v5h5M9 13h6M9 17h6" /></svg>
-                  </span>
-                ) : <span className="useful-form-number" aria-hidden="true">{index + 1}</span>}
+                {/* Une fiche, la même pour tous les comptes
+                    (usefulDocumentAdmin.css) : une icône, le rang et le format
+                    au-dessus du titre, puis le téléchargement. Seuls la date de
+                    publication, « Modifier » et le partage sont réservés à
+                    l'administrateur (demande du 22 novembre 2026). */}
+                <span className="useful-form-file-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v5h5M9 13h6M9 17h6" /></svg>
+                </span>
                 <span className="useful-form-file-copy">
-                  {isAdmin ? <small>{index + 1}. {document.format}</small> : null}
+                  <small>{index + 1}. {document.format}</small>
                   <strong>{document.title}</strong>
-                  {/* Sommaire : « PDF · À envoyer à » tient sur la ligne du format et
-                      l'adresse sur la suivante, soit trois lignes avec le titre
-                      (demande de l'administrateur, le 21 novembre 2026). */}
-                  {isAdmin ? null : <small>{document.format}{sendTo ? " · À envoyer à" : null}</small>}
-                  {sendTo ? <small className="useful-form-send-to">{isAdmin ? "À envoyer à " : null}<a href={`mailto:${sendTo}`}>{sendTo.split("@")[0]}<wbr />@{sendTo.split("@")[1]}</a></small> : null}
+                  {sendTo ? <small className="useful-form-send-to">À envoyer à <a href={`mailto:${sendTo}`}>{sendTo.split("@")[0]}<wbr />@{sendTo.split("@")[1]}</a></small> : null}
                   {isAdmin && document.publishAt && Date.parse(document.publishAt) > Date.now() && <small>{document.publishAt.startsWith('9999') ? 'Brouillon · À reprogrammer' : `Publication le ${new Date(document.publishAt).toLocaleString('fr-FR')}`}</small>}
                   {isAdmin && <button className="document-edit-button" type="button" aria-label={`Modifier ${document.title}`} onClick={() => setEditDocument(document)}>Modifier</button>}
                 </span>
@@ -405,13 +401,11 @@ export function UsefulFormsSection({
             {headings ? <h3 className="useful-form-list-heading">{headings.audioguides}</h3> : null}
             {folder.audioguides?.map((guide, index) => (
               <article key={guide.title} className="useful-form-download-card useful-audioguide-card">
-                {isAdmin ? (
-                  <span className="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
-                  </span>
-                ) : <span className="useful-form-number" aria-hidden="true">{index + 1}</span>}
+                <span className="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><path d="M4 15a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2z" /></svg>
+                </span>
                 <span className="useful-form-file-copy">
-                  {isAdmin ? <small>{index + 1}. AUDIOGUIDE</small> : null}
+                  <small>{index + 1}. AUDIOGUIDE</small>
                   <strong>Audioguide {guide.title}</strong>
                   <small className="useful-audioguide-code">{guide.languages}</small>
                   <small className="useful-audioguide-code">Code d’accès <b>{guide.code}</b></small>

@@ -625,7 +625,8 @@ describe("finitions d’interface", () => {
     expect(appNavigation).not.toContain("Mode d’emploi");
     expect(appNavigation).not.toContain("Compte et réglages");
     expect(appNavigation).not.toContain("État de sauvegarde");
-    expect(documentsSectionScreen).toContain("<UsefulResourcesHub");
+    // La rubrique Documents monte ses deux onglets : vérifié par le rendu dans
+    // DocumentsSectionScreen.test.tsx.
     // Les plannings PDF s'ouvrent depuis le calendrier, dans une fenêtre.
     expect(planningWorkspace).toContain("planning-pdf-dialog");
     // Deux onglets seulement, sans plannings PDF : vérifié par le rendu dans
@@ -695,7 +696,7 @@ describe("finitions d’interface", () => {
     expect(css.anywhere("html[data-theme=\"dark\"]")).toBe(false);
     // Le téléchargement d'un formulaire est un bouton réduit à son icône pour
     // tous les comptes ; il garde son nom pour les lecteurs d'écran (scénario
-    // e2e « un invité voit les documents d’un dossier en sommaire numéroté »).
+    // e2e « un invité voit les mêmes fiches que l’administrateur, sans ses options »).
   });
 
   it("renforce les contours des commandes de l’en-tête", () => {

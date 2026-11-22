@@ -408,7 +408,7 @@ export function UsefulContactsSection({ initialData, isAdmin = false, demoMode =
           <button className="section-back-hit-area" type="button" onClick={() => setDirectory(null)} aria-label="Revenir aux contacts utiles"><span className="section-back-arrow" aria-hidden="true">←</span></button>
           <div><span className="step-label">Contacts utiles</span><h2 id="visitor-contacts-title">Pour les visiteurs</h2></div>
         </header>
-        <VisitorQrLinks cards={isAdmin} />
+        <VisitorQrLinks />
       </section>
     );
   }

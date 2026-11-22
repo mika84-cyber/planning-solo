@@ -52,6 +52,9 @@ describe("DocumentsSectionScreen", () => {
         <DocumentsSectionScreen {...baseProps} shell={{ ...baseProps.shell, homeSection }} />,
       );
       expect(html).toContain("useful-resources-screen");
+      // Les deux onglets de la rubrique, Formulaires ouvert d'abord.
+      expect(html).toContain('<div class="useful-resource-tabs" role="tablist" aria-label="Documents et contacts">');
+      expect(html.match(/role="tab"[^>]*aria-label="([^"]+)"/g)?.map((tab) => tab.replace(/.*aria-label="([^"]+)"/, "$1"))).toEqual(["Formulaires", "Contacts"]);
       expect(html).toContain("Formulaires du 2026-09-03");
       expect(html).not.toContain("Programmation GP");
       expect(html).not.toContain("Plannings des collègues");

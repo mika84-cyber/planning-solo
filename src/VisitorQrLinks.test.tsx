@@ -13,26 +13,16 @@ describe("QR codes pour les visiteurs", () => {
     expect(html).toContain('href="https://l.ead.me/bg72nl"');
     expect(html).toContain('href="https://l.ead.me/bg72lH"');
     expect(html).toContain("Afficher le QR code");
-    // Même sommaire numéroté que les documents : un rang, plus d'icône.
-    expect(html.match(/<span class="useful-form-number" aria-hidden="true">\d<\/span>/g)).toEqual([
-      '<span class="useful-form-number" aria-hidden="true">1</span>',
-      '<span class="useful-form-number" aria-hidden="true">2</span>',
-    ]);
-    expect(html).not.toContain("useful-form-file-icon");
-    expect(html).toContain("--contact-category-accent:#c9623a");
   });
 
-  it("garde les fiches d'avant le sommaire pour le compte administrateur", () => {
-    const html = renderToStaticMarkup(<VisitorQrLinks cards />);
-    // Une icône à la place du rang, et la liste marquée pour ses règles de
-    // fiche (usefulDocumentAdmin.css), sans couleur de dossier.
+  it("présente les QR codes en fiches, les mêmes pour tous les comptes", () => {
+    const html = renderToStaticMarkup(<VisitorQrLinks />);
+    // Une icône par fiche, et la liste marquée pour les règles des fiches
+    // (usefulDocumentAdmin.css) : ni rang de sommaire, ni couleur de dossier.
     expect(html).toContain('<div class="useful-form-download-list visitor-qr-list doc-cards">');
     expect(html.match(/<span class="useful-form-file-icon useful-audioguide-icon" aria-hidden="true">/g)).toHaveLength(2);
     expect(html).not.toContain("useful-form-number");
     expect(html).not.toContain("--contact-category-accent");
-    expect(html).toContain('href="https://l.ead.me/bg72nl"');
-    // Les autres comptes gardent le sommaire.
-    expect(renderToStaticMarkup(<VisitorQrLinks />)).toContain('<div class="useful-form-download-list visitor-qr-list" style=');
   });
 
   it("ajoute « Pour les visiteurs » aux annuaires des contacts", () => {

@@ -1492,7 +1492,9 @@ test("un échange proposé par un collègue s’accepte d’un geste et s’insc
   });
   await page.goto("/?demo-exchange-request=1");
   const dialog = page.getByRole("dialog", { name: "Camille Durand vous propose un échange" });
-  await expect(dialog).toContainText(/Vous travaillez à sa place le \w+ \d+ \w+ 2\d{3}, de 10 h à 18 h\./);
+  // \p{L} et non \w : la date suit le jour où le parcours tourne, et \w ne
+  // reconnaît pas le « é » de « décembre », « février » ou « août ».
+  await expect(dialog).toContainText(/Vous travaillez à sa place le \p{L}+ \d+ \p{L}+ 2\d{3}, de 10 h à 18 h\./u);
   await expect(dialog).toContainText("Camille Durand vous remplace le");
   await dialog.getByRole("button", { name: "Accepter", exact: true }).click();
   await expect(dialog).toBeHidden();
@@ -2643,11 +2645,10 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   // exacte laisse la place à un bouton plus grand, jamais plus petit.
   expect(downloadIconBox.width).toBeGreaterThanOrEqual(44);
   expect(downloadIconBox.height).toBeGreaterThanOrEqual(44);
-  // Le compte administrateur garde ses fiches d'avant le sommaire numéroté :
-  // une icône, le rang et le format au-dessus du titre, le téléchargement
-  // réduit à son icône, un liseré et un fond à la couleur du dossier.
+  // Une fiche par document, la même pour tous les comptes : une icône, le
+  // rang et le format au-dessus du titre, le téléchargement réduit à son
+  // icône, un liseré et un fond à la couleur du dossier.
   await expect(sapLinks.first().locator(".useful-form-download-label")).toHaveCSS("width", "1px");
-  await expect(page.locator(".useful-form-number")).toHaveCount(0);
   await expect(page.locator(".useful-form-file-icon")).toHaveCount(3);
   await expect(page.locator(".useful-form-file-copy > small:first-child")).toHaveText(["1. PDF", "2. PDF", "3. PDF"]);
   const firstCard = page.locator(".useful-form-download-card").first();
@@ -2695,77 +2696,85 @@ test("les formulaires utiles conservent leurs dossiers, leur ordre et leur tél�
   await expect(page.locator(".useful-form-download-list")).toHaveCount(0);
 });
 
-test("un invité voit les documents d’un dossier en sommaire numéroté, sur une ligne", async ({ page }) => {
-  // Jusqu'au 20 novembre 2026, les colonnes d'une fiche n'existaient que dans
-  // la feuille de l'administrateur : un invité voyait l'icône, le titre et un
-  // grand bouton sans texte empilés.
+test("un invité voit les mêmes fiches que l’administrateur, sans ses options", async ({ page }) => {
+  // Du 20 au 22 novembre 2026, les comptes invités ont vu un sommaire
+  // numéroté ; l'administrateur a ensuite demandé pour eux « la même
+  // présentation » que son compte, « sans les options administrateur ».
   await prepareDemo(page);
+  // Ce qui fait l'allure d'une fiche, relevé sur le compte ouvert.
+  const look = () => page.locator(".useful-form-download-list").evaluate((list) => {
+    const read = (node: Element | null, names: string[]) => {
+      const style = getComputedStyle(node!);
+      return names.map((name) => style.getPropertyValue(name));
+    };
+    const card = list.querySelector(":scope > .useful-form-download-card")!;
+    return {
+      list: read(list, ["row-gap"]),
+      card: read(card, ["border-left-width", "border-left-color", "border-top-width", "border-top-color", "border-top-left-radius", "padding-top", "padding-left", "background-image", "box-shadow"]),
+      icon: read(card.querySelector(".useful-form-file-icon"), ["width", "height", "border-top-left-radius", "background-color", "color"]),
+      rank: read(card.querySelector(".useful-form-file-copy > small"), ["font-size", "font-weight", "letter-spacing", "color"]),
+      title: read(card.querySelector("strong"), ["font-size", "font-weight", "color"]),
+      link: read(card.querySelector(":scope > a"), ["width", "height", "border-top-left-radius", "background-color", "color"]),
+    };
+  });
+  await openUsefulResource(page, "Formulaires");
+  await page.getByRole("button", { name: /Formulaire SAP/ }).click();
+  await expect(page.locator(".document-share-button")).toHaveCount(3);
+  const adminLook = await look();
+
   await page.goto("/?local-test=1&preview-feedback-role=user");
   await openUsefulResource(page, "Formulaires");
-  // La case d'un document à renvoyer par courriel tient en trois lignes : le
-  // titre, « PDF · À envoyer à », puis l'adresse (demande de l'administrateur,
-  // le 21 novembre 2026 ; elle en faisait quatre sur téléphone).
+  // Un document à renvoyer par courriel le dit sous son titre, comme sur le
+  // compte de l'administrateur.
   await page.getByRole("button", { name: /Formulaire Brantôme/ }).click();
-  const mailRow = page.locator(".useful-form-download-card").filter({ hasText: "Formulaire d’adhésion carte POP" });
-  await expect(mailRow.locator("small").first()).toHaveText("PDF · À envoyer à");
-  await expect(mailRow.locator(".useful-form-send-to")).toHaveText("collectivites@centrepompidou.fr");
-  const mailLines = await mailRow.locator(".useful-form-file-copy").evaluate((node) => [...node.children].map((child) => child.getBoundingClientRect().height));
-  expect(mailLines).toHaveLength(3);
-  // « PDF · À envoyer à » tient sur une ligne partout. Le titre et l'adresse
-  // dépendent de la police du système (plus large sous Linux, en CI, où le
-  // titre passe sur deux lignes à largeur de téléphone) : on ne les compte
-  // que sur ordinateur, où la place ne manque dans aucune police.
-  expect(mailLines[1]).toBeLessThan(24);
-  if (page.viewportSize()!.width >= 1000) for (const height of mailLines) expect(height).toBeLessThan(24);
+  const mailCard = page.locator(".useful-form-download-card").filter({ hasText: "Formulaire d’adhésion carte POP" });
+  await expect(mailCard.locator("small").first()).toHaveText("6. PDF");
+  await expect(mailCard.locator(".useful-form-send-to")).toHaveText("À envoyer à collectivites@centrepompidou.fr");
+  await expect(mailCard.getByRole("link", { name: "collectivites@centrepompidou.fr" })).toHaveAttribute("href", "mailto:collectivites@centrepompidou.fr");
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+
   await page.getByRole("button", { name: /Formulaire SAP/ }).click();
-  const list = page.locator(".useful-form-download-list");
-  const rows = list.locator(":scope > .useful-form-download-card");
-  await expect(rows).toHaveCount(3);
+  const cards = page.locator(".useful-form-download-list > .useful-form-download-card");
+  await expect(cards).toHaveCount(3);
+  // Les options de l'administrateur n'y sont pas : ni l'ajout d'un document,
+  // ni « Modifier », ni le partage.
+  await expect(page.locator(".useful-document-admin-panel")).toHaveCount(0);
+  await expect(page.locator(".document-edit-button")).toHaveCount(0);
   await expect(page.locator(".document-share-button")).toHaveCount(0);
-  const row = rows.first();
-  const [rowBox, numberBox, titleBox, linkBox] = await Promise.all([
-    row.boundingBox(),
-    row.locator(".useful-form-number").boundingBox(),
-    row.locator("strong").boundingBox(),
-    row.locator("a").boundingBox(),
+  // La fiche est la sienne : une icône, le rang et le format au-dessus du
+  // titre, un liseré et un fond à la couleur du dossier, les mêmes valeurs.
+  await expect(page.locator(".useful-form-file-icon")).toHaveCount(3);
+  await expect(page.locator(".useful-form-file-copy > small:first-child")).toHaveText(["1. PDF", "2. PDF", "3. PDF"]);
+  const card = cards.first();
+  await expect(card).toHaveCSS("border-left-width", "6px");
+  await expect(card).not.toHaveCSS("background-image", "none");
+  expect(await look()).toEqual(adminLook);
+  // L'icône, le titre, puis le téléchargement, côte à côte dans la fiche.
+  const link = card.getByRole("link", { name: "Télécharger Demande de congés" });
+  const [cardBox, iconBox, titleBox, linkBox] = await Promise.all([
+    card.boundingBox(),
+    card.locator(".useful-form-file-icon").boundingBox(),
+    card.locator("strong").boundingBox(),
+    link.boundingBox(),
   ]);
-  // Le rang, le titre, puis l'action, côte à côte dans la ligne.
-  expect(numberBox!.x + numberBox!.width).toBeLessThanOrEqual(titleBox!.x);
+  expect(iconBox!.x + iconBox!.width).toBeLessThanOrEqual(titleBox!.x);
   expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(linkBox!.x + 1);
-  expect(linkBox!.x + linkBox!.width).toBeLessThanOrEqual(rowBox!.x + rowBox!.width + 1);
-  expect(Math.abs(linkBox!.y + linkBox!.height / 2 - (rowBox!.y + rowBox!.height / 2))).toBeLessThanOrEqual(2);
-  // Le téléchargement : un bouton rond réduit à son icône (choix de
-  // l'administrateur sur maquette, le 20 novembre 2026), assez grand pour le
-  // doigt, et qui garde son nom pour les lecteurs d'écran.
-  const link = row.getByRole("link", { name: "Télécharger Demande de congés" });
-  await expect(link).toHaveCSS("border-top-left-radius", "50%");
-  await expect(link).toHaveCSS("border-top-style", "solid");
+  expect(linkBox!.x + linkBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 1);
+  // Le téléchargement : un bouton plein réduit à son icône, assez grand pour
+  // le doigt, et qui garde son nom pour les lecteurs d'écran.
   await expect(link.locator(".useful-form-download-label")).toHaveCSS("width", "1px");
+  await expect(link).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(link).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   expect(linkBox!.width).toBeGreaterThanOrEqual(44);
   expect(linkBox!.height).toBeGreaterThanOrEqual(44);
-  await expect(row.locator("small").first()).toHaveText("PDF");
-  // Le sommaire repose sur un fond à la couleur du dossier ; un filet blanc
-  // de 2 px, du blanc du bouton, sépare les lignes, sans case autour de
-  // chacune (choix de l'administrateur sur maquette, le 21 novembre 2026).
-  await expect(list).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect(row).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect(row).toHaveCSS("border-bottom-width", "2px");
-  await expect(row).toHaveCSS("border-bottom-color", await link.evaluate((node) => getComputedStyle(node).backgroundColor));
-  // Le dernier rang n'est pas souligné : son filet dépasse de deux pixels
-  // sous le fond, qui le rogne, sur une colonne comme sur deux.
-  await expect(list).toHaveCSS("overflow", "hidden");
-  const hiddenLine = await list.evaluate((node) => {
-    const last = node.querySelector(":scope > .useful-form-download-card:last-of-type")!;
-    const visibleBottom = node.getBoundingClientRect().bottom - parseFloat(getComputedStyle(node).borderBottomWidth);
-    return last.getBoundingClientRect().bottom - visibleBottom;
-  });
-  expect(hiddenLine).toBeGreaterThan(1.4);
-  expect(hiddenLine).toBeLessThan(2.6);
-  // Toute la ligne se touche : un toucher sur le titre atteint le lien, étiré
-  // sur la ligne, et ouvre aussi le téléchargement.
-  await row.click({ position: { x: titleBox!.x - rowBox!.x + 12, y: titleBox!.y - rowBox!.y + titleBox!.height / 2 } });
-  await expect(page.getByRole("dialog", { name: "Et si vous la remplissiez dans l’appli ?" })).toBeVisible();
+  // Seul le bouton télécharge : un toucher sur le titre ne déclenche rien
+  // (relevé sur l'instant, une vérification qui attend ne prouverait rien).
+  const reminder = page.getByRole("dialog", { name: "Et si vous la remplissiez dans l’appli ?" });
+  await card.locator("strong").click();
+  await page.waitForTimeout(250);
+  expect(await reminder.count()).toBe(0);
+  await link.click();
+  await expect(reminder).toBeVisible();
 });
 
 test("l’administrateur partage un document et l’alerte invitée ouvre la bonne rubrique", async ({ page }) => {
@@ -2982,30 +2991,32 @@ test("les titres repas de Ma paie et ceux de Docs renvoient l’un à l’autre"
 test("les documents d’un dossier portent tous la couleur du dossier", async ({ page }) => {
   await prepareDemo(page);
   // Jusqu'au 12 novembre 2026 : six teintes en boucle, sans signification.
-  // L'administrateur lit la couleur du dossier sur le liseré de ses fiches,
-  // les autres comptes sur le rang de chaque document, où elle est foncée
-  // (78 % de la couleur, le reste de noir) pour se lire sur le fond coloré.
-  for (const [address, marks, property, shade] of [
-    ["/?local-test=1", ".useful-form-download-list > .useful-form-download-card", "borderLeftColor", "100%"],
-    ["/?local-test=1&preview-feedback-role=user", ".useful-form-download-list > .useful-form-download-card > .useful-form-number", "color", "78%"],
-  ] as const) {
+  // Tous les comptes lisent la couleur du dossier sur le liseré de chaque
+  // fiche et, en plus foncé (78 % de la couleur, le reste de noir), sur le
+  // bouton de téléchargement.
+  for (const address of ["/?local-test=1", "/?local-test=1&preview-feedback-role=user"]) {
     await page.goto(address);
     await openUsefulResource(page, "Formulaires");
     for (const [folder, tone] of [["Formulaire SAP", "rgb(83, 104, 168)"], ["Formulaire Brantôme", "rgb(185, 120, 30)"]] as const) {
       await page.getByRole("button", { name: new RegExp(folder) }).click();
-      const nodes = page.locator(marks);
-      await expect(nodes.first()).toBeVisible();
-      const colors = await nodes.evaluateAll((items, name) => items.map((item) => getComputedStyle(item)[name]), property);
-      expect(colors.length).toBeGreaterThan(1);
-      // La couleur attendue, calculée par le navigateur lui-même.
-      const expected = shade === "100%" ? tone : await page.evaluate(([color, share]) => {
-        const probe = document.body.appendChild(document.createElement("span"));
-        probe.style.color = `color-mix(in srgb, ${color} ${share}, #000)`;
-        const value = getComputedStyle(probe).color;
-        probe.remove();
-        return value;
-      }, [tone, shade] as const);
-      expect(new Set(colors)).toEqual(new Set([expected]));
+      for (const [marks, property, shade] of [
+        [".useful-form-download-list > .useful-form-download-card", "borderLeftColor", "100%"],
+        [".useful-form-download-list > .useful-form-download-card > a", "backgroundColor", "78%"],
+      ] as const) {
+        const nodes = page.locator(marks);
+        await expect(nodes.first()).toBeVisible();
+        const colors = await nodes.evaluateAll((items, name) => items.map((item) => getComputedStyle(item)[name]), property);
+        expect(colors.length).toBeGreaterThan(1);
+        // La couleur attendue, calculée par le navigateur lui-même.
+        const expected = shade === "100%" ? tone : await page.evaluate(([color, share]) => {
+          const probe = document.body.appendChild(document.createElement("span"));
+          probe.style.backgroundColor = `color-mix(in srgb, ${color} ${share}, #000)`;
+          const value = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return value;
+        }, [tone, shade] as const);
+        expect(new Set(colors)).toEqual(new Set([expected]));
+      }
       await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
     }
   }

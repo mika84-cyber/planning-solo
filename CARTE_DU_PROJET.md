@@ -561,36 +561,29 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   Comme `UsefulContactsSection.tsx`, l’en-tête se limite au surtitre et au
   titre (phrases d’explication retirées le 4 novembre 2026). Une recherche
   sans résultat le dit (« Aucun document ne porte ce nom. »). Les documents
-  d'un dossier se lisent en sommaire numéroté, sauf pour le compte
-  administrateur (voir plus bas) : un
-  grand chiffre (`.useful-form-number`) à la couleur du dossier
-  (`FOLDER_TONES`, posée en `--contact-category-accent` sur
-  `.useful-form-download-list`), le titre et son format, puis un bouton rond
-  cerclé, réduit à l'icône de téléchargement (libellé masqué ; le lien garde
-  son nom, « Télécharger » suivi du titre, pour les lecteurs d'écran) ; le tout sur un fond à la couleur du dossier, à 18 %
-  (choix de l'administrateur sur maquette, le 20 novembre 2026 : il a
-  trouvé 10 % trop pâle ; à 18 %, « PDF » garde un contraste de 4,5). Un filet blanc
-  de 2 px, du blanc du bouton (`var(--surface)`, donc sombre en mode
-  sombre), sépare les lignes (son choix parmi cinq séparations, le
-  21 novembre 2026), sauf sous le dernier rang : chaque ligne déborde de
-  deux pixels (`margin-bottom: -2px`) et le fond (`overflow: hidden`, bordure
-  basse transparente en guise de marge) rogne le dernier filet, sur une
-  colonne comme sur deux, sans compter les rangs. Toute la ligne se touche
-  (lien étiré). Un document à renvoyer par courriel (`sendTo`) tient en trois
-  lignes : le titre, « PDF · À envoyer à », puis l'adresse (sa demande du
-  même jour ; l'administrateur garde « À envoyer à » devant l'adresse, dans
-  sa fiche). Les audioguides d'un dossier et les QR
-  codes des visiteurs (`VisitorQrLinks.tsx`, dans Contacts) suivent le même
-  format, avec leurs deux boutons sous le titre. `--doc-fill` colore les
-  boutons pleins et `--doc-ink` les textes ; le premier garde un nom sans
-  « text » ni « ink » pour échapper à l'éclaircissement des textes du mode
-  sombre (`darkStyles.ts`). Le compte administrateur garde, lui, ses fiches
-  d'avant le sommaire (sa demande, le 20 novembre 2026) : `isAdmin` pose
-  `doc-cards` sur la liste (et `cards` sur `VisitorQrLinks`), le composant
-  rend une icône, le rang et le format au-dessus du titre ; les règles de ces
-  fiches sont dans `usefulDocumentAdmin.css` et l'emportent sur le sommaire.
-  Une règle réservée au sommaire se cible par `.useful-form-number~a` (le
-  chiffre n'existe que là) ou par `.useful-form-download-list:not(.doc-cards)`.
+  d'un dossier se lisent en fiches, les mêmes pour tous les comptes : un
+  liseré de 6 px et un fond pastel à la couleur du dossier (`FOLDER_TONES`,
+  posée en `--contact-category-accent` sur `.useful-form-download-list`), une
+  icône, le rang et le format au-dessus du titre (« 1. PDF »), puis un bouton
+  plein de 44 px, à la couleur foncée du dossier, réduit à l'icône de
+  téléchargement (libellé masqué ; le lien garde son nom, « Télécharger »
+  suivi du titre, pour les lecteurs d'écran). Seul ce bouton télécharge : la
+  fiche ne se touche pas en entier. Un document à renvoyer par courriel
+  (`sendTo`) le dit sous son titre (« À envoyer à » et l'adresse, cliquable).
+  Les audioguides d'un dossier et les QR codes des visiteurs
+  (`VisitorQrLinks.tsx`, dans Contacts) suivent le même format, avec leurs
+  deux boutons bruns sous le titre. Seul l'administrateur reçoit en plus
+  l'ajout d'un document, la date de publication, « Modifier » et le partage
+  (`isAdmin`) ; le bouton de partage ajoute sa colonne
+  (`.useful-form-download-card:has(.document-share-button)`). Les colonnes
+  sont dans `14-documents-contacts.css` ; le cadre, le fond et les teintes
+  dans `usefulDocumentAdmin.css`, sous la classe `doc-cards` que portent
+  toutes les listes. Historique : du 20 au 22 novembre 2026, les comptes
+  invités et collègues ont vu un sommaire numéroté (grand chiffre, fond
+  coloré, bouton rond, filet blanc) pendant que l'administrateur gardait ses
+  fiches ; le 22, il a demandé pour eux « la même présentation » que son
+  compte, « sans les options administrateur », et les règles du sommaire ont
+  été retirées.
   Pour voir ce que
   voient les autres comptes : `/?local-test=1&preview-feedback-role=user`.
   L'écran

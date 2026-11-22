@@ -165,11 +165,8 @@ html[data-theme="dark"] .colleague-week-legend { color: #c9bcb0; }
 html[data-theme="dark"] .colleague-sharing-page button.colleague-today-step { border-color: #9b84d6; background: transparent; color: #cbbcf3; }
 html[data-theme="dark"] .colleague-sharing-page button.colleague-today-step:hover { background: rgba(155, 132, 214, 0.16); }
 html[data-theme="dark"] .useful-resource-tab.resource-pdf { --tile-tint: #3a2620; --tile-ink: #f0a988; }
-/* Sommaire des documents : le chiffre et l'icône de téléchargement dans la
-   couleur du dossier, éclaircie. */
-html[data-theme="dark"] .useful-form-download-list { --doc-ink: color-mix(in srgb, var(--contact-category-accent) 50%, #fff); }
-/* Fiches du compte administrateur : le bouton de téléchargement garde la
-   couleur foncée du dossier. */
+/* Fiches des documents : le bouton de téléchargement garde la couleur foncée
+   du dossier. */
 html[data-theme="dark"] .doc-cards article > a { background: color-mix(in srgb, var(--contact-category-accent) 72%, #000); color: #fff; }
 /* Rappel du formulaire (Formulaire SAP) : « Remplir dans l'appli » garde le
    bleu du dossier, la vignette passe en bleu nuit. */

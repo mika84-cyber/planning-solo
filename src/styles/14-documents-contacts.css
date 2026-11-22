@@ -232,51 +232,17 @@
 
 .useful-forms-folder-header small { color: var(--folder-accent); font-weight: 850; }
 
-/* Documents d'un dossier : un sommaire numéroté. Un grand chiffre à la couleur
-  du dossier, le titre, puis un bouton rond de téléchargement ; un filet blanc
-  sépare les lignes. Les colonnes sont posées ici, pour tous les comptes : jusqu'au
-  20 novembre 2026 elles ne l'étaient que dans la feuille de l'administrateur,
-  et un invité voyait tout empilé. */
+/* Documents d'un dossier : une fiche par document, la même pour tous les
+  comptes (une icône, le rang et le format, le titre, puis le téléchargement).
+  Les colonnes sont posées ici ; le cadre, le fond et les teintes des fiches
+  sont dans usefulDocumentAdmin.css (classe `doc-cards`). Du 20 au 22 novembre
+  2026, les comptes invités ont vu à la place un sommaire numéroté. */
 .useful-form-download-list { display: grid; }
 
-/* Le sommaire repose sur un fond à la couleur du dossier, à 18 % : assez
-  soutenu pour se voir, assez clair pour les textes (choix de
-  l'administrateur sur maquette, le 20 novembre 2026, qui a écarté 10 %). Le compte administrateur
-  garde ses fiches (`doc-cards`, usefulDocumentAdmin.css), sans ce fond. Le
-  fond rogne le filet du dernier rang, qui dépasse de deux pixels (voir la
-  ligne) : la bordure transparente tient lieu de marge basse. */
-.useful-form-download-list:not(.doc-cards) {
-  overflow: hidden;
-  border-bottom: 3px solid #0000;
-  border-radius: 16px;
-  /* 10 px sur les côtés : à 12, l'adresse « À envoyer à » passait à la ligne
-    pour 0,3 px sur un écran de 344 px. */
-  padding: 1px 10px 0;
-  background: color-mix(in srgb, var(--contact-category-accent) 18%, var(--surface));
-}
-
 .useful-form-download-card {
-  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 10px;
-  /* Un filet blanc de 2 px (choix de l'administrateur sur maquette, le
-    21 novembre 2026, parmi cinq séparations) ; il recouvre le haut de la ligne
-    suivante, d'où les 11 px en haut pour 9 en bas : 9 px de part et d'autre. */
-  margin-bottom: -2px;
-  border-bottom: 2px solid var(--surface);
-  padding: 11px 0 9px;
-}
-
-.useful-form-download-card:has(+ .useful-form-list-heading) { border-bottom-width: 0; }
-
-.useful-form-number {
-  width: 30px;
-  color: var(--doc-ink);
-  font-family: var(--font-display);
-  font-size: 24px;
-  line-height: 1;
 }
 
 .resource-search-field { display: grid; gap: 5px; }
@@ -292,8 +258,7 @@
   font: inherit;
 }
 
-/* Même tracé pour l'icône des fiches du compte administrateur
-  (usefulDocumentAdmin.css). */
+/* Même tracé pour l'icône de la fiche et pour celle du téléchargement. */
 .useful-form-file-icon svg,
 .useful-form-download-card>a svg {
   width: 17px;
@@ -304,15 +269,13 @@
   stroke-width: 1.8;
 }
 
-.useful-form-file-copy { display: grid; gap: 2px; }
+.useful-form-file-copy { display: grid; gap: 3px; }
 
 .useful-form-file-copy small { color: var(--muted); font-size: 12px; font-weight: 600; }
 
 .useful-form-file-copy strong { font-size: 14px; line-height: 1.3; }
 
-/* L'adresse passe devant le lien de téléchargement, étiré sur toute la ligne
-  du sommaire, pour rester cliquable à part. */
-.useful-form-send-to a { position: relative; z-index: 1; color: var(--accent-strong); font-weight: 800; }
+.useful-form-send-to a { color: var(--accent-strong); font-weight: 800; }
 
 /* Intitulés « Document(s) » et « Audioguide(s) » d'un dossier qui réunit les
   deux : petites capitales discrètes suivies d'un filet. */
@@ -347,35 +310,18 @@
 }
 
 /* L'audioguide : ses deux boutons côte à côte sous le texte. */
-.useful-form-download-list>.useful-audioguide-card {
-  grid-template-columns: auto minmax(0, 1fr);
-  row-gap: 8px;
-}
+.useful-form-download-list>.useful-audioguide-card { grid-template-columns: auto minmax(0, 1fr); }
 
-/* Le téléchargement, réduit à son icône à la couleur foncée du dossier ; le
-  lien garde son nom pour les lecteurs d'écran (« Télécharger » et le titre). */
+/* Le téléchargement, réduit à son icône ; le lien garde son nom pour les
+  lecteurs d'écran (« Télécharger » et le titre). Seul ce bouton télécharge :
+  la fiche ne se touche pas en entier. Sa taille et sa couleur, celle du
+  dossier en plus foncé, sont dans usefulDocumentAdmin.css. */
 .useful-form-download-card>a {
   min-width: 44px;
   min-height: 44px;
   display: grid;
   place-items: center;
-  color: var(--doc-ink);
 }
-
-/* Dans le sommaire (là où il y a un chiffre, donc hors des fiches de
-  l'administrateur) : un bouton rond et blanc, cerclé à la couleur du dossier. */
-.useful-form-number~a {
-  border: 1.5px solid color-mix(in srgb, var(--contact-category-accent) 60%, transparent);
-  border-radius: 50%;
-  background: var(--surface);
-}
-
-.useful-form-number~a svg { width: 21px; }
-
-/* Le lien s'étire sur toute la ligne du sommaire. Dans les fiches de
-  l'administrateur il ne s'étire pas (usefulDocumentAdmin.css) : « Modifier »
-  et le partage n'ont donc pas à repasser devant. */
-.useful-form-download-card>a::after { position: absolute; inset: 0; content: ""; }
 
 .useful-form-local-notice {
   margin: 0;
@@ -477,17 +423,6 @@
   border: 1px solid var(--border-control);
 }
 
-/* Tous les documents d'un dossier prennent sa couleur
-  (`--contact-category-accent`, posée par UsefulFormsSection) : le chiffre,
-  puis, en plus foncé, « Télécharger » et les boutons d'un audioguide. Jusqu'au
-  12 novembre 2026, six teintes en boucle sans signification. `--doc-fill` est
-  un fond de bouton : son nom le tient à l'écart de l'éclaircissement des
-  textes en mode sombre, qui rendrait le blanc illisible dessus. */
-.useful-form-download-list {
-  --doc-fill: color-mix(in srgb, var(--contact-category-accent) 78%, #000);
-  --doc-ink: var(--doc-fill);
-}
-
 /* ---- Contacts utiles ------------------------------------------------------- */
 
 .useful-contact-load-state {
@@ -546,17 +481,17 @@
   transform: translateY(-50%);
 }
 
-/* Audioguides d'exposition : même ligne que les fiches, code d'accès en vue,
-  et deux boutons à la couleur du dossier, alignés sous le titre. */
+/* Audioguides d'exposition et QR codes des visiteurs : même fiche que les
+  documents, code d'accès en vue, et deux boutons bruns alignés sous le titre. */
 .useful-audioguide-actions { display: flex; grid-column: 2; gap: 8px; }
 
 .useful-audioguide-actions>* {
   flex: 1 1 0;
   min-width: 0;
-  border: 1px solid var(--doc-fill);
+  border: 1px solid #a4502f;
   border-radius: 12px;
   padding: 10px 8px;
-  background: var(--doc-fill);
+  background: #a4502f;
   color: #fff;
   font: inherit;
   font-size: 13px;
@@ -566,7 +501,7 @@
   cursor: pointer;
 }
 
-.useful-audioguide-actions button { border-color: currentColor; background: transparent; color: var(--doc-ink); }
+.useful-audioguide-actions button { background: #fff; color: #a4502f; }
 
 .useful-audioguide-code b {
   margin-left: 4px;
