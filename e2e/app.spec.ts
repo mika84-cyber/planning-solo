@@ -8524,6 +8524,38 @@ test("le rappel du CET guide de la question au solde puis à la demande, sans qu
   await expect(page.locator(".cet-balance-main")).toContainText("12");
 });
 
+test("« Oui » touché juste après un rendu de l’appli donne quand même la main au champ du solde", async ({ page }) => {
+  // Le 23 novembre 2026, le parcours précédent a échoué une fois sur
+  // ordinateur : le champ du solde affiché, sans la main. React termine les
+  // effets d'un rendu de l'appli avant de traiter le geste ; l'un d'eux
+  // consommait la consigne quand le champ n'existait pas encore. Ici, un rendu
+  // (le passage hors connexion) puis « Oui » touché dès que ce rendu a modifié
+  // la page, avant ses effets : le cas devient systématique.
+  await page.clock.setFixedTime(new Date("2026-11-20T10:00:00"));
+  await seedCetProfile(page, false);
+  await prepareDemo(page);
+  const question = page.getByRole("complementary", { name: "Avez-vous un CET ?" });
+  await expect(question.getByRole("button", { name: "Oui", exact: true })).toBeVisible();
+  const clicked = await page.evaluate(() => new Promise<string>((resolve) => {
+    const yes = [...document.querySelectorAll<HTMLButtonElement>(".cet-window-reminder-go")].find((button) => button.textContent === "Oui");
+    if (!yes) return resolve("pas de bouton Oui");
+    const giveUp = window.setTimeout(() => { observer.disconnect(); resolve("aucun rendu de l’appli"); }, 3000);
+    const observer = new MutationObserver(() => {
+      observer.disconnect();
+      window.clearTimeout(giveUp);
+      yes.click();
+      resolve("touché");
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
+    window.dispatchEvent(new Event("offline"));
+  }));
+  expect(clicked).toBe("touché");
+  const field = page.getByRole("complementary", { name: "Quel est son solde ?" }).getByRole("spinbutton", { name: "Solde du CET, en jours" });
+  await expect(field).toBeVisible();
+  await expect(field).toBeFocused();
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+});
+
 test("en fin d’année, un CET non renseigné reste rappelé jusqu’à « Non », qui le fait taire pour l’année", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-12-27T10:00:00"));
   await prepareDemo(page);

@@ -175,18 +175,23 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
   // Solde enregistré dans la carte et rien à verser : elle le dit au lieu de
   // disparaître d'un coup.
   const [savedHere, setSavedHere] = useState(false);
-  const focusNext = useRef<"ribbon" | "card" | "balance" | null>(null);
+  // Le bouton touché disparaît : la main passe à ce qui le remplace (le
+  // bandeau, le geste de l'étape, le champ du solde). Rien d'autre. Un état,
+  // rendu en même temps que sa cible, et non une référence : React termine les
+  // effets d'un rendu précédent avant de traiter le geste, et l'un d'eux
+  // consommait la consigne quand le champ n'existait pas encore (touché juste
+  // après un rendu de l'appli, « Oui » laissait le champ du solde sans la main).
+  const [focusNext, setFocusNext] = useState<"ribbon" | "card" | "balance" | null>(null);
   const ribbonRef = useRef<HTMLButtonElement>(null);
   const goRef = useRef<HTMLButtonElement>(null);
   const balanceRef = useRef<HTMLInputElement>(null);
   const folded = !unfolded && cetReminderFolded(foldedOn, todayKey);
   useEffect(() => {
-    // Le bouton touché disparaît : la main passe à ce qui le remplace (le
-    // bandeau, le geste de l'étape, le champ du solde). Rien d'autre.
-    const target = focusNext.current === "ribbon" ? ribbonRef.current : focusNext.current === "balance" ? balanceRef.current : focusNext.current === "card" ? goRef.current : null;
-    focusNext.current = null;
+    if (!focusNext) return;
+    const target = focusNext === "ribbon" ? ribbonRef.current : focusNext === "balance" ? balanceRef.current : goRef.current;
+    setFocusNext(null);
     target?.focus();
-  });
+  }, [focusNext]);
   const state = useMemo(() => {
     // Les soldes de l'année ne se calculent que si la carte peut s'afficher.
     const year = Number(todayKey.slice(0, 4));
@@ -210,7 +215,7 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
     const parts = cetTickerParts(state);
     const line = parts.map((part) => <Fragment key={part}>{part}<i /></Fragment>);
     return (
-      <button ref={ribbonRef} type="button" className={`cet-ticker${state.daysLeft <= 8 ? " urgent" : ""}`} aria-label={`${parts.join(". ")}.`} onClick={() => { focusNext.current = "card"; setUnfolded(true); }}>
+      <button ref={ribbonRef} type="button" className={`cet-ticker${state.daysLeft <= 8 ? " urgent" : ""}`} aria-label={`${parts.join(". ")}.`} onClick={() => { setFocusNext("card"); setUnfolded(true); }}>
         <span className="cet-ticker-label" aria-hidden="true">CET</span>
         <span className="cet-ticker-window" aria-hidden="true">
           <span className="cet-ticker-track" style={{ "--ticker-duration": `${Math.round(parts.join(" • ").length * 0.2)}s` } as CSSProperties}>
@@ -228,7 +233,7 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
   const kind = !state ? "nothing" : state.kind === "setup" && askBalance ? "balance" : state.kind === "setup" && confirmNo ? "decline" : state.kind;
   const fold = () => {
     try { localStorage.setItem(FOLDED_KEY, todayKey); } catch { /* Replié pour cette visite seulement. */ }
-    focusNext.current = "ribbon";
+    setFocusNext("ribbon");
     setFoldedOn(todayKey);
     setUnfolded(false);
   };
@@ -255,7 +260,7 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
     setBalanceError("");
     setAskBalance(false);
     setSavedHere(true);
-    focusNext.current = "card";
+    setFocusNext("card");
   };
   return (
     <aside className={`cet-window-reminder ${kind}`} aria-labelledby="cet-window-reminder-title">
@@ -271,8 +276,8 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
           <h2 id="cet-window-reminder-title">Avez-vous un CET ?</h2>
           <p>Vos CA, RTT et jours de fractionnement non pris peuvent y être versés, en une seule demande par an.</p>
           <div className="cet-window-reminder-answers">
-            <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={() => { focusNext.current = "balance"; setAskBalance(true); }}>Oui</button>
-            <button type="button" className="cet-window-reminder-no" aria-label="Non, je n’ai pas de CET" onClick={() => { focusNext.current = "card"; setConfirmNo(true); }}>Non</button>
+            <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={() => { setFocusNext("balance"); setAskBalance(true); }}>Oui</button>
+            <button type="button" className="cet-window-reminder-no" aria-label="Non, je n’ai pas de CET" onClick={() => { setFocusNext("card"); setConfirmNo(true); }}>Non</button>
           </div>
           {/* Pour qui n'en a pas encore : un encart à part, sous la question,
               plutôt qu'un petit lien souligné qu'on remarquait à peine. */}
@@ -291,7 +296,7 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
           <p>Vous pourrez quand même ouvrir un CET à tout moment de l’année, depuis Congés › Mon CET.</p>
           <div className="cet-window-reminder-answers">
             <button ref={goRef} type="button" className="cet-window-reminder-go" onClick={declineForYear}>Confirmer : je n’ai pas de CET</button>
-            <button type="button" className="cet-window-reminder-no" onClick={() => { focusNext.current = "card"; setConfirmNo(false); }}>‹ Revenir à la question</button>
+            <button type="button" className="cet-window-reminder-no" onClick={() => { setFocusNext("card"); setConfirmNo(false); }}>‹ Revenir à la question</button>
           </div>
         </>
       ) : kind === "balance" ? (
@@ -318,7 +323,7 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
             </label>
           ) : null}
           {balanceError ? <p className="cet-window-reminder-error" role="alert">{balanceError}</p> : null}
-          <button type="button" className="cet-window-reminder-link" onClick={() => { focusNext.current = "card"; setBalanceError(""); setAskBalance(false); }}>‹ Retour</button>
+          <button type="button" className="cet-window-reminder-link" onClick={() => { setFocusNext("card"); setBalanceError(""); setAskBalance(false); }}>‹ Retour</button>
         </>
       ) : state?.kind === "missing" ? (
         <>

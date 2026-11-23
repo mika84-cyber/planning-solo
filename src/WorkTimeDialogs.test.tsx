@@ -61,6 +61,26 @@ describe("fenêtres de temps de travail", () => {
     expect(html).toBe("");
   });
 
+  it("ne saisit les heures supplémentaires que par leurs horaires, début puis fin", () => {
+    const html = renderToStaticMarkup(
+      <OvertimeDialog
+        open
+        draft={{ date: "2026-08-21", start: "18:00", end: "19:00", disposition: "paid" }}
+        setDraft={vi.fn()}
+        saving={false}
+        group={2}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+    const title = html.indexOf('<strong class="overtime-time-title">Horaires effectués</strong>');
+    expect(title).toBeGreaterThan(-1);
+    expect(html.indexOf("Heure de début")).toBeGreaterThan(title);
+    expect(html.indexOf("Heure de fin")).toBeGreaterThan(html.indexOf("Heure de début"));
+    // Plus de saisie par durée.
+    expect(html).not.toContain("Nombre d’heures");
+  });
+
   it("conserve les quatre parcours et leurs libellés", () => {
     const overtime = renderToStaticMarkup(
       <OvertimeDialog

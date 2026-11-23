@@ -309,7 +309,8 @@ describe("finitions d’interface", () => {
   });
 
   it("conserve uniquement la saisie par horaires pour les heures supplémentaires", () => {
-    expect(workTimeDialogs).toContain('className="overtime-time-title">Horaires');
+    // Le titre « Horaires effectués », puis le début et la fin : test de rendu
+    // dans src/WorkTimeDialogs.test.tsx.
     expect(app).not.toContain("Nombre d’heures");
     expect(app).not.toContain('overtimeDraft.inputMode === "duration"');
     expect(app).toContain('inputMode: "range"');

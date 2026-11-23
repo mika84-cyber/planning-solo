@@ -104,7 +104,13 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   formulaire d’alimentation (cible `cet-funding` de `helpTargets.ts` :
   `LeaveManagementPage` ouvre la fenêtre, `CetSection` le formulaire). En démo, `?date-cet=2026-12-26`
   la montre à une autre date. Styles dans `adminHomeMessage.css`, sombre dans
-  `darkTheme.css`.
+  `darkTheme.css`. Le bouton touché disparaît : la main passe à ce qui le
+  remplace (le bandeau, le geste de l’étape, le champ du solde) par l’état
+  `focusNext`, rendu avec sa cible. Ce n’est pas une référence : React
+  termine les effets d’un rendu précédent avant de traiter un geste, et
+  l’un d’eux consommait la consigne quand le champ n’existait pas encore
+  (« Oui » touché juste après un rendu de l’appli ; corrigé le 23 novembre
+  2026).
 - `src/ExpoHomeNotices.tsx` (`expoHomeNotices.css`, chargé à part) : à
   l’ouverture de l’accueil, pour tous les comptes, l’annonce des expositions
   dans une fenêtre (`.modal-card`, posée par `AppShellChrome.tsx` ; d’abord
@@ -1227,7 +1233,7 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - CET : `src/cet.test.ts`, `src/CetSection.test.tsx` et
   `src/CetWindowReminder.test.tsx` ; scénarios « l’accueil rappelle
   l’alimentation du CET », « le rappel du CET guide de la question au
-  solde », « un CET non renseigné reste rappelé », « sans CET, l’accueil
+  solde », « « Oui » touché juste après un rendu de l’appli », « un CET non renseigné reste rappelé », « sans CET, l’accueil
   repose la question chaque année » et « l’application restée ouverte depuis
   la veille » dans `e2e/app.spec.ts`.
 - Rubriques de Congés en fenêtre : `src/LeaveManagementPage.test.tsx` ;
