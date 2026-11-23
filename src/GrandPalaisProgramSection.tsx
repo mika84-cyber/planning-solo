@@ -223,7 +223,10 @@ export function interExhibitionRangeLabel(period: InterExhibitionPeriod) {
     : sameYear
       ? { day: "numeric", month: "long" }
       : { day: "numeric", month: "long", year: "numeric" });
-  return `Du ${start} au ${formatFrenchDate(period.endsOn)}`;
+  // « 1er octobre », comme ailleurs dans les Expos : une coupure peut finir
+  // la veille d'une exposition qui ouvre le 2.
+  const firstOfMonth = (label: string) => label.replace(/^1(?!\d)/, "1er");
+  return `Du ${firstOfMonth(start)} au ${firstOfMonth(formatFrenchDate(period.endsOn))}`;
 }
 
 export function describeInterExhibitionPeriod(period: InterExhibitionPeriod, today: string) {
@@ -1131,9 +1134,11 @@ export function GrandPalaisProgramSection({ guestPreview = false, isAdmin = fals
                   {/* La durée, en chiffre, à droite de l'encadré. */}
                   <p className="grand-palais-interexpo-length"><b>{detail.durationDays}</b> <small>jours de fermeture</small></p>
                   <p className="grand-palais-interexpo-kind">Inter-expo</p>
-                  {/* À la ligne, « au … » reste d'un seul tenant. */}
+                  {/* À la ligne, « au 18 septembre » reste d'un seul tenant ;
+                      l'année passe dessous quand la place manque (petit
+                      téléphone), plutôt que de mordre sur le nombre de jours. */}
                   <strong className="grand-palais-interexpo-cut-range">
-                    {range.includes(" au ") ? <>{range.slice(0, range.indexOf(" au "))} <span style={{ whiteSpace: "nowrap" }}>{range.slice(range.indexOf(" au ") + 1)}</span></> : range}
+                    {range.includes(" au ") ? <>{range.slice(0, range.indexOf(" au "))} <span style={{ whiteSpace: "nowrap" }}>{range.slice(range.indexOf(" au ") + 1).replace(/ \d{4}$/, "")}</span>{range.match(/ \d{4}$/)?.[0] ?? ""}</> : range}
                   </strong>
                   <p className="grand-palais-interexpo-when">
                     <em>{detail.status}</em> <DelayText long={detail.timing} short={detail.shortTiming} />

@@ -294,9 +294,37 @@ describe("programmation du Grand Palais", () => {
     const periods = calculateInterExhibitionPeriods("2026-09-28");
     const tail = exhibitionsAfterInterExhibitions(periods);
     const lastEnd = periods[periods.length - 1].endsOn;
-    expect(tail.map((item) => item.title)).toContain("Yves Klein");
+    expect(tail.map((item) => item.title)).toContain("Peter Doig");
     expect(tail.every((item) => item.endsOn > lastEnd)).toBe(true);
     expect(exhibitionsAfterInterExhibitions([])).toEqual([]);
+  });
+
+  it("suit le calendrier du 6 novembre 2026 aux Galeries 3 et 4, de Yves Klein à Peter Doig", () => {
+    const today = "2026-11-23";
+    const groups = venueYearGroups(GRAND_PALAIS_PROGRAM.galleries34, [2027, 2028, 2029, 2030], today);
+    // Une carte par exposition, dans l'année où elle commence ; rien en 2030.
+    expect(groups.map((group) => [group.year, group.entries.map((entry) => entry.title)])).toEqual([
+      [2027, ["Cezanne et nous", "Marcel Duchamp, portrait possible", "Chagall"]],
+      [2028, ["Yves Klein", "Dalí"]],
+      [2029, ["Jean Arp & Sophie Taeuber-Arp", "Peter Doig"]],
+    ]);
+    // Deux fins possibles : la période les dit, la date suit la barre du tableau.
+    const dali = groups[1].entries[1];
+    expect(dali).toMatchObject({ period: "Du 19 septembre 2028 au 7 ou 14 janvier 2029", startsOn: "2028-09-19", endsOn: "2029-01-07", uncertain: true });
+    expect(groups[2].entries[1]).toMatchObject({ period: "Du 2 octobre 2029 à fin janvier ou début février 2030", startsOn: "2029-10-02", endsOn: "2030-02-03", uncertain: true });
+    expect(grandPalaisEntryStatus(dali, today).label).toBe("À confirmer");
+    // Les trois montages de neuf semaines deviennent des inter-expos.
+    expect(calculateInterExhibitionPeriods(today)).toEqual(expect.arrayContaining([
+      { startsOn: "2028-07-17", endsOn: "2028-09-18" },
+      { startsOn: "2029-01-08", endsOn: "2029-03-19" },
+      { startsOn: "2029-07-30", endsOn: "2029-10-01" },
+    ]));
+    // Peter Doig n'est plus aux Galeries 9 et 10.
+    const doigVenues = Object.entries(GRAND_PALAIS_PROGRAM)
+      .filter(([, venue]) => Object.values(venue.schedule).some((entries) => entries?.some((entry) => entry.title === "Peter Doig")))
+      .map(([key]) => key);
+    expect(doigVenues).toEqual(["galleries34"]);
+    expect(venueHeadline(GRAND_PALAIS_PROGRAM.gallery910, today)).toMatchObject({ kind: "next", title: "Mika Ninagawa with EiM - Alive with Shadows" });
   });
 
   it("range « En ce moment » par espace : les quatre grands, la Nef, puis tous les autres", () => {
@@ -333,6 +361,11 @@ describe("programmation du Grand Palais", () => {
       .toBe("Du 3 au 19 mars 2027");
     expect(interExhibitionRangeLabel({ startsOn: "2026-12-28", endsOn: "2027-01-06" }))
       .toBe("Du 28 décembre 2026 au 6 janvier 2027");
+    // Le premier du mois s'écrit « 1er », au début comme à la fin.
+    expect(interExhibitionRangeLabel({ startsOn: "2029-07-30", endsOn: "2029-10-01" }))
+      .toBe("Du 30 juillet au 1er octobre 2029");
+    expect(interExhibitionRangeLabel({ startsOn: "2027-08-01", endsOn: "2027-08-21" }))
+      .toBe("Du 1er au 21 août 2027");
   });
 
   it("détaille la durée et l’échéance d’une période d’inter-expositions", () => {

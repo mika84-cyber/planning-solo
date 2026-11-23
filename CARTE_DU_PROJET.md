@@ -714,6 +714,15 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   « Par espace » montre une exposition à cheval sur deux années une seule
   fois (`venueYearGroups`, même titre et mêmes dates) ; une exposition « À
   confirmer » mais datée donne déjà son délai (« Dans 4 mois… »).
+  Les Galeries 3 et 4 suivent le calendrier prévisionnel du 6 novembre 2026,
+  jusqu'en 2030 : Yves Klein, Dalí, Jean Arp & Sophie Taeuber-Arp, Peter
+  Doig (retiré des Galeries 9 et 10, où il était par erreur). Quand le
+  tableau écrit deux fins (« 7 ou 14 janvier », « fin janvier ou début
+  février »), `period` les dit toutes les deux et `endsOn` prend la fin où
+  s'arrête la barre du tableau : c'est elle que suivent les inter-expos.
+  Dans une coupure, « au 18 septembre » reste d'un seul tenant et l'année
+  passe dessous quand la place manque (344 et 360 px) ; le premier du mois
+  s'écrit « 1er » (`interExhibitionRangeLabel`).
   Les tarifs (`src/grandPalaisProgramData.ts`) sont ceux de la fiche
   officielle, par grille nommée quand elle en a plusieurs (`group` :
   session du matin, nocturne…) et ses horaires à côté de son nom

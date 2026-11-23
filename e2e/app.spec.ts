@@ -3505,7 +3505,17 @@ test("la programmation GP suit l’ordre demandé et range tous les espaces au m
   await page.getByRole("tab", { name: /^Galeries 9 et 10,/ }).click();
   await expect(page.locator(".grand-palais-venue-panel")).toContainText("Leandro Erlich");
   await expect(page.locator(".grand-palais-venue-panel")).toContainText("Mika Ninagawa");
-  await expect(page.getByRole("region", { name: "Galeries 9 et 10 - 2029" })).toContainText("Peter Doig");
+  // Peter Doig n'y est plus : le calendrier du 6 novembre 2026 le place aux
+  // Galeries 3 et 4, après Jean Arp & Sophie Taeuber-Arp.
+  await expect(page.locator(".grand-palais-venue-panel")).not.toContainText("Peter Doig");
+  await expect(page.locator(".grand-palais-venue-panel .expo-year-group")).toHaveCount(1);
+  await page.getByRole("tab", { name: /^Galeries 3 et 4,/ }).click();
+  const galleries34Year = (year: number) => page.getByRole("region", { name: `Galeries 3 et 4 - ${year}` });
+  await expect(galleries34Year(2028).locator("article strong")).toHaveText(["Yves Klein", "Dalí"]);
+  await expect(galleries34Year(2028).locator("article").filter({ hasText: "Dalí" })).toContainText("Du 19 septembre 2028 au 7 ou 14 janvier 2029");
+  await expect(galleries34Year(2029).locator("article strong")).toHaveText(["Jean Arp & Sophie Taeuber-Arp", "Peter Doig"]);
+  await expect(galleries34Year(2029).locator("article").filter({ hasText: "Peter Doig" })).toContainText("Du 2 octobre 2029 à fin janvier ou début février 2030");
+  await expect(galleries34Year(2030)).toHaveCount(0);
 
   await page.getByRole("tab", { name: "Inter-expos" }).click();
   await expect(page.getByRole("heading", { name: "Périodes d’inter expos" })).toBeVisible();
@@ -3530,6 +3540,19 @@ test("la programmation GP suit l’ordre demandé et range tous les espaces au m
   const lastProgramme = page.locator(".grand-palais-interexpo-list > *").last();
   await expect(lastProgramme).toHaveClass(/grand-palais-interexpo-open/);
   await expect(lastProgramme.locator(".grand-palais-interexpo-cut")).toHaveCount(0);
+  await expect(lastProgramme).toContainText("Peter Doig");
+  // Le premier du mois s'écrit « 1er », et une date longue (« au 18 septembre
+  // 2028 ») passe son année à la ligne plutôt que de mordre sur le nombre de
+  // jours de fermeture.
+  await expect(page.locator(".grand-palais-interexpo-cut-range").filter({ hasText: "octobre 2029" })).toHaveText("Du 30 juillet au 1er octobre 2029");
+  await expect(page.locator(".grand-palais-interexpo-cut-range").filter({ hasText: "septembre 2028" })).toHaveText("Du 17 juillet au 18 septembre 2028");
+  const overlapping = await page.locator(".grand-palais-interexpo-cut").evaluateAll((cuts) => cuts.filter((cut) => {
+    const text = document.createRange();
+    text.selectNodeContents(cut.querySelector(".grand-palais-interexpo-cut-range")!);
+    const right = Math.max(...[...text.getClientRects()].map((rect) => rect.right));
+    return right > cut.querySelector(".grand-palais-interexpo-length")!.getBoundingClientRect().left;
+  }).map((cut) => cut.querySelector(".grand-palais-interexpo-cut-range")!.textContent));
+  expect(overlapping).toEqual([]);
 });
 
 test("les vues des Expos forment une bande de couleurs, la vue choisie en plein", async ({ page }) => {

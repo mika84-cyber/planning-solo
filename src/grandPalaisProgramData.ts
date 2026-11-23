@@ -121,34 +121,58 @@ export type GrandPalaisVenue = {
 
 export type GrandPalaisProgramData = Record<string, GrandPalaisVenue>;
 
+/** Les expositions des Galeries 3 et 4 à cheval sur deux années figurent dans
+ *  chacune : la seconde reprend la fiche de la première et ne change que sa
+ *  période (« Jusqu'au … »). */
+const CEZANNE: GrandPalaisProgramEntry = {
+  title: "Cezanne et nous",
+  period: "Du 23 septembre 2026 au 17 janvier 2027",
+  details: "J-R Touzet · X. Rey · C. Bernardi · M. Gauthier",
+  officialUrl: "https://www.grandpalais.fr/fr/programme/cezanne-et-nous",
+  prices: CEZANNE_PRICES,
+  startsOn: "2026-09-23",
+  endsOn: "2027-01-17",
+  audioguide: CEZANNE_AUDIOGUIDE,
+};
+
+const CHAGALL: GrandPalaisProgramEntry = {
+  title: "Chagall",
+  period: "Du 5 octobre 2027 au 16 janvier 2028",
+  details: "A. Lampe",
+  startsOn: "2027-10-05",
+  endsOn: "2028-01-16",
+};
+
+/** Dalí et Peter Doig (calendrier du 6 novembre 2026) : deux fins possibles
+ *  sont écrites sous la barre. La période les dit toutes les deux ; endsOn est
+ *  la fin où s'arrête la barre du tableau (7 janvier 2029, semaine du
+ *  3 février 2030), celle que suivent les inter-expos. */
+const TO_CONFIRM = { details: "Titre et dates à confirmer", uncertain: true };
+
+const DALI: GrandPalaisProgramEntry = {
+  title: "Dalí",
+  period: "Du 19 septembre 2028 au 7 ou 14 janvier 2029",
+  ...TO_CONFIRM,
+  startsOn: "2028-09-19",
+  endsOn: "2029-01-07",
+};
+
+const PETER_DOIG: GrandPalaisProgramEntry = {
+  title: "Peter Doig",
+  period: "Du 2 octobre 2029 à fin janvier ou début février 2030",
+  ...TO_CONFIRM,
+  startsOn: "2029-10-02",
+  endsOn: "2030-02-03",
+};
+
 export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue> = {
   galleries34: {
     label: "Galeries 3 et 4",
     heading: "Galeries 3 et 4 · Champs-Élysées",
     schedule: {
-      2026: [
-        {
-          title: "Cezanne et nous",
-          period: "Du 23 septembre 2026 au 17 janvier 2027",
-          details: "J-R Touzet · X. Rey · C. Bernardi · M. Gauthier",
-          officialUrl: "https://www.grandpalais.fr/fr/programme/cezanne-et-nous",
-          prices: CEZANNE_PRICES,
-          startsOn: "2026-09-23",
-          endsOn: "2027-01-17",
-          audioguide: CEZANNE_AUDIOGUIDE,
-        },
-      ],
+      2026: [CEZANNE],
       2027: [
-        {
-          title: "Cezanne et nous",
-          period: "Jusqu’au 17 janvier 2027",
-          details: "J-R Touzet · X. Rey · C. Bernardi · M. Gauthier",
-          officialUrl: "https://www.grandpalais.fr/fr/programme/cezanne-et-nous",
-          prices: CEZANNE_PRICES,
-          startsOn: "2026-09-23",
-          endsOn: "2027-01-17",
-          audioguide: CEZANNE_AUDIOGUIDE,
-        },
+        { ...CEZANNE, period: "Jusqu’au 17 janvier 2027" },
         {
           title: "Marcel Duchamp, portrait possible",
           period: "Du 23 mars au 1er août 2027",
@@ -157,22 +181,10 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           startsOn: "2027-03-23",
           endsOn: "2027-08-01",
         },
-        {
-          title: "Chagall",
-          period: "Du 5 octobre 2027 au 16 janvier 2028",
-          details: "A. Lampe",
-          startsOn: "2027-10-05",
-          endsOn: "2028-01-16",
-        },
+        CHAGALL,
       ],
       2028: [
-        {
-          title: "Chagall",
-          period: "Jusqu’au 16 janvier 2028",
-          details: "A. Lampe",
-          startsOn: "2027-10-05",
-          endsOn: "2028-01-16",
-        },
+        { ...CHAGALL, period: "Jusqu’au 16 janvier 2028" },
         {
           title: "Yves Klein",
           period: "Du 21 mars au 16 juillet 2028",
@@ -181,29 +193,20 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           startsOn: "2028-03-21",
           endsOn: "2028-07-16",
         },
-        {
-          title: "Projet #10",
-          period: "Après le 20 septembre 2028, jusqu’au début janvier 2029",
-          details: "Calendrier prévisionnel",
-          uncertain: true,
-        },
+        DALI,
       ],
-      // Projet #10 se termine début janvier 2029 : il ne figure qu'en 2028,
-      // l'année où il commence.
       2029: [
+        { ...DALI, period: "Jusqu’au 7 ou 14 janvier 2029" },
         {
           title: "Jean Arp & Sophie Taeuber-Arp",
-          period: "De mars à juillet 2029",
-          details: "Titre et dates à confirmer",
-          uncertain: true,
+          period: "Du 20 mars au 29 juillet 2029",
+          ...TO_CONFIRM,
+          startsOn: "2029-03-20",
+          endsOn: "2029-07-29",
         },
-        {
-          title: "Projet #12",
-          period: "À l’automne 2029",
-          details: "Titre et dates à confirmer",
-          uncertain: true,
-        },
+        PETER_DOIG,
       ],
+      2030: [{ ...PETER_DOIG, period: "Jusqu’à fin janvier ou début février 2030" }],
     },
   },
   gallery8: {
@@ -362,14 +365,8 @@ export const GRAND_PALAIS_PROGRAM: Record<GrandPalaisVenueKey, GrandPalaisVenue>
           endsOn: "2027-03-21",
         },
       ],
-      2029: [
-        {
-          title: "Peter Doig",
-          period: "Jusqu’en mars 2030",
-          details: "Dates à confirmer",
-          uncertain: true,
-        },
-      ],
+      // Peter Doig n'y est plus : il est aux Galeries 3 et 4 (calendrier du
+      // 6 novembre 2026).
     },
   },
   childrenPalace: {

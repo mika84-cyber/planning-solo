@@ -73,6 +73,13 @@ describe("navigation principale", () => {
     // Pendant la vérification, le bouton se désactive et dit ce qu'il fait.
     const checking = renderToStaticMarkup(<AppHeader {...headerProps} checkingAppUpdate />);
     expect(checking).toMatch(/<button class="header-update-button checking" type="button" disabled="" aria-label="Mise à jour en cours…"/);
+    // Les commandes de l'en-tête forment un seul groupe (la mise à jour, puis
+    // le compte), sans l'ancien bouton circulaire « Rafraîchir le planning ».
+    for (const html of [idle, ready, checking]) {
+      expect(html).toMatch(/<div class="header-control-cluster"><div class="header-actions">[\s\S]*header-update-button[\s\S]*account-button/);
+      expect(html).not.toContain("header-refresh-button");
+      expect(html).not.toContain("Rafraîchir");
+    }
   });
 
   it("propose une navigation adaptative sans numéros et marque la rubrique active", () => {

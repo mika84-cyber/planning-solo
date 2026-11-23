@@ -564,15 +564,10 @@ describe("finitions d’interface", () => {
   });
 
   it("regroupe les commandes de l’en-tête et harmonise le groupe", () => {
-    expect(app).toContain('className="header-control-cluster"');
+    // Le groupe des commandes de l'en-tête : AppNavigation.test.tsx.
     expect(app).toContain("Prochain jour travaillé");
     expect(css.anywhere(".planning-group-action-row")).toBe(false);
     expect(css.mentions(".leave-request-archive")).toBe(true);
-  });
-
-  it("retire le bouton d’actualisation circulaire de l’en-tête", () => {
-    expect(app).not.toContain("header-refresh-button");
-    expect(app).not.toContain("Rafraîchir le planning");
   });
 
   it("permet la reprise annuelle sans dates et ouvre la fiche depuis un solde", () => {
