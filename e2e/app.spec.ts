@@ -4091,8 +4091,18 @@ test("les notes d’une journée portent un point rond, même celles écrites av
   await expect(saved).not.toContainText("–");
   // « Ajouter une note » écrit le point rond, et le donne aussi à la ligne déjà là.
   await dialog.getByRole("button", { name: "Ajouter une note" }).click();
-  await expect(dialog.locator("textarea")).toHaveValue("• Psy 11h45\n\n• ");
-  await dialog.locator("textarea").pressSequentially("Mécénat 18h30 / 22h30");
+  const field = dialog.locator("textarea");
+  await expect(field).toHaveValue("• Psy 11h45\n\n• ");
+  // L'appli donne la main au champ et place le curseur à la fin de la note
+  // une image après l'appui. On attend qu'il y soit avant d'écrire : sur une
+  // machine lente, la frappe partait sinon du début de la note (« Mécénat
+  // 18h30• Psy 11h45 »), ce qui a fait échouer ce parcours sur GitHub le
+  // 22 novembre 2026.
+  await expect.poll(() => field.evaluate((node: HTMLTextAreaElement) => (
+    document.activeElement === node && node.selectionStart === node.value.length && node.selectionEnd === node.value.length
+  ))).toBe(true);
+  await field.pressSequentially("Mécénat 18h30 / 22h30");
+  await expect(field).toHaveValue("• Psy 11h45\n\n• Mécénat 18h30 / 22h30");
   await save();
   await open();
   await expect(saved.locator(".note-text-line.bullet")).toHaveCount(2);
