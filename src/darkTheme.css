@@ -177,6 +177,9 @@ html[data-theme="dark"] .colleague-sharing-page button.colleague-today-step:hove
 /* Fiches des documents : le bouton de téléchargement garde la couleur foncée
    du dossier. */
 html[data-theme="dark"] .doc-cards article > a { background: color-mix(in srgb, var(--contact-category-accent) 72%, #000); color: #fff; }
+/* Leur titre, leur icône et leur rang : la couleur du dossier éclaircie (le
+   titre du SAP n'avait qu'un contraste de 4,1, celui de Brantôme 4,2). */
+html[data-theme="dark"] .useful-form-download-list.doc-cards:not(.visitor-qr-list) { --contact-category-text: color-mix(in srgb, var(--contact-category-accent) 55%, #fff); }
 /* Rappel du formulaire (Formulaire SAP) : « Remplir dans l'appli » garde le
    bleu du dossier, la vignette passe en bleu nuit. */
 html[data-theme="dark"] .absence-form-reminder-actions > a { border-color: #5368a8; background: #5368a8; color: #fff; }
@@ -188,13 +191,19 @@ html[data-theme="dark"] .cet-window-reminder .step-label.urgent { color: #f4977a
 html[data-theme="dark"] .cet-window-reminder p.cet-window-reminder-error { color: #f0a08f; }
 html[data-theme="dark"] .cet-ticker { --base: #e2a383; --label: #e2a383; --more: #e2a383; --sep: #a8806c; }
 html[data-theme="dark"] .cet-ticker.urgent { --ink: #f4977a; --label: #f4977a; --fill: #f4977a; }
-html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #1f3327; --tile-ink: #8fd1a8; }
-html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #1f2a3a; --tile-ink: #9ec0ec; }
+html[data-theme="dark"] .useful-resource-tab.resource-forms { --tile-tint: #3e2b22; --tile-ink: #e2a383; }
+html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #3a3020; --tile-ink: #e0c98a; }
 /* Dossiers de formulaires et annuaires : icône, lettre, flèche et nombre de
    documents dans la couleur du dossier, éclaircie. */
 html[data-theme="dark"] .resource-folder-row :is(.resource-folder-row-icon, .resource-folder-row-go) { color: color-mix(in srgb, var(--row-tone) 55%, #fff); }
 html[data-theme="dark"] .resource-folder-row .resource-folder-row-icon svg { stroke: currentColor; }
 html[data-theme="dark"] .useful-forms-folder-header small { color: color-mix(in srgb, var(--folder-accent) 50%, #fff); }
+/* Brantôme : l'olive du clair (#5f6b27) s'éteint sur fond sombre ; un olive
+   plus clair et plus vif le remplace (demande de l'administrateur, le
+   23 novembre 2026). La couleur du dossier est posée sur l'élément même par
+   UsefulFormsSection, d'où !important. */
+html[data-theme="dark"] [data-folder="brantome"] { --row-tone: #a3b44c !important; --contact-category-accent: #a3b44c !important; }
+html[data-theme="dark"] .useful-forms-folder-header.tone-brantome { --folder-accent: #a3b44c; }
 /* Notes du compte principal : le vert de Mika et le rose d'Agnès restent
    reconnaissables sur fond sombre. */
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-mika { background: #29321b; }

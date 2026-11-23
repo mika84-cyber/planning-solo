@@ -147,11 +147,12 @@ export function usefulFormFoldersForDate(
 }
 
 /** La couleur de chaque dossier, reprise de la page Documents : liseré,
- *  icône pleine et flèche ronde. */
+ *  icône pleine et flèche ronde. Brantôme est olive depuis le 23 novembre
+ *  2026 (il était ocre, jugé peu harmonieux par l'administrateur). */
 const FOLDER_TONES: Record<string, string> = {
   expo: "#2f7f74",
   sap: "#5368a8",
-  brantome: "#b9781e",
+  brantome: "#5f6b27",
   tickets: "#9a5a86",
   accident: "#a4532f",
 };
@@ -349,7 +350,7 @@ export function UsefulFormsSection({
             />
           </figure>
         ) : folder.documents.length || folder.audioguides?.length ? (
-          <div className="useful-form-download-list doc-cards" style={{ "--contact-category-accent": FOLDER_TONES[folder.key] ?? DEFAULT_TONE } as CSSProperties}>
+          <div className="useful-form-download-list doc-cards" data-folder={folder.key} style={{ "--contact-category-accent": FOLDER_TONES[folder.key] ?? DEFAULT_TONE } as CSSProperties}>
             {!secureContext ? (
               <p className="useful-form-local-notice">
                 Mode de test local : les PDF s’ouvrent dans le lecteur du navigateur. Utilisez ensuite son bouton Enregistrer. Le téléchargement direct sans alerte sera disponible sur la version sécurisée.
@@ -481,6 +482,7 @@ export function UsefulFormsSection({
           <button
             key={item.key}
             className="resource-folder-row"
+            data-folder={item.key}
             style={{ "--row-tone": FOLDER_TONES[item.key] ?? DEFAULT_TONE } as CSSProperties}
             type="button"
             onClick={() => openFolder(item.key)}

@@ -121,8 +121,8 @@
 
 /* Rubrique ouverte : deux tuiles côte à côte, Formulaires et Contacts (choix
   de l'administrateur le 22 novembre 2026, parmi quatre propositions ;
-  auparavant, un sélecteur segmenté). Chacune a son dessin dans une case à sa
-  couleur, son nom et ce qu'elle contient (« 11 documents », « 46 contacts ») ;
+  auparavant, un sélecteur segmenté). Chacune a son dessin dans une case
+  teintée, son nom et ce qu'elle contient (« 11 documents », « 46 contacts ») ;
   la tuile choisie est en couleur pleine, écrite en blanc. `--tile-fill` est
   un fond : son nom le tient à l'écart de l'éclaircissement des textes en mode
   sombre, où `--tile-ink` devient clair. */
@@ -229,9 +229,15 @@
   .has-active-resource .useful-resource-tab-copy strong { font-size: .86rem; }
 }
 
-.useful-resource-tab.resource-forms { --tile-tint: #e3efe7; --tile-ink: #2f7a52; --tile-fill: #2f7a52; }
+/* Les couleurs de l'appli (demande de l'administrateur le 23 novembre 2026,
+  « plus dans la DA de l'application », puis une couleur par tuile, enfin « le
+  V mais inverse les couleurs » ; elles étaient vertes et bleues) :
+  Formulaires à la brique de l'appli (--accent), celle des étiquettes du
+  dessous ; Contacts à l'ocre de la rubrique Docs, celui de l'en-tête
+  (#907632) foncé pour que le blanc s'y lise. */
+.useful-resource-tab.resource-forms { --tile-tint: #f8e6dc; --tile-ink: #985438; --tile-fill: #985438; }
 
-.useful-resource-tab.resource-contacts { --tile-tint: #e4ebf5; --tile-ink: #3a5f8f; --tile-fill: #3a5f8f; }
+.useful-resource-tab.resource-contacts { --tile-tint: #f3ead2; --tile-ink: #7a6125; --tile-fill: #7a6125; }
 
 /* ---- Formulaires utiles ---------------------------------------------------- */
 
@@ -272,7 +278,7 @@
 
 .useful-forms-folder-header.tone-sap { --folder-accent: #5368a8; }
 
-.useful-forms-folder-header.tone-brantome { --folder-accent: #b9781e; }
+.useful-forms-folder-header.tone-brantome { --folder-accent: #5f6b27; }
 
 .useful-forms-folder-header h2 { margin: 3px 0; color: #2c2621; font-size: 24px; }
 

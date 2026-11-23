@@ -418,8 +418,7 @@ describe("finitions d’interface", () => {
     expect(serviceWorker).toContain('event.data?.type === "SKIP_WAITING"');
     expect(serviceWorker.match(/self\.addEventListener\("install"[\s\S]*?\n\}\);/)?.[0]).not.toContain("skipWaiting");
     expect(app).toContain("checkForAppUpdate");
-    expect(app).toContain('className={`header-update-button');
-    expect(app).toContain("Vérifier les mises à jour");
+    // Le bouton de l'en-tête et ses trois états : AppNavigation.test.tsx.
     expect(app).toContain("Une mise à jour est disponible");
     expect(app).toContain("planning-app-update-available");
     expect(appUpdate).toContain('registration.addEventListener("updatefound"');

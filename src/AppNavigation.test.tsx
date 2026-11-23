@@ -69,6 +69,10 @@ describe("navigation principale", () => {
     expect(ready).toContain('aria-label="Installer la mise à jour"');
     expect(ready).toContain("header-update-dot");
     expect(ready.indexOf("header-update-button")).toBeLessThan(ready.indexOf("account-button"));
+    expect(ready).toContain('class="header-update-button update-available"');
+    // Pendant la vérification, le bouton se désactive et dit ce qu'il fait.
+    const checking = renderToStaticMarkup(<AppHeader {...headerProps} checkingAppUpdate />);
+    expect(checking).toMatch(/<button class="header-update-button checking" type="button" disabled="" aria-label="Mise à jour en cours…"/);
   });
 
   it("propose une navigation adaptative sans numéros et marque la rubrique active", () => {

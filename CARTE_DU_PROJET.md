@@ -559,10 +559,14 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
 - `src/UsefulResourcesHub.tsx` : Documents et contacts. Deux tuiles côte à
   côte, Formulaires et Contacts (choix de l'administrateur le 22 novembre
   2026, parmi quatre propositions ; auparavant, un sélecteur segmenté) : un
-  dessin dans une case à la couleur de la rubrique (`--tile-tint`,
-  `--tile-ink`), son nom et ce qu'elle contient, « 11 documents »,
-  « 46 contacts » (`resourceTabDetail`) ; la tuile choisie est en couleur
-  pleine (`--tile-fill`, qui reste foncée en mode sombre). Les nombres
+  dessin dans une case teintée (`--tile-tint`, `--tile-ink`), son nom et ce
+  qu'elle contient, « 11 documents », « 46 contacts » (`resourceTabDetail`) ;
+  la tuile choisie est en couleur pleine (`--tile-fill`, qui reste foncée en
+  mode sombre). Couleurs de l'appli depuis le 23 novembre 2026 (vert et bleu
+  auparavant ; l'administrateur les voulait « plus dans la DA », une par
+  tuile, et a pris « le V mais inverse les couleurs ») : Formulaires à la
+  brique de l'appli (#985438, `--accent`), Contacts à l'ocre de l'en-tête
+  Docs foncé (#7a6125). Les nombres
   viennent des rubriques elles-mêmes, dont une seule est montée à la fois :
   `UsefulFormsSection` dit le total de ses dossiers (`onDocumentCount`),
   `UsefulContactsSection` celui de ses deux annuaires (`onContactCount`,
@@ -577,7 +581,11 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   sans résultat le dit (« Aucun document ne porte ce nom. »). Les documents
   d'un dossier se lisent en fiches, les mêmes pour tous les comptes : un
   liseré de 6 px et un fond pastel à la couleur du dossier (`FOLDER_TONES`,
-  posée en `--contact-category-accent` sur `.useful-form-download-list`), une
+  posée en `--contact-category-accent` sur `.useful-form-download-list`, avec
+  `data-folder` ; Brantôme est olive depuis le 23 novembre 2026, #5f6b27, ocre
+  auparavant, et prend en mode sombre un olive plus vif, #a3b44c, dans
+  darkTheme.css ; en sombre, le titre, l'icône et le rang des fiches prennent
+  la couleur du dossier éclaircie), une
   icône, le rang et le format au-dessus du titre (« 1. PDF »), puis un bouton
   plein de 44 px, à la couleur foncée du dossier, réduit à l'icône de
   téléchargement (libellé masqué ; le lien garde son nom, « Télécharger »

@@ -1139,7 +1139,7 @@ test("les documents s’ouvrent directement sur les formulaires, Contacts à cô
   // écrite en blanc, l'autre blanche ; chacune avec son dessin.
   const formsTab = page.getByRole("tab", { name: /^Formulaires/ });
   const contactsTab = page.getByRole("tab", { name: /^Contacts/ });
-  await expect(formsTab).toHaveCSS("background-color", "rgb(47, 122, 82)");
+  await expect(formsTab).toHaveCSS("background-color", "rgb(152, 84, 56)");
   await expect(formsTab.locator("strong")).toHaveCSS("color", "rgb(255, 255, 255)");
   await expect(contactsTab).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(page.locator(".useful-resource-tab-mark svg")).toHaveCount(2);
@@ -1164,10 +1164,10 @@ test("les documents s’ouvrent directement sur les formulaires, Contacts à cô
   await page.getByRole("tab", { name: "Contacts" }).click();
   await expect(page.getByRole("tabpanel", { name: "Contacts" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Contacts Pompidou/ })).toBeVisible();
-  // Contacts choisi : sa tuile en bleu plein, Formulaires redevenue blanche ;
+  // Contacts choisi : sa tuile en ocre plein, Formulaires redevenue blanche ;
   // son nombre est la somme des contacts des deux annuaires, et celui des
   // documents est gardé.
-  await expect(contactsTab).toHaveCSS("background-color", "rgb(58, 95, 143)");
+  await expect(contactsTab).toHaveCSS("background-color", "rgb(122, 97, 37)");
   await expect(formsTab).toHaveCSS("background-color", "rgb(255, 255, 255)");
   const contacts = await rowTotal("contacts?");
   expect(contacts).toBeGreaterThan(0);
@@ -3025,7 +3025,7 @@ test("les documents d’un dossier portent tous la couleur du dossier", async ({
   for (const address of ["/?local-test=1", "/?local-test=1&preview-feedback-role=user"]) {
     await page.goto(address);
     await openUsefulResource(page, "Formulaires");
-    for (const [folder, tone] of [["Formulaire SAP", "rgb(83, 104, 168)"], ["Formulaire Brantôme", "rgb(185, 120, 30)"]] as const) {
+    for (const [folder, tone] of [["Formulaire SAP", "rgb(83, 104, 168)"], ["Formulaire Brantôme", "rgb(95, 107, 39)"]] as const) {
       await page.getByRole("button", { name: new RegExp(folder) }).click();
       for (const [marks, property, shade] of [
         [".useful-form-download-list > .useful-form-download-card", "borderLeftColor", "100%"],
@@ -3048,6 +3048,18 @@ test("les documents d’un dossier portent tous la couleur du dossier", async ({
       await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
     }
   }
+  // En mode sombre, l'olive de Brantôme s'éteignait : un olive plus vif le
+  // remplace, sur la ligne du dossier comme sur ses fiches.
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  const brightOlive = "rgb(163, 180, 76)";
+  await expect(page.locator('.resource-folder-row[data-folder="brantome"]')).toHaveCSS("box-shadow", new RegExp(`^${brightOlive.replace(/[()]/g, "\\$&")} 4px 0px 0px 0px inset`));
+  await page.getByRole("button", { name: /Formulaire Brantôme/ }).click();
+  await expect(page.locator(".useful-form-download-list > .useful-form-download-card").first()).toHaveCSS("border-left-color", brightOlive);
+  // Le SAP garde sa couleur.
+  await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
+  await page.getByRole("button", { name: /Formulaire SAP/ }).click();
+  await expect(page.locator(".useful-form-download-list > .useful-form-download-card").first()).toHaveCSS("border-left-color", "rgb(83, 104, 168)");
 });
 
 test("les flèches de dépliage sont des chevrons dessinés, pas la lettre « v »", async ({ page }) => {
