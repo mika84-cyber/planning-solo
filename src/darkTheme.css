@@ -81,13 +81,13 @@ html[data-theme="dark"] .grand-palais-venue-navigation .grand-palais-primary-pic
 html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button:not(.active) { background: color-mix(in srgb, var(--tab) 20%, #1f1d1b); color: color-mix(in srgb, var(--tab) 40%, #f3eee8); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tab) 42%, #1f1d1b); }
 html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button:not(.active):hover { background: color-mix(in srgb, var(--tab) 30%, #1f1d1b); }
 html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button:not(.active) svg { color: color-mix(in srgb, var(--tab) 55%, #fff); }
-html[data-theme="dark"] :is(.expo-price-group, .grand-palais-interexpo-open li b) { color: color-mix(in srgb, var(--venue-accent, #c9754f) 50%, #fff); }
+html[data-theme="dark"] :is(.expo-price-group, .grand-palais-interexpo-open li b, .expo-card-links a) { color: color-mix(in srgb, var(--venue-accent, #c9754f) 50%, #fff); }
 
 /* Les illustrations détourées se posent sur le fond sombre de leur tuile. */
 html[data-theme="dark"] .leave-tool-illustration { background: transparent; filter: brightness(.92); }
 
-/* Le dock se détache du fond : capsule un peu plus claire, rubrique ouverte en crème. */
-html[data-theme="dark"] .section-dock { border-color: rgba(255, 255, 255, .14); background: #2b2420; }
+/* Le dock se détache du fond : capsule en verre dépoli, rubrique ouverte en crème. */
+html[data-theme="dark"] .section-dock { border-color: rgba(255, 255, 255, .15); background: rgba(43, 36, 32, .82); }
 /* La rubrique ouverte prend sa couleur : toute la case sur grand écran ; sur
    téléphone, la pastille de l'icône, et le nom dans cette couleur éclaircie.
    Six teintes bien séparées : Accueil bordeaux, Collègues terracotta, Docs
@@ -198,12 +198,12 @@ html[data-theme="dark"] .useful-resource-tab.resource-contacts { --tile-tint: #3
 html[data-theme="dark"] .resource-folder-row :is(.resource-folder-row-icon, .resource-folder-row-go) { color: color-mix(in srgb, var(--row-tone) 55%, #fff); }
 html[data-theme="dark"] .resource-folder-row .resource-folder-row-icon svg { stroke: currentColor; }
 html[data-theme="dark"] .useful-forms-folder-header small { color: color-mix(in srgb, var(--folder-accent) 50%, #fff); }
-/* Brantôme : l'olive du clair (#5f6b27) s'éteint sur fond sombre ; un olive
-   plus clair et plus vif le remplace (demande de l'administrateur, le
-   23 novembre 2026). La couleur du dossier est posée sur l'élément même par
-   UsefulFormsSection, d'où !important. */
-html[data-theme="dark"] [data-folder="brantome"] { --row-tone: #a3b44c !important; --contact-category-accent: #a3b44c !important; }
-html[data-theme="dark"] .useful-forms-folder-header.tone-brantome { --folder-accent: #a3b44c; }
+/* Brantôme (vert sauge) et Titres repas (orange ambré) : éclaircis sur fond
+   sombre pour rester doux et lisibles. */
+html[data-theme="dark"] [data-folder="brantome"] { --row-tone: #6da87d !important; --contact-category-accent: #6da87d !important; }
+html[data-theme="dark"] .useful-forms-folder-header.tone-brantome { --folder-accent: #6da87d; }
+html[data-theme="dark"] [data-folder="tickets"] { --row-tone: #cf8f48 !important; --contact-category-accent: #cf8f48 !important; }
+html[data-theme="dark"] .useful-forms-folder-header.tone-tickets { --folder-accent: #cf8f48; }
 /* Notes du compte principal : le vert de Mika et le rose d'Agnès restent
    reconnaissables sur fond sombre. */
 html[data-theme="dark"] .upcoming-item.note-card.note-card-colored .note-author-mika { background: #29321b; }
@@ -278,6 +278,8 @@ html[data-theme="dark"] .sunday-done-legend .unpaid::before { background: #d9707
 html[data-theme="dark"] .contact-theme-head :is(h3, small) { color: color-mix(in srgb, var(--tone) 45%, #fff); }
 html[data-theme="dark"] .contact-theme-row { border-left-color: color-mix(in srgb, var(--tone) 65%, #fff); }
 html[data-theme="dark"] .contact-theme-number { background: color-mix(in srgb, var(--tone) 18%, #1f1d1b); color: #f3ede6; }
+html[data-theme="dark"] .contact-copy-btn { border-color: color-mix(in srgb, var(--tone) 45%, #1f1d1b); background: color-mix(in srgb, var(--tone) 18%, #1f1d1b); color: color-mix(in srgb, var(--tone) 55%, #fff); }
+html[data-theme="dark"] .contact-copy-btn.copied { border-color: #5fb483; background: #1f4d35; color: #d8f5e3; }
 html[data-theme="dark"] .contact-theme-number > span,
 html[data-theme="dark"] .contact-theme-sms { background: color-mix(in srgb, var(--tone) 65%, #fff); color: #1d1916; }
 /* Congé posé un jour de fermeture : sa nature (CA, RTT…) reste lisible

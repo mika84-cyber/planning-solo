@@ -1,4 +1,4 @@
-import { lazy, Suspense, type RefObject } from "react";
+import { lazy, Suspense, useEffect, useState, type RefObject } from "react";
 import { ThemeSwitch } from "./ThemePreferenceControl";
 
 const NoteReminderButton = lazy(() => import("./NoteReminderButton"));
@@ -47,23 +47,43 @@ export function AdaptiveNavigation({ homeSection, onNavigate }: {
   homeSection: MainSection; onNavigate: (section: MainSection) => void;
 }) {
   const isActive = (key: MainSection) => homeSection === key || (key === "pdf" && homeSection === "forms");
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 360);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   return (
-    <nav className="section-dock" aria-label="Navigation principale">
-      {SECTION_TABS.map(({ key, short, long }) => (
+    <>
+      {showTop ? (
         <button
-          key={key}
           type="button"
-          data-section={key}
-          className={isActive(key) ? "active" : ""}
-          aria-current={isActive(key) ? "page" : undefined}
-          aria-label={long}
-          onClick={() => onNavigate(key)}
+          className="scroll-top-button"
+          aria-label="Revenir en haut de la page"
+          title="Revenir en haut"
+          onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}
         >
-          <NavigationIcon section={key} />
-          <span aria-hidden="true">{short}</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
         </button>
-      ))}
-    </nav>
+      ) : null}
+      <nav className="section-dock" aria-label="Navigation principale">
+        {SECTION_TABS.map(({ key, short, long }) => (
+          <button
+            key={key}
+            type="button"
+            data-section={key}
+            className={isActive(key) ? "active" : ""}
+            aria-current={isActive(key) ? "page" : undefined}
+            aria-label={long}
+            onClick={() => onNavigate(key)}
+          >
+            <NavigationIcon section={key} />
+            <span aria-hidden="true">{short}</span>
+          </button>
+        ))}
+      </nav>
+    </>
   );
 }
 

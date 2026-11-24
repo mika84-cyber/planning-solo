@@ -37,6 +37,48 @@ function offersSms(phone: UsefulContactPhone) {
   return isMobilePhone(phone.number) && phone.allowSms !== false;
 }
 
+function CopyContactButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    const done = () => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    };
+    const fallback = () => {
+      try {
+        const area = document.createElement("textarea");
+        area.value = value;
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        if (document.execCommand("copy")) done();
+        area.remove();
+      } catch {}
+    };
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(value).then(done).catch(fallback);
+      return;
+    }
+    fallback();
+  };
+  return (
+    <button
+      type="button"
+      className={`contact-copy-btn${copied ? " copied" : ""}`}
+      onClick={copy}
+      aria-label={copied ? "Copié" : label}
+      title={copied ? "Copié" : "Copier"}
+    >
+      {copied ? (
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+      ) : (
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+      )}
+    </button>
+  );
+}
+
 export function mailComposeHref(email: string | string[]) {
   const recipients = Array.isArray(email) ? email.join(",") : email;
   return `mailto:${recipients}`;
@@ -152,6 +194,7 @@ export function ContactThemePanels({ contacts, isAdmin, onEdit }: { contacts: Us
                               </a>
                             ) : <span className={`contact-theme-number${mobile ? " mobile" : ""}`}>{displayed}</span>}
                             {offersSms(phone) ? <a className="contact-theme-sms" href={smsHref(phone.number)} aria-label={`Envoyer un SMS à ${contact.name} au ${displayed}`}>SMS</a> : null}
+                            <CopyContactButton value={displayed} label={`Copier le numéro de ${contact.name} (${displayed})`} />
                           </span>
                         );
                       })}
@@ -160,6 +203,7 @@ export function ContactThemePanels({ contacts, isAdmin, onEdit }: { contacts: Us
                           <a className="contact-theme-number" href={mailComposeHref(contact.email)} aria-label={`Écrire à ${contact.name} avec l’application de messagerie`}>
                             <span aria-hidden="true">✉</span>Écrire
                           </a>
+                          <CopyContactButton value={contact.email} label={`Copier l’adresse e-mail de ${contact.name}`} />
                         </span>
                       ) : null}
                     </span>
@@ -199,13 +243,16 @@ export function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulCo
               côté d'un portable. */}
           <div className="useful-contact-actions">
             {contact.email ? (
-              <a
-                href={mailComposeHref(contact.email)}
-                className="useful-contact-email contact-theme-number"
-                aria-label={`Écrire à ${contact.name} avec l’application de messagerie`}
-              >
-                <span aria-hidden="true">✉</span>{contact.email}
-              </a>
+              <span className="contact-theme-phone">
+                <a
+                  href={mailComposeHref(contact.email)}
+                  className="useful-contact-email contact-theme-number"
+                  aria-label={`Écrire à ${contact.name} avec l’application de messagerie`}
+                >
+                  <span aria-hidden="true">✉</span>{contact.email}
+                </a>
+                <CopyContactButton value={contact.email} label={`Copier l’adresse e-mail de ${contact.name}`} />
+              </span>
             ) : null}
             {contact.phones?.map((phone) => {
               const mobile = isMobilePhone(phone.number);
@@ -218,6 +265,7 @@ export function ContactCards({ contacts, isAdmin, onEdit }: { contacts: UsefulCo
                     </a>
                   ) : <span className="contact-theme-number">{displayedNumber}</span>}
                   {offersSms(phone) ? <a className="contact-theme-sms" href={smsHref(phone.number)} aria-label={`Envoyer un SMS à ${contact.name} au ${displayedNumber}`}>SMS</a> : null}
+                  <CopyContactButton value={displayedNumber} label={`Copier le numéro de ${contact.name} (${displayedNumber})`} />
                 </span>
               );
             })}

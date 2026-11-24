@@ -38,14 +38,16 @@
 /* Le dock : une capsule sombre, centrée en bas de l'écran. Chaque rubrique
    montre son icône et son nom ; la rubrique ouverte passe en pastille claire.
    Sur téléphone, la capsule prend la largeur et le nom passe sous l'icône. */
-.section-dock { position: fixed; z-index: 45; bottom: calc(12px + env(safe-area-inset-bottom)); left: 50%; display: flex; align-items: center; gap: 2px; max-width: calc(100vw - 16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 999px; padding: 5px; background: #2c2621; box-shadow: 0 14px 32px rgba(44, 38, 33, 0.32), 0 2px 6px rgba(44, 38, 33, 0.18); transform: translateX(-50%); }
+.section-dock { position: fixed; z-index: 45; bottom: calc(12px + env(safe-area-inset-bottom)); left: 50%; display: flex; align-items: center; gap: 2px; max-width: calc(100vw - 16px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px; padding: 5px; background: rgba(44, 38, 33, 0.86); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 14px 32px rgba(44, 38, 33, 0.28), 0 2px 6px rgba(44, 38, 33, 0.16); transform: translateX(-50%); }
 .section-dock > button { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 7px; height: 46px; border: 0; border-radius: 999px; padding: 0 15px 0 12px; background: transparent; color: #e9dccf; font: inherit; font-size: 13px; font-weight: 800; line-height: 1.2; white-space: nowrap; cursor: pointer; transition: background-color 220ms ease, color 220ms ease; }
 .section-dock svg { flex: none; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .section-dock > button:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
 .section-dock > button.active { background: #fffdf9; color: var(--accent-strong); }
 .section-dock > button.active svg { stroke-width: 2.3; }
 .section-dock > button:focus-visible { outline: 3px solid rgba(241, 211, 179, 0.75); outline-offset: 1px; }
-@media (prefers-reduced-motion: reduce) { .section-dock > button { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .section-dock > button { transition: none; } .scroll-top-button { animation: none; } }
+.scroll-top-button { position: fixed; z-index: 44; right: max(14px, env(safe-area-inset-right)); bottom: calc(84px + env(safe-area-inset-bottom)); display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 50%; padding: 0; background: rgba(44, 38, 33, 0.84); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #fffdf9; box-shadow: 0 10px 24px rgba(44, 38, 33, 0.28); cursor: pointer; animation: ui-pop .18s ease-out; }
+.scroll-top-button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
 @media (max-width: 720px) {
   .section-dock { right: 8px; left: 8px; justify-content: space-between; gap: 0; max-width: none; padding: 4px; transform: none; }
   .section-dock > button { flex: 1 1 0; flex-direction: column; gap: 2px; min-width: 0; height: 52px; border-radius: 24px; padding: 0 2px; font-size: 11px; }

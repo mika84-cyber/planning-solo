@@ -56,14 +56,14 @@
      sa rubrique sans qu'on ait à chercher où elle commence. */
   /* Chaque encadré est délimité par un trait noir : sur du blanc, c'est
      le seul moyen de voir où une sous-partie commence. */
-  --border-card: #968b80;
+  --border-card: #cfc4b7;
   /* Séparations intérieures : lignes entre éléments d'une même carte. */
   --border-soft: #e7e1d9;
-  --border-control: rgba(44, 38, 33, 0.3);
+  --border-control: rgba(44, 38, 33, 0.26);
   --radius-panel: 24px;
   --radius-card: 18px;
   --radius-control: 13px;
-  --shadow-card: 0 7px 20px rgba(74, 48, 28, 0.1);
+  --shadow-card: 0 8px 24px -8px rgba(74, 48, 28, 0.11);
   --action-primary: var(--accent);
   --app-frame-strong: var(--border-card);
   --app-frame-soft: var(--border-control);

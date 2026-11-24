@@ -183,7 +183,11 @@ const budgets = {
   // automatique intelligente (protection des saisies, contrôle /version.json,
   // anti-boucle, purge de cache et message manuel en cas d'échec uniquement) ;
   // 2 169,7 / 722,4 Kio mesurés.
-  totalJavaScript: { raw: 2_171 * KIB, gzip: 723 * KIB },
+  // Relevé le 24 novembre 2026 à 2 173 / 724 Kio, avec l'accord de
+  // l'administrateur (« ok publie tout ») : bouton « Copier » sur les contacts
+  // (téléphones et e-mails) et bouton flottant « Retour en haut » au-dessus
+  // du dock (2 171,5 / 723,0 Kio mesurés).
+  totalJavaScript: { raw: 2_173 * KIB, gzip: 724 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -238,7 +242,13 @@ const budgets = {
   // Relevé le 21 novembre 2026 à 546 / 107 Kio, avec l'accord de
   // l'administrateur (« Oui, relève-les ») : la fenêtre qui annonce les
   // expositions à l'ouverture de l'accueil (544,9 / 106,3 Kio mesurés).
-  totalCss: { raw: 546 * KIB, gzip: 107 * KIB },
+  // Relevé le 24 novembre 2026 à 549 / 107 Kio, avec l'accord de
+  // l'administrateur (« ok publie tout ») : retouches esthétiques (dock verre
+  // dépoli, animations douces des fenêtres/toasts, bordures adoucies, lien
+  // officiel Expos en pastille, bouton Copier des contacts, bouton Retour en
+  // haut et nouvelles couleurs des dossiers Formulaires) ; 547,5 / 106,5 Kio
+  // mesurés.
+  totalCss: { raw: 549 * KIB, gzip: 107 * KIB },
 };
 
 async function filesUnder(directory) {

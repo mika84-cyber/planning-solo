@@ -47,10 +47,6 @@
    8 novembre 2026, jugé un peu grand). */
 :root .app-shell .top-header .top-header-title h1 { display: -webkit-box !important; overflow: hidden !important; padding-bottom: 0.14em !important; color: #fff !important; font-size: clamp(1.55rem, 6.3vw, 2.1rem) !important; line-height: 1.08 !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.25) !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 :root .app-shell .top-header .top-header-title h1 span { display: inline !important; }
-/* « Programme / GP » et « Planning / partagé » : sur deux lignes à toutes les
-   largeurs (sur téléphone aussi depuis le 8 novembre 2026, comme « Congés et
-   récupérations » ou « Documents et contacts »). */
-:root .app-shell :is(.top-header-program, .top-header-colleagues) .top-header-title h1 span { display: block !important; }
 /* Téléphone : l'étiquette « Planning solo » en haut de la case, à hauteur des
    commandes ; le titre, dans la colonne de gauche (il ne passe jamais sous un
    bouton), centré entre l'étiquette et « Liste des raccourcis », sur deux

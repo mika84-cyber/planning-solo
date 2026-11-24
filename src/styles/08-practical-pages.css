@@ -47,6 +47,7 @@
   left: 50%;
   bottom: calc(84px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
+  animation: ui-pop .18s ease-out;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto 30px;
   align-items: center;

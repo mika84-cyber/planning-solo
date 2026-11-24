@@ -3025,7 +3025,7 @@ test("les documents d’un dossier portent tous la couleur du dossier", async ({
   for (const address of ["/?local-test=1", "/?local-test=1&preview-feedback-role=user"]) {
     await page.goto(address);
     await openUsefulResource(page, "Formulaires");
-    for (const [folder, tone] of [["Formulaire SAP", "rgb(83, 104, 168)"], ["Formulaire Brantôme", "rgb(95, 107, 39)"]] as const) {
+    for (const [folder, tone] of [["Formulaire SAP", "rgb(83, 104, 168)"], ["Formulaire Brantôme", "rgb(63, 122, 79)"]] as const) {
       await page.getByRole("button", { name: new RegExp(folder) }).click();
       for (const [marks, property, shade] of [
         [".useful-form-download-list > .useful-form-download-card", "borderLeftColor", "100%"],
@@ -3048,14 +3048,17 @@ test("les documents d’un dossier portent tous la couleur du dossier", async ({
       await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
     }
   }
-  // En mode sombre, l'olive de Brantôme s'éteignait : un olive plus vif le
-  // remplace, sur la ligne du dossier comme sur ses fiches.
+  // En mode sombre : Expo violet, SAP bleu, Brantôme vert sauge et Titres repas
+  // orange ambré éclairci.
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  const brightOlive = "rgb(163, 180, 76)";
-  await expect(page.locator('.resource-folder-row[data-folder="brantome"]')).toHaveCSS("box-shadow", new RegExp(`^${brightOlive.replace(/[()]/g, "\\$&")} 4px 0px 0px 0px inset`));
+  const sageGreen = "rgb(109, 168, 125)";
+  const warmAmber = "rgb(207, 143, 72)";
+  await expect(page.locator('.resource-folder-row[data-folder="expo"]')).toHaveCSS("box-shadow", /^rgb\(154, 90, 134\) 4px 0px 0px 0px inset/);
+  await expect(page.locator('.resource-folder-row[data-folder="brantome"]')).toHaveCSS("box-shadow", new RegExp(`^${sageGreen.replace(/[()]/g, "\\$&")} 4px 0px 0px 0px inset`));
+  await expect(page.locator('.resource-folder-row[data-folder="tickets"]')).toHaveCSS("box-shadow", new RegExp(`^${warmAmber.replace(/[()]/g, "\\$&")} 4px 0px 0px 0px inset`));
   await page.getByRole("button", { name: /Formulaire Brantôme/ }).click();
-  await expect(page.locator(".useful-form-download-list > .useful-form-download-card").first()).toHaveCSS("border-left-color", brightOlive);
+  await expect(page.locator(".useful-form-download-list > .useful-form-download-card").first()).toHaveCSS("border-left-color", sageGreen);
   // Le SAP garde sa couleur.
   await page.getByRole("button", { name: "Revenir aux dossiers de formulaires" }).click();
   await page.getByRole("button", { name: /Formulaire SAP/ }).click();
@@ -7209,14 +7212,12 @@ test("les détails des 3 groupes s’ouvrent dans une fenêtre, à droite de Jou
   await prepareDemo(page);
   await goToSection(page, "colleagues");
   const mode = page.locator(".colleague-board-mode");
-  // Téléphone et Z Fold fermé : « Liste des 3 groupes » sur deux lignes. Dès
-  // 721 px (Z Fold ouvert, ordinateur) : sur une seule.
-  const wide = (page.viewportSize()?.width ?? 0) >= 721;
+  // « Liste des 3 groupes » tient en pilule sur une seule ligne à droite de Jour / Semaine.
   const label = "Liste des 3 groupes";
   const open = page.getByRole("button", { name: label, exact: true });
   await expect(open).toBeVisible();
   const labelBox = await open.locator(".colleague-groups-open-label").boundingBox();
-  expect(labelBox!.height > 20).toBe(!wide);
+  expect(labelBox!.height).toBeLessThanOrEqual(22);
   const [modeBox, openBox, boardBox] = await Promise.all([
     mode.boundingBox(),
     open.boundingBox(),
@@ -8640,6 +8641,29 @@ test("sans CET, l’accueil repose la question chaque année et mène à la dema
   await page.clock.setFixedTime(new Date("2027-11-20T10:00:00"));
   await page.reload();
   await expect(reminder.getByRole("button", { name: "Demander l’ouverture" })).toBeVisible();
+});
+
+test("les contacts proposent un bouton Copier et le bouton Retour en haut remonte au-dessus du dock", async ({ page }) => {
+  await prepareDemo(page);
+  const topBtn = page.getByRole("button", { name: "Revenir en haut de la page" });
+  await expect(topBtn).toHaveCount(0);
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await expect(topBtn).toBeVisible();
+  const [btnBox, dockBox] = await Promise.all([
+    topBtn.boundingBox(),
+    page.locator(".section-dock").boundingBox(),
+  ]);
+  expect(btnBox!.y + btnBox!.height).toBeLessThanOrEqual(dockBox!.y);
+  await topBtn.click();
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
+
+  await goToSection(page, "documents");
+  await page.getByRole("tab", { name: /Contacts/ }).click();
+  await page.getByRole("button", { name: /Contact GP‑RMN/ }).click();
+  const copyBtn = page.locator(".contact-copy-btn").first();
+  await expect(copyBtn).toBeVisible();
+  await copyBtn.click();
+  await expect(copyBtn).toHaveClass(/copied/);
 });
 
 test("quand la mise en route est ouverte sur l’accueil, elle reste déployée et le rappel du CET se replie en bandeau", async ({ page }) => {

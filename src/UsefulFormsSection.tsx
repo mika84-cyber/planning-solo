@@ -147,13 +147,12 @@ export function usefulFormFoldersForDate(
 }
 
 /** La couleur de chaque dossier, reprise de la page Documents : liseré,
- *  icône pleine et flèche ronde. Brantôme est olive depuis le 23 novembre
- *  2026 (il était ocre, jugé peu harmonieux par l'administrateur). */
+ *  icône pleine et flèche ronde. */
 const FOLDER_TONES: Record<string, string> = {
-  expo: "#2f7f74",
+  expo: "#9a5a86",
   sap: "#5368a8",
-  brantome: "#5f6b27",
-  tickets: "#9a5a86",
+  brantome: "#3f7a4f",
+  tickets: "#9e5f22",
   accident: "#a4532f",
 };
 const DEFAULT_TONE = "#7d6f5f";

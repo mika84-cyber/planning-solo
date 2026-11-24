@@ -27,8 +27,9 @@ describe("carte de contact", () => {
     const agent = { name: "Agent test", email: "agent.test@example.test", phones: [{ number: "0611223344", label: "Portable" }, { number: "0144780000", label: "Bureau" }] };
     const html = renderToStaticMarkup(<ContactCards contacts={[agent]} isAdmin={false} onEdit={vi.fn()} />);
     expect(html).toContain('class="useful-contact-email contact-theme-number" aria-label="Écrire à Agent test avec l’application de messagerie"><span aria-hidden="true">✉</span>agent.test@example.test</a>');
-    // Le numéro est lui-même le lien d'appel ; le SMS, à côté du seul portable.
-    expect(html).toContain('<span class="useful-contact-phone contact-theme-phone mobile"><a class="contact-theme-number" href="tel:+33611223344" aria-label="Appeler Agent test au 06 11 22 33 44"><span aria-hidden="true">☎</span>06 11 22 33 44</a><a class="contact-theme-sms" href="sms:+33611223344" aria-label="Envoyer un SMS à Agent test au 06 11 22 33 44">SMS</a></span>');
+    // Le numéro est lui-même le lien d'appel ; le SMS, à côté du seul portable, suivi du bouton copier.
+    expect(html).toContain('<span class="useful-contact-phone contact-theme-phone mobile"><a class="contact-theme-number" href="tel:+33611223344" aria-label="Appeler Agent test au 06 11 22 33 44"><span aria-hidden="true">☎</span>06 11 22 33 44</a><a class="contact-theme-sms" href="sms:+33611223344" aria-label="Envoyer un SMS à Agent test au 06 11 22 33 44">SMS</a><button type="button" class="contact-copy-btn" aria-label="Copier le numéro de Agent test (06 11 22 33 44)"');
+    expect(html).toContain('aria-label="Copier l’adresse e-mail de Agent test"');
     expect(html).toContain('<span class="useful-contact-phone contact-theme-phone fixed"><a class="contact-theme-number" href="tel:+33144780000"');
     expect(html).not.toContain("SMS à Agent test au 01 44 78 00 00");
     // Plus de libellé « Portable » / « Bureau » ni de bouton « Appeler ».

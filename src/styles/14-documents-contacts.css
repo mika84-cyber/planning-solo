@@ -274,11 +274,11 @@
 
 .useful-forms-folder-header>div { grid-column: 2; min-width: 0; }
 
-.useful-forms-folder-header.tone-expo { --folder-accent: #2f7f74; }
+.useful-forms-folder-header.tone-expo { --folder-accent: #9a5a86; }
 
 .useful-forms-folder-header.tone-sap { --folder-accent: #5368a8; }
 
-.useful-forms-folder-header.tone-brantome { --folder-accent: #5f6b27; }
+.useful-forms-folder-header.tone-brantome { --folder-accent: #3f7a4f; }
 
 .useful-forms-folder-header h2 { margin: 3px 0; color: #2c2621; font-size: 24px; }
 
@@ -418,7 +418,7 @@
 
 /* Rubriques pratiques : quatrième dossier équilibré, image lisible et
   annuaire tactile sans surcharger les écrans étroits. */
-.useful-forms-folder-header.tone-tickets { --folder-accent: #9a5a86; }
+.useful-forms-folder-header.tone-tickets { --folder-accent: #9e5f22; }
 
 .useful-form-information-image {
   display: grid;
@@ -804,9 +804,10 @@
 .contact-theme-who small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; text-wrap: balance; }
 .contact-theme-actions { display: contents; }
 .contact-theme-phones { grid-area: phones; display: grid; gap: 6px; }
-.contact-theme-phone { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.contact-theme-phone { display: flex; align-items: stretch; gap: 6px; }
 .contact-theme-number,
 .contact-theme-sms,
+.contact-copy-btn,
 .contact-theme-edit {
   display: inline-flex;
   align-items: center;
@@ -821,6 +822,8 @@
 /* La barre d'appel : le combiné (ou l'enveloppe) dans un rond à la couleur
    du thème, le numéro en chiffres alignés, un fond à peine teinté. */
 .contact-theme-number {
+  flex: 1 1 0;
+  min-width: 0;
   gap: 8px;
   justify-content: flex-start;
   border: 0;
@@ -840,7 +843,10 @@
   color: #fff;
   font-size: 11px;
 }
-.contact-theme-sms { width: 56px; padding: 0; background: var(--tone); color: #fff; font-size: 12px; font-weight: 800; }
+.contact-theme-sms { flex: none; width: 52px; padding: 0; background: var(--tone); color: #fff; font-size: 12px; font-weight: 800; }
+.contact-copy-btn { flex: none; width: 38px; border: 1px solid color-mix(in srgb, var(--tone) 24%, transparent); padding: 0; background: color-mix(in srgb, var(--tone) 8%, #fff); color: var(--tone); cursor: pointer; }
+.contact-copy-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.contact-copy-btn.copied { border-color: #2f7a52; background: #e2f3e8; color: #1f6641; }
 .contact-theme-edit {
   grid-area: edit;
   align-self: start;

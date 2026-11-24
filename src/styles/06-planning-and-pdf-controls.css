@@ -242,6 +242,7 @@
   aspect-ratio: 1;
 }
 
+@keyframes ui-pop { from { opacity: 0; translate: 0 7px; } }
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -252,7 +253,7 @@
   place-items: center;
   padding: 12px;
   background: rgba(44, 38, 33, 0.52);
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(4px);
 }
 .modal-card {
   position: relative;
@@ -263,6 +264,10 @@
   padding: 24px;
   background: var(--surface);
   box-shadow: 0 28px 80px rgba(44, 38, 33, 0.28);
+  animation: ui-pop .18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-card, .success-toast, .undo-toast { animation: none; }
 }
 .modal-card h2 {
   margin: 0 35px 6px 0;
