@@ -46,7 +46,8 @@ self.addEventListener("fetch", (event) => {
   if (
     event.request.method !== "GET" ||
     url.origin !== self.location.origin ||
-    url.pathname.startsWith("/api/")
+    url.pathname.startsWith("/api/") ||
+    url.pathname === "/version.json"
   )
     return;
   // Les formulaires peuvent être remplacés par l’administrateur sans changer de lien.

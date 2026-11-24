@@ -23,8 +23,9 @@
 .success-toast {
   position: fixed;
   z-index: 180;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(18px, env(safe-area-inset-bottom));
+  left: 50%;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 28px;
   align-items: center;

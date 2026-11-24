@@ -258,9 +258,9 @@ export function AppUpdateDialog({
         aria-labelledby="app-update-title"
       >
         <span className="update-available-symbol" aria-hidden="true">↻</span>
-        <span className="step-label">Nouvelle version publiée</span>
+        <span className="step-label">Mise à jour à terminer</span>
         <h2 id="app-update-title">Une mise à jour est disponible</h2>
-        <p>Vous choisissez quand charger la dernière version. La page ne sera actualisée qu’après votre confirmation.</p>
+        <p>La mise à jour automatique n’a pas pu se charger correctement. Touchez le bouton ci-dessous pour charger la dernière version.</p>
         <div className="modal-actions">
           <button className="secondary-button" type="button" onClick={onLater}>Plus tard</button>
           <button className="save-button update-now-button" type="button" disabled={checking} onClick={onUpdate}>

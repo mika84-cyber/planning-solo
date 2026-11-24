@@ -6,6 +6,8 @@ import { join, relative } from "node:path";
 // Le dossier construit : « dist » pour la publication, un autre pour les tests PWA.
 const distDir = join(process.cwd(), process.argv[2] || "dist");
 const swPath = join(distDir, "sw.js");
+const versionPath = join(distDir, "version.json");
+const indexPath = join(distDir, "index.html");
 const formSwPath = join(distDir, "formulaire", "sw.js");
 
 function collectFiles(dir) {
@@ -13,7 +15,7 @@ function collectFiles(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) files.push(...collectFiles(fullPath));
-    else if (fullPath !== swPath) files.push(fullPath);
+    else if (fullPath !== swPath && fullPath !== versionPath) files.push(fullPath);
   }
   return files;
 }
@@ -65,6 +67,9 @@ if (withPrecache === stamped) {
   throw new Error("stamp-sw: PRECACHE constant not found in sw.js — check the pattern still matches public/sw.js");
 }
 writeFileSync(swPath, compactServiceWorker(withPrecache));
+writeFileSync(versionPath, `${JSON.stringify({ version: digest })}\n`);
+const indexHtml = readFileSync(indexPath, "utf8").replace(/<meta name="app-version" content="[^"]*" \/>/g, "");
+writeFileSync(indexPath, indexHtml.replace("</head>", `<meta name="app-version" content="${digest}" /></head>`));
 const precacheKb = Math.round(precache.reduce((sum, { size }) => sum + size, 0) / 1024);
 
 const formSwContent = readFileSync(formSwPath, "utf8");

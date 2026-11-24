@@ -432,7 +432,7 @@ describe("finitions d’interface", () => {
     expect(app).toContain("<AppUpdateDialog");
     expect(planningDialogs).toContain("Mettre à jour maintenant");
     expect(planningDialogs).toContain('className="save-button update-now-button"');
-    expect(planningDialogs).toContain("La page ne sera actualisée qu’après votre confirmation");
+    expect(planningDialogs).toContain("La mise à jour automatique n’a pas pu se charger correctement");
     expect(css.mentions(".header-update-button.checking")).toBe(true);
     expect(css.mentions(".update-available-modal .update-now-button")).toBe(true);
     expect(css.declares("background", "#c52f42")).toBe(true);

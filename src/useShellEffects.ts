@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { clearAutoUpdateAttempt } from "./appUpdate";
 import { setInstallMetadataEnabled } from "./useInstallPrompt";
 import { rememberScreenBeforeUpdate, resumedScreen } from "./updateResume";
 import { warmUpScreens } from "./warmUpScreens";
@@ -119,17 +120,24 @@ export function useShellEffects({ authStatus, isProgramAdmin, demoMode, installa
         // s'installe quand même.
         await registration.update().catch(() => {});
         const waiting = registration.waiting;
-        if (waiting)
+        if (waiting) {
           await new Promise((resolve) => {
             navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
             waiting.postMessage({ type: "SKIP_WAITING" });
             window.setTimeout(resolve, 3000);
           });
+        } else if ("caches" in window) {
+          // Aucun worker en attente : on vide le cache applicatif pour débloquer
+          // un navigateur (ex. Safari iOS) resté sur une ancienne version.
+          const keys = await caches.keys();
+          await Promise.all(keys.filter((k) => k.startsWith("planning-solo-")).map((k) => caches.delete(k)));
+        }
       }
     } catch {
       // Le rechargement ci-dessous reste utile même si le contrôle du service
       // worker échoue (hors connexion, navigateur ancien ou cache corrompu).
     } finally {
+      clearAutoUpdateAttempt();
       // La page repart là où l'on était (updateResume).
       rememberScreenBeforeUpdate();
       window.setTimeout(() => window.location.reload(), 250);

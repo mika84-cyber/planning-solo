@@ -178,7 +178,12 @@ const budgets = {
   // expositions à l'ouverture de l'accueil (règles, programme validé dans la
   // veille, « Compris » retenu sur le compte). Elle se charge à part : le
   // chargement initial reste à 550,7 Kio ; 2 166,8 / 721,1 Kio mesurés.
-  totalJavaScript: { raw: 2_168 * KIB, gzip: 722 * KIB },
+  // Relevé le 24 novembre 2026 à 2 171 / 723 Kio, avec l'accord de
+  // l'administrateur (« ok relève le plafond et publie ») : mise à jour
+  // automatique intelligente (protection des saisies, contrôle /version.json,
+  // anti-boucle, purge de cache et message manuel en cas d'échec uniquement) ;
+  // 2 169,7 / 722,4 Kio mesurés.
+  totalJavaScript: { raw: 2_171 * KIB, gzip: 723 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

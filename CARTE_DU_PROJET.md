@@ -1198,27 +1198,34 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   partagé avec la construction du site Congé CP.
 - `public/sw.js` : cache hors ligne et activation des mises à jour. À la
   construction, `scripts/stamp-sw.mjs` donne au cache l’empreinte de la
-  version et remplit `PRECACHE` : code, styles, polices et images
+  version, écrit `/version.json` (jamais mis en cache) et pose `<meta name="app-version">`
+  dans `index.html`, puis remplit `PRECACHE` : code, styles, polices et images
   légères (≈ 3,7 Mo), téléchargés dès l’installation pour que l’application
   soit complète hors ligne dès la première visite.
-- `src/appUpdate.ts` : dès qu’une nouvelle version est prête, la fenêtre « Une
-  mise à jour est disponible » le dit, une fois par version, et rien ne se
-  recharge sans accord. Une version publiée est cherchée au lancement, au
-  retour sur la fenêtre, au retour du réseau et toutes les minutes. Après
-  « Plus tard », la fenêtre revient à la réouverture (retour après au moins une
-  minute d’absence, `AWAY_MS`) : le téléphone rouvre sinon la page laissée en
-  arrière-plan, dans l’ancienne version. « Mettre à jour maintenant »
-  (`checkForAppUpdate`, `useShellEffects.ts`) installe la version prête, même
-  hors connexion, attend qu’elle prenne la main, puis recharge.
+- `src/appUpdate.ts` : mise à jour automatique dès qu’une nouvelle version est
+  prête et qu’aucune manipulation n’est en cours (`isUserEditing` : aucune
+  fenêtre utilisateur, aucun panneau de demande/effacement, aucun champ actif ;
+  les annonces passives `.expo-notices` ne bloquent pas). Une version publiée
+  est cherchée (service worker + `/version.json`) au lancement, au retour sur
+  la fenêtre, au retour du réseau et toutes les minutes. Si une saisie est en
+  cours, la mise à jour patiente puis s’applique dès la fin. La fenêtre manuelle
+  « Une mise à jour est disponible » n’apparaît qu’en cas d’échec de la mise à
+  jour automatique (timeout `UPDATE_TIMEOUT_MS`, écart persistant avec
+  `/version.json` après une tentative auto sans boucler, ou `vite:preloadError`).
+  Après « Plus tard » sur cet échec, le rappel revient après `AWAY_MS` (1 min)
+  et le bouton `↻` de l’en-tête reste disponible (`checkForAppUpdate`,
+  `useShellEffects.ts`, qui vide le cache applicatif si aucun worker n’attend).
   Après un rechargement, la page rouvre là où l’on était
   (`src/updateResume.ts` : rubrique et sous-écran de Ma paie notés dans
   sessionStorage, relus par `useAppShellUiState` et `usePayUiState`, puis
-  « Application mise à jour. »). Tests dans `src/appUpdate.test.ts`.
+  toast « Application mise à jour. » placé au-dessus de la barre d’onglets
+  `.section-dock`). Tests dans `src/appUpdate.test.ts`.
 - `e2e-pwa/pwa.spec.ts` (`npm run test:pwa`) : la version de production,
   construite dans `dist-pwa-e2e` et servie par `scripts/serve-dist.mjs`, avec
-  le service worker actif — mise en cache, réouverture hors ligne, et chaque
-  cas de mise à jour : retour après une absence, usage en cours, saisie en
-  cours, page déjà à jour, « Plus tard » puis retour hors connexion. À lancer
+  le service worker actif — mise en cache, réouverture hors ligne, mise à jour
+  automatique (retour après absence + toast au-dessus du dock, consultation
+  calme, saisie protégée puis appliquée après `blur`, réouverture après
+  publication) et repli manuel en cas de cache bloqué (`version.json`). À lancer
   dès qu’on touche `public/sw.js`, `src/main.tsx`, `src/appUpdate.ts` ou
   `scripts/stamp-sw.mjs`.
 - `public/manifest.webmanifest` : installation de la PWA.

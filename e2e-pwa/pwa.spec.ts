@@ -9,6 +9,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 /** Le service worker servi par scripts/serve-dist.mjs, relu à chaque demande. */
 const SW_FILE = "dist-pwa-e2e/sw.js";
+const VERSION_FILE = "dist-pwa-e2e/version.json";
+const INDEX_FILE = "dist-pwa-e2e/index.html";
 
 const shell = (page: Page) => page.getByRole("heading", { name: "Votre planning" });
 
@@ -102,22 +104,43 @@ test("un fichier non préchargé entre dans le cache dès sa première utilisati
   await expect.poll(() => cachedPaths(page)).toContain("/header-art.jpg");
 });
 
-/** Publie une nouvelle version en réécrivant sw.js (autre nom de cache). Rend
- *  de quoi revenir au fichier construit. */
+/** Publie une nouvelle version en réécrivant sw.js, version.json et index.html.
+ *  Rend de quoi revenir aux fichiers construits. */
 function publish(build: string) {
   const swSource = readFileSync(SW_FILE, "utf8");
+  const versionSource = readFileSync(VERSION_FILE, "utf8");
+  const indexSource = readFileSync(INDEX_FILE, "utf8");
   writeFileSync(SW_FILE, swSource.replace(/const CACHE = "[^"]*";/, `const CACHE = "planning-solo-${build}";`));
-  return () => writeFileSync(SW_FILE, swSource);
+  writeFileSync(VERSION_FILE, `${JSON.stringify({ version: build })}\n`);
+  writeFileSync(INDEX_FILE, indexSource.replace(/<meta name="app-version" content="[^"]*" \/>/, `<meta name="app-version" content="${build}" />`));
+  return () => {
+    writeFileSync(SW_FILE, swSource);
+    writeFileSync(VERSION_FILE, versionSource);
+    writeFileSync(INDEX_FILE, indexSource);
+  };
+}
+
+/** Simule un cache bloqué : version.json annonce une nouvelle version mais
+ *  index.html et sw.js restent sur l'ancienne. */
+function publishStuckVersion(build: string) {
+  const versionSource = readFileSync(VERSION_FILE, "utf8");
+  writeFileSync(VERSION_FILE, `${JSON.stringify({ version: build })}\n`);
+  return () => writeFileSync(VERSION_FILE, versionSource);
 }
 
 /** La version qui sert la page : celle dont le cache reste seul, une fois
  *  l'ancien effacé par la nouvelle à sa prise de main. */
-function servingBuild(page: Page) {
-  return page.evaluate(async () => {
-    if (!navigator.serviceWorker.controller) return null;
-    const names = (await caches.keys()).filter((name) => name.startsWith("planning-solo-"));
-    return names.length === 1 ? names[0].replace("planning-solo-", "") : null;
-  });
+async function servingBuild(page: Page) {
+  try {
+    return await page.evaluate(async () => {
+      if (!navigator.serviceWorker.controller) return null;
+      const names = (await caches.keys()).filter((name) => name.startsWith("planning-solo-"));
+      return names.length === 1 ? names[0].replace("planning-solo-", "") : null;
+    });
+  } catch {
+    // Rechargement automatique en cours : le poll suivant lira la nouvelle page.
+    return null;
+  }
 }
 
 /** Avance l'horloge de la page (Date.now), sans attendre pour de vrai. */
@@ -145,29 +168,47 @@ function setVisibility(page: Page, state: "hidden" | "visible") {
 const markPage = (page: Page) => page.evaluate(() => { (window as unknown as { leftHere: boolean }).leftHere = true; });
 const pageMarked = (page: Page) => page.evaluate(() => (window as unknown as { leftHere?: boolean }).leftHere === true);
 const updateNow = (page: Page) => page.evaluate(() => navigator.serviceWorker.getRegistration().then((registration) => registration?.update()));
-const announcement = (page: Page) => page.evaluate(() => new Promise<boolean>((resolve) => {
-  window.addEventListener("planning-app-update-available", () => resolve(true), { once: true });
-}));
 
 const updateDialog = (page: Page) => page.getByRole("alertdialog", { name: "Une mise à jour est disponible" });
 
-test("au retour après une absence, la fenêtre propose la dernière version, sans rien recharger", async ({ page }) => {
+test("au retour après une absence, la dernière version s’installe automatiquement et le toast reste au-dessus des onglets", async ({ page }) => {
   await openSignedIn(page);
   const oldCache = (await page.evaluate(() => caches.keys())).find((name) => name.startsWith("planning-solo-"));
-  // L'application est restée en arrière-plan pendant qu'une version était publiée.
   await setVisibility(page, "hidden");
   const restore = publish("nouvelle1");
   try {
     await advanceClock(page, 5 * 60_000);
     await markPage(page);
-    await setVisibility(page, "visible");
-    await expect(updateDialog(page)).toBeVisible({ timeout: 30_000 });
-    await page.waitForTimeout(1500);
-    expect(await pageMarked(page)).toBe(true);
-
-    // Confirmée, la nouvelle version remplace l'ancienne et son cache.
     const reloaded = page.waitForEvent("load");
-    await updateDialog(page).getByRole("button", { name: "Mettre à jour maintenant" }).click();
+    await setVisibility(page, "visible");
+    await reloaded;
+    expect(await pageMarked(page)).toBe(false);
+    await expect(appShell(page)).toBeVisible();
+    await expect.poll(() => servingBuild(page)).toBe("nouvelle1");
+    await expect.poll(() => page.evaluate(() => caches.keys())).not.toContain(oldCache);
+    await expect(updateDialog(page)).toHaveCount(0);
+    // Le toast de confirmation apparaît sans recouvrir la barre de navigation.
+    const toast = page.locator(".success-toast");
+    await expect(toast).toContainText("Application mise à jour.");
+    const [toastBox, dockBox] = await Promise.all([
+      toast.boundingBox(),
+      page.locator(".section-dock").boundingBox(),
+    ]);
+    expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(dockBox!.y);
+  } finally {
+    restore();
+  }
+});
+
+test("pendant une consultation calme, une nouvelle version s’installe automatiquement", async ({ page }) => {
+  await openSignedIn(page);
+  const oldCache = (await page.evaluate(() => caches.keys())).find((name) => name.startsWith("planning-solo-"));
+  expect(oldCache).toBeTruthy();
+  const restore = publish("nouvelle1");
+  try {
+    await markPage(page);
+    const reloaded = page.waitForEvent("load");
+    await updateNow(page);
     await reloaded;
     expect(await pageMarked(page)).toBe(false);
     await expect(appShell(page)).toBeVisible();
@@ -179,102 +220,71 @@ test("au retour après une absence, la fenêtre propose la dernière version, sa
   }
 });
 
-test("pendant qu’on s’en sert, une nouvelle version est signalée et attend l’accord", async ({ page }) => {
-  await openControlled(page);
-  const oldCache = (await page.evaluate(() => caches.keys())).find((name) => name.startsWith("planning-solo-"));
-  expect(oldCache).toBeTruthy();
-  const restore = publish("nouvelle1");
-  try {
-    await markPage(page);
-    // L'application écoute l'événement qui ouvre la fenêtre « Une mise à jour
-    // est disponible » : il doit partir sans rechargement automatique.
-    const announced = announcement(page);
-    await updateNow(page);
-    expect(await announced).toBe(true);
-    await expect.poll(() => page.evaluate(() =>
-      navigator.serviceWorker.getRegistration().then((registration) => Boolean(registration?.waiting)))).toBe(true);
-    await page.waitForTimeout(1500);
-    expect(await pageMarked(page)).toBe(true);
-    await expect(shell(page)).toBeVisible();
-
-    // Confirmée, la nouvelle version prend la main et efface l'ancien cache.
-    await page.evaluate(() => new Promise<void>((resolve) => {
-      navigator.serviceWorker.addEventListener("controllerchange", () => resolve(), { once: true });
-      void navigator.serviceWorker.getRegistration().then((registration) =>
-        registration?.waiting?.postMessage({ type: "SKIP_WAITING" }));
-    }));
-    await expect.poll(() => page.evaluate(() => caches.keys())).toContain("planning-solo-nouvelle1");
-    await expect.poll(() => page.evaluate(() => caches.keys())).not.toContain(oldCache);
-  } finally {
-    restore();
-  }
-});
-
-test("un texte en cours de saisie n’est pas perdu : la mise à jour est proposée", async ({ page }) => {
+test("un texte en cours de saisie n’est pas perdu : la mise à jour patiente puis s’applique dès la fin", async ({ page }) => {
   await openControlled(page);
   const email = page.getByLabel("Adresse e-mail");
   await email.fill("mika@exemple.fr");
   const restore = publish("nouvelle1");
   try {
     await markPage(page);
-    const announced = announcement(page);
     await updateNow(page);
-    expect(await announced).toBe(true);
+    await expect.poll(() => page.evaluate(() =>
+      navigator.serviceWorker.getRegistration().then((registration) => Boolean(registration?.waiting)))).toBe(true);
     await page.waitForTimeout(1500);
     expect(await pageMarked(page)).toBe(true);
     await expect(email).toHaveValue("mika@exemple.fr");
+    // Une fois la saisie quittée, la mise à jour s'applique d'elle-même.
+    const reloaded = page.waitForEvent("load");
+    await email.blur();
+    await reloaded;
+    expect(await pageMarked(page)).toBe(false);
+    await expect.poll(() => servingBuild(page)).toBe("nouvelle1");
   } finally {
     restore();
   }
 });
 
-test("rouverte après une publication, l’application propose aussi la mise à jour", async ({ page }) => {
+test("rouverte après une publication, l’application charge automatiquement la nouvelle version", async ({ page }) => {
   await openSignedIn(page);
-  // Publiée pendant que l'application était fermée : on la rouvre, le nouveau
-  // service worker s'installe derrière, et la fenêtre le dit.
   const restore = publish("nouvelle1");
   try {
     await page.reload();
     await expect(appShell(page)).toBeVisible();
-    await markPage(page);
-    await expect(updateDialog(page)).toBeVisible({ timeout: 30_000 });
-    await page.waitForTimeout(1500);
-    expect(await pageMarked(page)).toBe(true);
+    await expect.poll(() => servingBuild(page), { timeout: 30_000 }).toBe("nouvelle1");
+    await expect(updateDialog(page)).toHaveCount(0);
   } finally {
     restore();
   }
 });
 
-test("après « Plus tard », la fenêtre revient à la réouverture, et la version téléchargée s’installe même hors connexion", async ({ page, context }) => {
+test("si la mise à jour automatique échoue (cache bloqué), le message manuel apparaît sans boucler", async ({ page }) => {
   await openSignedIn(page);
-  const restore = publish("nouvelle1");
+  const restore = publishStuckVersion("bloquee99999");
   try {
-    await updateNow(page);
-    await expect(updateDialog(page)).toBeVisible({ timeout: 30_000 });
+    // 1re détection via version.json : une tentative automatique de rechargement.
+    const reloaded = page.waitForEvent("load");
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await reloaded;
+    await expect(appShell(page)).toBeVisible();
+    // La page est toujours sur l'ancienne empreinte : pas de boucle, le message apparaît.
+    await expect(updateDialog(page)).toBeVisible({ timeout: 15_000 });
+    await expect(updateDialog(page)).toContainText("La mise à jour automatique n’a pas pu se charger correctement");
+    await markPage(page);
+    await page.waitForTimeout(1500);
+    expect(await pageMarked(page)).toBe(true);
+    // Après « Plus tard », la fenêtre ne revient qu'après une vraie absence.
     await updateDialog(page).getByRole("button", { name: "Plus tard" }).click();
     await expect(updateDialog(page)).toHaveCount(0);
-    // Le temps de lire un message : elle ne revient pas.
     await setVisibility(page, "hidden");
     await advanceClock(page, 10_000);
     await setVisibility(page, "visible");
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(400);
     await expect(updateDialog(page)).toHaveCount(0);
-    // On quitte l'application, et on la rouvre sans réseau.
     await setVisibility(page, "hidden");
-    await context.setOffline(true);
     await advanceClock(page, 5 * 60_000);
-    await markPage(page);
     await setVisibility(page, "visible");
     await expect(updateDialog(page)).toBeVisible();
-    expect(await pageMarked(page)).toBe(true);
-    const reloaded = page.waitForEvent("load");
-    await updateDialog(page).getByRole("button", { name: "Mettre à jour maintenant" }).click();
-    await reloaded;
-    expect(await pageMarked(page)).toBe(false);
-    await expect(appShell(page)).toBeVisible();
-    await expect.poll(() => servingBuild(page)).toBe("nouvelle1");
   } finally {
-    await context.setOffline(false);
     restore();
   }
 });

@@ -50,8 +50,8 @@ createServer(async (request, response) => {
   const body = await readFile(file);
   response.writeHead(200, {
     "content-type": TYPES[extname(file)] || "application/octet-stream",
-    // Comme en ligne : le service worker et les pages sont toujours relus.
-    "cache-control": /sw\.js$|\.html$/.test(file) ? "no-cache" : "public, max-age=31536000, immutable",
+    // Comme en ligne : le service worker, la version et les pages sont toujours relus.
+    "cache-control": /sw\.js$|\.html$|version\.json$/.test(file) ? "no-cache" : "public, max-age=31536000, immutable",
   });
   response.end(body);
 }).listen(port, "127.0.0.1", () => console.log(`serve-dist : ${root} sur ${port}`));

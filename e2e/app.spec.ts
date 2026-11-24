@@ -5547,7 +5547,7 @@ test("le compte avertit lorsqu’une nouvelle version est disponible", async ({ 
 
   const updateDialog = page.getByRole("alertdialog", { name: "Une mise à jour est disponible" });
   await expect(updateDialog).toBeVisible();
-  await expect(updateDialog).toContainText("La page ne sera actualisée qu’après votre confirmation");
+  await expect(updateDialog).toContainText("La mise à jour automatique n’a pas pu se charger correctement");
   const updateNowButton = updateDialog.getByRole("button", { name: "Mettre à jour maintenant" });
   await expect(updateNowButton).toBeVisible();
   await expect(updateNowButton).toHaveCSS("background-color", "rgb(197, 47, 66)");
@@ -6736,6 +6736,12 @@ test("nettoyage et gestion d’un congé utilisent des actions directes", async 
     .click();
   const undo = page.locator(".undo-toast");
   await expect(undo).toContainText("L’absence a été supprimée");
+  // Le toast reste au-dessus de la barre d'onglets sans la recouvrir.
+  const [undoBox, dockBox] = await Promise.all([
+    undo.boundingBox(),
+    page.locator(".section-dock").boundingBox(),
+  ]);
+  expect(undoBox!.y + undoBox!.height).toBeLessThanOrEqual(dockBox!.y);
   await undo.getByRole("button", { name: "Annuler", exact: true }).click();
   await page.locator('.month-card .day[aria-current="date"]').click();
   await expect(page.getByRole("dialog", { name: /.+/ }).getByText("Déjà posé ce jour")).toBeVisible();
