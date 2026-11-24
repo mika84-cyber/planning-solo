@@ -8086,6 +8086,8 @@ test("en mode sombre, les mois qui comptent pour le fractionnement se détachent
   // Avant, le fond des mois qui comptent se confondait avec la carte (1,1).
   expect(contrasts.fill).toBeGreaterThan(1.8);
   expect(contrasts.text).toBeGreaterThan(4.5);
+  // Les illustrations détourées des outils Congés ne gardent plus d'encadré beige clair en sombre.
+  expect(await page.locator(".leave-tool-illustration").evaluateAll((frames) => frames.every((frame) => getComputedStyle(frame).backgroundColor === "rgba(0, 0, 0, 0)"))).toBe(true);
 });
 
 test("en mode sombre, la frise, les dimanches et la date des notes gardent leur couleur", async ({ page }, testInfo) => {
@@ -8419,8 +8421,15 @@ test("un férié travaillé propose prime seule, prime + récup ou un échange a
 /** Le profil d'un agent qui a posé 20 CA en 2026 et suit son CET (solde de
  *  5 jours), ne l'a pas encore renseigné (`withAccount` à faux), ou a répondu
  *  « Je n'ai pas de CET » ("declined"). */
+function dismissHomeSetup(page: Page) {
+  return page.addInitScript(() => {
+    localStorage.setItem("planning:setup-dismissed-v1:demo", JSON.stringify(["planning-group", "pay-profile", "holiday-choice", "payslip-upload"]));
+  });
+}
+
 function seedCetProfile(page: Page, withAccount: boolean | "declined" = true) {
   return page.addInitScript((account) => {
+    localStorage.setItem("planning:setup-dismissed-v1:demo", JSON.stringify(["planning-group", "pay-profile", "holiday-choice", "payslip-upload"]));
     localStorage.setItem("planning:e2e-pay-profile", JSON.stringify({
       fullName: "",
       group: "2",
@@ -8433,6 +8442,7 @@ function seedCetProfile(page: Page, withAccount: boolean | "declined" = true) {
 
 test("l’application restée ouverte depuis la veille montre le rappel du CET dès minuit le 15 novembre", async ({ page }) => {
   await page.clock.install({ time: new Date("2026-11-14T23:58:00") });
+  await dismissHomeSetup(page);
   await prepareDemo(page);
   await expect(page.getByRole("heading", { name: "Aujourd’hui" })).toBeVisible();
   const reminder = page.getByRole("complementary", { name: "Avez-vous un CET ?" });
@@ -8558,6 +8568,7 @@ test("« Oui » touché juste après un rendu de l’appli donne quand même la 
 
 test("en fin d’année, un CET non renseigné reste rappelé jusqu’à « Non », qui le fait taire pour l’année", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-12-27T10:00:00"));
+  await dismissHomeSetup(page);
   await prepareDemo(page);
   const reminder = page.getByRole("complementary", { name: "Avez-vous un CET ?" });
   await expect(reminder.locator(".step-label.urgent")).toHaveText("CET · plus que 5 jours");
@@ -8623,6 +8634,30 @@ test("sans CET, l’accueil repose la question chaque année et mène à la dema
   await page.clock.setFixedTime(new Date("2027-11-20T10:00:00"));
   await page.reload();
   await expect(reminder.getByRole("button", { name: "Demander l’ouverture" })).toBeVisible();
+});
+
+test("quand la mise en route est ouverte sur l’accueil, elle reste déployée et le rappel du CET se replie en bandeau", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-20T10:00:00"));
+  await prepareDemo(page);
+  const setup = page.locator(".home-setup-checklist");
+  await expect(setup.getByRole("heading", { name: "Mise en route" })).toBeVisible();
+  const ribbon = page.locator(".cet-ticker");
+  const reminder = page.getByRole("complementary", { name: "Avez-vous un CET ?" });
+  await expect(ribbon).toBeVisible();
+  await expect(reminder).toHaveCount(0);
+  // Toucher le bandeau déplie la carte du CET pour cette visite.
+  await ribbon.click();
+  await expect(reminder).toBeVisible();
+  await expect(reminder.getByRole("button", { name: "Oui", exact: true })).toBeFocused();
+  // Une fois la mise en route écartée, le rappel du CET se déploie tout seul.
+  await page.reload();
+  await expect(ribbon).toBeVisible();
+  for (let i = 0; i < 4 && (await setup.count()) > 0; i++) {
+    await setup.locator(".home-setup-skip").click();
+  }
+  await expect(setup).toHaveCount(0);
+  await expect(reminder).toBeVisible();
+  await expect(ribbon).toHaveCount(0);
 });
 
 test("l’accueil annonce une exposition la veille de son ouverture, puis une semaine avant sa fin", async ({ page }) => {

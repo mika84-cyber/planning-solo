@@ -151,5 +151,17 @@ describe("le rappel de l'alimentation du CET sur l'accueil", () => {
       vi.stubGlobal("localStorage", { getItem: () => "2026-11-18", setItem: vi.fn() });
       expect(render("2026-12-27", tracked())).toContain("Vous pouvez verser jusqu’à 20 jours</h2>");
     });
+
+    it("se replie aussi en bandeau tant que « Mise en route » est ouverte sur l'accueil", () => {
+      const html = renderToStaticMarkup(
+        <CetWindowReminder todayKey="2026-11-20" account={undefined} periods={[]} group={2} manualAdjustments={used(0)} defer {...handlers} />,
+      );
+      expect(html).not.toContain("cet-window-reminder");
+      expect(html).toContain('class="cet-ticker"');
+      const urgent = renderToStaticMarkup(
+        <CetWindowReminder todayKey="2026-12-27" account={tracked()} periods={[]} group={2} manualAdjustments={used(20)} defer {...handlers} />,
+      );
+      expect(urgent).toContain('class="cet-ticker urgent"');
+    });
   });
 });

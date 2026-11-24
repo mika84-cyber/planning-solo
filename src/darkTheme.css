@@ -83,8 +83,8 @@ html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker butto
 html[data-theme="dark"] .grand-palais-view-tools .grand-palais-view-picker button:not(.active) svg { color: color-mix(in srgb, var(--tab) 55%, #fff); }
 html[data-theme="dark"] :is(.expo-price-group, .grand-palais-interexpo-open li b) { color: color-mix(in srgb, var(--venue-accent, #c9754f) 50%, #fff); }
 
-/* Les illustrations dessinées sur fond clair gardent leur fond, sans éblouir. */
-html[data-theme="dark"] .leave-tool-illustration { background: #f3ede6; filter: brightness(.88); }
+/* Les illustrations détourées se posent sur le fond sombre de leur tuile. */
+html[data-theme="dark"] .leave-tool-illustration { background: transparent; filter: brightness(.92); }
 
 /* Le dock se détache du fond : capsule un peu plus claire, rubrique ouverte en crème. */
 html[data-theme="dark"] .section-dock { border-color: rgba(255, 255, 255, .14); background: #2b2420; }

@@ -80,6 +80,8 @@ type Props = {
     & Pick<ReturnType<typeof useShellEffects>, "checkForAppUpdate">
     & Pick<ReturnType<typeof useAuthenticationActions>, "disconnect">
     & Pick<ReturnType<typeof useProfileAdjustmentActions>, "saveCetAccount" | "saveExpoNoticesSeen">;
+  /** Vrai tant que la carte « Mise en route » reste ouverte sur l'accueil. */
+  setupOpen?: boolean;
 };
 
 /**
@@ -90,7 +92,7 @@ type Props = {
  */
 export function AppShellChrome({
   now, group, demoMode, userEmail, isProgramAdmin, actualProgramAdmin, programAdminKnown,
-  admin, installation, shell, pay, calendar, allowanceValues, feedbackMessaging, notify, showSuccess, help, actions,
+  admin, installation, shell, pay, calendar, allowanceValues, feedbackMessaging, notify, showSuccess, help, actions, setupOpen = false,
 }: Props) {
   const { guestPreview, setGuestPreview, adminToolsOpen, setAdminToolsOpen, setAdminRevision } = admin;
   const { enabled: installationEnabled, installPrompt, installApp } = installation;
@@ -352,6 +354,7 @@ export function AppShellChrome({
         periods={periods}
         group={group}
         manualAdjustments={formProfile?.manualAdjustments}
+        defer={setupOpen}
         onPrepare={() => openCet("cet-funding")}
         onOpenCet={() => openCet("cet")}
         onRequestOpening={() => openCet("cet-opening")}

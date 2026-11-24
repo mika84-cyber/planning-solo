@@ -98,7 +98,10 @@ Cette carte sert à trouver le bon fichier sans relire toute l'application.
   par des losanges, et un filet en bas qui avance du 15 novembre au
   31 décembre (`cetWindowElapsed`) ; orangés la dernière semaine. Sur
   l’appareil seulement : elle le reste les jours suivants et ne se redéplie
-  d’elle-même que le 24 décembre ; touché, le bandeau la redéplie. Le
+  d’elle-même que le 24 décembre ; touché, le bandeau la redéplie. Tant que
+  « Mise en route » reste ouverte sur l’accueil (`defer={setupOpen}`), la carte
+  se replie aussi en bandeau pour lui laisser la place et se redéplie dès
+  qu’elle se ferme. Le
   défilement s’arrête sous le doigt, la souris ou le clavier, et pas du tout
   avec « réduire les animations ». « Préparer ma demande » ouvre Congés › Mon CET avec le
   formulaire d’alimentation (cible `cet-funding` de `helpTargets.ts` :

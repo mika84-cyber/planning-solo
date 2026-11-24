@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useEffect, useState, type CSSProperties, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { noteLines, type NoteListItem } from "./appModel";
 import { NotesPanelContent } from "./PlanningView";
 import "./sharedNotes.css";
@@ -81,6 +81,7 @@ type HomeDashboardProps = {
   nextExtraWork: { kind: "mecenat" | "overtime"; date: string; start: string; end: string } | null;
   setupItems: HomeSetupItem[];
   setupDismissKey: string;
+  onSetupChange?: (open: boolean) => void;
   hasAnyNote: boolean;
   noteQuery: string;
   onNoteQueryChange: Dispatch<SetStateAction<string>>;
@@ -103,6 +104,7 @@ export function HomeDashboard({
   nextExtraWork,
   setupItems,
   setupDismissKey,
+  onSetupChange,
   hasAnyNote,
   noteQuery,
   onNoteQueryChange,
@@ -141,6 +143,7 @@ export function HomeDashboard({
   const skippedSetup = (item: HomeSetupItem) => !item.done && dismissedSetupItems.includes(item.id);
   const setupHandled = setupItems.filter((item) => item.done || skippedSetup(item)).length;
   const setupVisible = setupHandled < setupItems.length;
+  useEffect(() => { onSetupChange?.(setupVisible); }, [setupVisible, onSetupChange]);
   const [selectedSetup, setSelectedSetup] = useState<string | null>(null);
   const setupCurrent = setupItems.find((item) => item.id === selectedSetup && !item.done)
     ?? setupItems.find((item) => !item.done && !skippedSetup(item));

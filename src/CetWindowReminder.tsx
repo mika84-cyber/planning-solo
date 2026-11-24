@@ -131,6 +131,8 @@ type Props = {
   /** Enregistre le compte d'après le solde du relevé RH ; vrai une fois fait. */
   onSaveBalance: (initialBalance: number, legacyCap70: boolean) => Promise<boolean>;
   onNoCet: () => void;
+  /** Replié en bandeau tant que « Mise en route » reste ouverte sur l'accueil. */
+  defer?: boolean;
 };
 
 const STEPS = ["Votre CET", "Son solde", "Demande"] as const;
@@ -160,7 +162,7 @@ function CetJourney({ step }: { step: number }) {
  * solde du relevé RH sans quitter l'accueil ; ensuite, ce qui peut être versé,
  * ou les CA qui manquent. « Plus tard », en haut, replie la carte en bandeau.
  */
-export function CetWindowReminder({ todayKey, account, periods, group, manualAdjustments, onPrepare, onOpenCet, onRequestOpening, onRequestLeave, onSaveBalance, onNoCet }: Props) {
+export function CetWindowReminder({ todayKey, account, periods, group, manualAdjustments, onPrepare, onOpenCet, onRequestOpening, onRequestLeave, onSaveBalance, onNoCet, defer = false }: Props) {
   const [foldedOn, setFoldedOn] = useState(readFolded);
   // Le bandeau touché redéplie la carte pour la visite, sans oublier le repli.
   const [unfolded, setUnfolded] = useState(false);
@@ -185,7 +187,7 @@ export function CetWindowReminder({ todayKey, account, periods, group, manualAdj
   const ribbonRef = useRef<HTMLButtonElement>(null);
   const goRef = useRef<HTMLButtonElement>(null);
   const balanceRef = useRef<HTMLInputElement>(null);
-  const folded = !unfolded && cetReminderFolded(foldedOn, todayKey);
+  const folded = !unfolded && (defer || cetReminderFolded(foldedOn, todayKey));
   useEffect(() => {
     if (!focusNext) return;
     const target = focusNext === "ribbon" ? ribbonRef.current : focusNext === "balance" ? balanceRef.current : goRef.current;

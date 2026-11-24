@@ -42,6 +42,7 @@ type Props = {
     missingHolidayChoices: number;
     missingPayValues: boolean;
   };
+  onSetupChange?: (open: boolean) => void;
   shell: Pick<
     ReturnType<typeof useAppShellUiState>,
     "noteQuery" | "setNoteQuery" | "setHomeSection" | "setGroupChooserOpen"
@@ -63,7 +64,7 @@ type Props = {
  */
 export function HomeSectionScreen({
   now, group, demoMode, userEmail, isProgramAdmin, formProfile, entries, ownNoteAuthorLabel,
-  overview, setup, shell, pay, actions,
+  overview, setup, onSetupChange, shell, pay, actions,
 }: Props) {
   const { setHomeSection, setGroupChooserOpen } = shell;
   const { setPayScreen } = pay;
@@ -80,6 +81,7 @@ export function HomeSectionScreen({
           leaveYear={overview.leaveYear}
           nextExtraWork={overview.nextExtraWork}
           setupDismissKey={`planning:setup-dismissed-v1:${demoMode ? "demo" : userEmail.trim().toLowerCase()}`}
+          onSetupChange={onSetupChange}
           setupItems={[
             {
               id: "planning-group",

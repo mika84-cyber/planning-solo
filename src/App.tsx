@@ -537,6 +537,9 @@ export default function Home() {
   // que rien n'a été confirmé, ce ne sont que des valeurs de repli.
   const missingCalculationProfile = !formProfile?.status || !formProfile?.workQuota;
   const missingHolidayChoices = currentYearPay ? allowances?.holidayPending ?? 0 : 0;
+  // Quand « Mise en route » est ouverte sur l'accueil, le rappel du CET se
+  // replie en bandeau pour lui laisser la place.
+  const [setupOpen, setSetupOpen] = useState(false);
 
   const showCalendarWorkspace =
     homeSection === "home" ||
@@ -942,6 +945,7 @@ export default function Home() {
         showSuccess={confirm}
         help={{ openPlanningPdf: () => setPdfDialogOpen(true), openBlankForm, requestLeave: () => { openRequestChooser("planning"); requestFromHelp.current = true; }, openExchange: () => openWorkExchange() }}
         actions={{ navigateFromShell, checkForAppUpdate, disconnect, saveCetAccount, saveExpoNoticesSeen }}
+        setupOpen={setupOpen}
       />
 
       {feedbackMessaging.resolutionNotice ? (
@@ -1005,6 +1009,7 @@ export default function Home() {
           ownNoteAuthorLabel={ownNoteAuthorLabel}
           overview={{ ...workedDaysOverview, totalLeaveRemaining, leaveYear: absenceYear, upcoming, hasAnyNote, noteSearchResults }}
           setup={{ missingCalculationProfile, missingHolidayChoices, missingPayValues }}
+          onSetupChange={setSetupOpen}
           shell={appShellUi}
           pay={payUi}
           actions={{ setView, openDay, beginQuickNote, deleteMultiplePlanningDates, deleteAgnesNote }}
