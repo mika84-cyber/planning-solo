@@ -33,6 +33,8 @@ const PAYSLIP_GAP_EXPLANATIONS: Record<string, string> = {
   "sunday-flat": "Le forfait mensuel des dimanches est fixe : un écart signale un rappel, une retenue ou un changement de barème.",
   status: "Un contractuel ne perçoit ni IFSE ni CIA. Si ce bulletin en porte, votre statut est sans doute « Fonctionnaire » : corrigez-le dans le profil de paie pour que l’estimation en tienne compte.",
   carence: "Un jour de carence apparaît sur le bulletin alors qu’aucun arrêt maladie correspondant n’est enregistré dans l’application.",
+  overtime: "Des heures supplémentaires peuvent être payées le mois suivant selon la date de validation, ou avec un taux horaire légèrement arrondi.",
+  mecenat: "Une vacation de mécénat peut être payée sur la paie suivante, ou réglée sans majoration de nuit.",
 };
 
 /**

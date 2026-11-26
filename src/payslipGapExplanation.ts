@@ -6,7 +6,7 @@
  *  centime : ce que les lignes connues n'expliquent pas devient une ligne
  *  « inexpliquée », jamais un écart passé sous silence. */
 import { euros } from "./appModel";
-import { estimatedIncomeTax } from "./payEstimate";
+import { estimatedIncomeTax, estimatedTaxableNet } from "./payEstimate";
 import { describePayslipGap, type PayslipReviewCheck } from "./payslipReview";
 import type { PayslipGapFigures, PayslipGapRecord } from "./payslipVerificationRecords";
 import { SUNDAY_ALLOWANCE, sundayCountLabel } from "./planningLogic";
@@ -64,7 +64,7 @@ export type PayslipGapExplanation = {
 export type PayslipGapInput = {
   checks: PayslipReviewCheck[];
   expected: { gross: number; netBeforeTax?: number; incomeTax?: number };
-  actual: { gross?: number; netBeforeTax?: number; incomeTax?: number };
+  actual: { gross?: number; netBeforeTax?: number; incomeTax?: number; taxableNet?: number };
   /** Les parts du brut gardées en net, en %, comme l'estimation. */
   netRatioFixed: number;
   netRatioVariable: number;
@@ -134,10 +134,16 @@ function grossCause(check: PayslipReviewCheck, residenceGap: number): PayslipGap
   // résidence, déjà comptée sur sa propre ligne.
   const amount = cents(check.key === "other-fixed" ? difference - residenceGap : difference);
   if (Math.abs(amount) < 0.01) return null;
+  const suffix =
+    check.key === "holidays" && difference > 0
+      ? " — sans doute un rappel (« R ») d’un férié précédent"
+      : check.key === "overtime" && difference < 0
+        ? " — des heures déclarées récemment peuvent tomber sur la paie suivante"
+        : "";
   return {
     key: check.key,
     title: describePayslipGap(check),
-    detail: `${euros(found)} sur le bulletin, ${euros(check.expected)} prévus`,
+    detail: `${euros(found)} sur le bulletin, ${euros(check.expected)} prévus${suffix}`,
     amount,
     kind: "cause",
     check,
@@ -157,8 +163,8 @@ export function explainPayslipGapChain(input: PayslipGapInput): PayslipGapExplan
   if (actual.gross === undefined) return null;
   const finish = (line: PayslipGapLine): PayslipGapLine => {
     const key = line.check?.key ?? line.key;
-    const applied = input.applied?.[key];
-    const detail = input.details?.[key];
+    const applied = line.kind === "follow" ? undefined : input.applied?.[key];
+    const detail = line.kind === "follow" ? undefined : input.details?.[key];
     const reference = input.references?.[key];
     return {
       ...line,
@@ -303,6 +309,30 @@ export function explainPayslipGapChain(input: PayslipGapInput): PayslipGapExplan
         detail: `${rate} % sur ce qui reste${exemptNote}`,
         amount: taxEffect,
         kind: "follow",
+      });
+    }
+  } else if (actual.taxableNet !== undefined && paidRate !== undefined) {
+    const taxFromActualBase = cents((actual.taxableNet * paidRate) / 100);
+    const expectedTaxableNet = taxBase
+      ? estimatedTaxableNet(actual.netBeforeTax, taxBase.adjustment, taxBase.exemptActual)
+      : undefined;
+    if (Math.abs(taxFromActualBase - actualTax) <= 0.15) {
+      taxLines.push({
+        key: "income-tax",
+        title: "Assiette imposable différente",
+        detail: expectedTaxableNet !== undefined
+          ? `Net imposable lu : ${euros(actual.taxableNet)} (estimé : ${euros(expectedTaxableNet)}) à ${rate} % = ${euros(actualTax)} prélevés.`
+          : `Net imposable lu : ${euros(actual.taxableNet)} à ${rate} % = ${euros(actualTax)} prélevés.`,
+        amount: taxEffect,
+        kind: "cause",
+      });
+    } else {
+      taxLines.push({
+        key: "income-tax",
+        title: taxEffect > 0 ? "Impôt plus bas que prévu" : "Impôt plus élevé que prévu",
+        detail: `${euros(actualTax)} prélevés, mais ${rate} % de ${euros(actual.taxableNet)} font ${euros(taxFromActualBase)} : vérifiez la ligne PAS.`,
+        amount: taxEffect,
+        kind: "unknown",
       });
     }
   } else {

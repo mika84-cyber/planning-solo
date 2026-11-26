@@ -130,7 +130,7 @@ export function payslipGapChoices(issue: PayslipReviewCheck, context: PayslipGap
     }];
   }
 
-  if (issue.key === "gross" && found !== undefined && found < expected) {
+  if ((issue.key === "gross" || issue.key === "mecenat") && found !== undefined && found < expected) {
     const unpaid = unpaidMecenats(context.mecenatLines, context.bulletinMecenatCents);
     if (unpaid.length) {
       const total = unpaid.reduce((sum, entry) => sum + mecenatPaidCents(entry), 0) / 100;

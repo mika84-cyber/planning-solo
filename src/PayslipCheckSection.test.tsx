@@ -333,10 +333,12 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Il manque 24,07 € sur votre net");
     expect(html).toMatch(/Prévu<\/dt><dd>2 224,24 €[\s\S]*Payé<\/dt><dd>2 200,17 €[\s\S]*Écart<\/dt><dd>− 24,07 €/);
     expect(html).toContain("Un demi-dimanche non payé");
+    expect(html).toContain("payslip-gap-unit\">brut<");
     expect(html).toContain("Reporter le demi-dimanche sur décembre 2026");
     expect(html).toContain("Moins de cotisations");
     expect(html).toContain("prélevées sur ce demi-dimanche");
     expect(html).toContain("Moins d’impôt");
+    expect(html).toContain("Écart expliqué (net)");
     expect(html).toContain("Tout l’écart est expliqué");
     // Seul ce qui diffère est dit : ni lignes identiques, ni tableau.
     expect(html).not.toContain("identique");
@@ -345,6 +347,27 @@ describe("PayslipCheckSection", () => {
     expect(html).toContain("Octobre prend les montants du bulletin : net 2 200,17 €, dimanches 6,5.");
     expect(html).toContain("C’est une erreur : proposition de courrier à envoyer aux RH");
     expect(html).not.toContain("Conclusion de la vérification");
+
+    // Quand toutes les causes ont déjà mis à jour le profil, les coches passent au vert.
+    const allAppliedHtml = renderToStaticMarkup(
+      <PayslipCheckSection
+        {...props}
+        gapExplanation={explainPayslipGapChain({
+          checks: [
+            { key: "gross", label: "Cumul brut", found: 2822.48, expected: 2822.48 },
+            { key: "net-before-tax", label: "Net avant impôt", found: 2277.19, expected: 2277.19, tolerance: 0.5 },
+            { key: "pas-rate", label: "Taux d’imposition (PAS)", found: 2.6, expected: 2.2, tolerance: 0.01 },
+          ],
+          expected: { gross: 2822.48, netBeforeTax: 2277.19, incomeTax: 52.95 },
+          actual: { gross: 2822.48, netBeforeTax: 2277.19, incomeTax: 62.58 },
+          netRatioFixed: 79.5,
+          netRatioVariable: 89.7,
+          applied: { "pas-rate": "nouveau taux enregistré" },
+        })}
+      />,
+    );
+    expect(allAppliedHtml).toContain('class="cause applied"');
+    expect(allAppliedHtml).toContain("Tout l’écart est expliqué — votre profil est déjà à jour");
   });
 
   it("conserve les arrêts maladie et l'édition des paramètres", () => {

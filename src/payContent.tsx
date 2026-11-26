@@ -17,7 +17,8 @@ import type { StrikePayEstimate } from "./strike";
 import { DeductionSources, type DeductionSourceLine } from "./DeductionSources";
 import { ofPayMonth, payMonthKey } from "./deductionPayMonth";
 import type { sickLeaveSummaryForYear } from "./sickLeaveSummary";
-import { isMecenatLabel, isOvertimeLabel, oneOffExtraLines, oneOffExtraTotal, type inspectNetRatioCalibration } from "./payslip";
+import { isMecenatLabel, isOvertimeLabel, oneOffExtraLines, oneOffExtraTotal, usesAverageNetRatios, type inspectNetRatioCalibration } from "./payslip";
+import { auditPayslip } from "./payslipAudit";
 import { MECENAT_NIGHT_REGULARISATION, mecenatRatesFor, pendingNightMajoration } from "./mecenat";
 import type { computePayAllowances } from "./payAllowances";
 import {
@@ -600,6 +601,21 @@ export function buildPayContent({
   // Des taux de cotisations recalés par la lecture du bulletin.
   const ratesRecalibrated = snapshot !== null &&
     (Math.abs(snapshot.netRatioFixed - netRatioFixed) >= 0.01 || Math.abs(snapshot.netRatioVariable - netRatioVariable) >= 0.01);
+  const carenceDetail = payslipCheck?.reading.carenceDates?.length
+    ? `retenue sur le brut pour le ${payslipCheck.reading.carenceDates.map((date) =>
+        new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
+      ).join(" et le ")} (aucun arrêt maladie enregistré)`
+    : undefined;
+  const auditRateWarning = payslipCheck
+    ? auditPayslip(payslipCheck.reading).find((finding) => finding.tone === "warn" && finding.key.startsWith("rate-"))
+    : undefined;
+  const contributionsDetail = ratesRecalibrated
+    ? "les taux de l’estimation ne suivaient pas encore vos bulletins"
+    : auditRateWarning
+      ? `taux anormal relevé sur le bulletin : ${auditRateWarning.title}`
+      : usesAverageNetRatios(netRatioFixed, netRatioVariable) || payslipRateCalibration.reason === "approximate"
+        ? "les cotisations étaient encore estimées sur des taux moyens ou un seul bulletin : vérifiez un mois aux primes différentes pour affiner"
+        : undefined;
   // D'où vient l'écart, pas à pas, du brut jusqu'au net versé : contre
   // l'estimation d'avant la lecture quand elle a été gardée.
   const payslipGapExplanation = payslipReview && comparablePayslip
@@ -615,10 +631,12 @@ export function buildPayContent({
         applied: {
           ...appliedByReading,
           ...(ratesRecalibrated ? { "contributions-other": "taux de cotisations recalés sur ce bulletin" } : {}),
+          ...(snapshot !== null && payslipCheck.reading.taxableNet !== undefined ? { "income-tax": "assiette d’impôt calibrée sur ce bulletin" } : {}),
         },
         details: {
           ...(mecenatNight ? { mecenat: mecenatNight.detail } : mecenatRegularisation ? { mecenat: mecenatRegularisation } : {}),
-          ...(ratesRecalibrated ? { "contributions-other": "les taux de l’estimation ne suivaient pas encore vos bulletins" } : {}),
+          ...(carenceDetail ? { carence: carenceDetail } : {}),
+          ...(contributionsDetail ? { "contributions-other": contributionsDetail } : {}),
         },
         references: mecenatNight ? { mecenat: mecenatNight.reference } : undefined,
         // L'impôt comme l'estimation le calcule, heures sup et mécénats
@@ -632,6 +650,7 @@ export function buildPayContent({
           gross: payslipCheck.reading.gross,
           netBeforeTax: payslipCheck.reading.netBeforeTax,
           incomeTax: payslipCheck.reading.incomeTax,
+          taxableNet: payslipCheck.reading.taxableNet,
         },
         netRatioFixed: snapshot?.netRatioFixed ?? netRatioFixed,
         netRatioVariable: snapshot?.netRatioVariable ?? netRatioVariable,

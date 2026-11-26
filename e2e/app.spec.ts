@@ -1803,8 +1803,10 @@ test("deux bulletins vérifiés à deux visites différentes affinent les taux n
     await elements.getByRole("button", { name: /^(Voir|À compléter)$/ }).click();
   const samplesList = page.getByRole("region", { name: "Bulletins qui calent vos taux" });
   await expect(samplesList.locator("li")).toHaveCount(3);
+  await expect(samplesList).toContainText("Précision constatée sur 2 bulletins");
   await expect(samplesList).toContainText("1 bulletin écarté : il ne concorde pas avec les autres.");
   await expect(samplesList.locator("li.rejected")).toContainText("Août 2026");
+  await expect(samplesList.locator("li.rejected")).toContainText(/−\d+ % vs taux du statut · écarté/);
   await samplesList.getByRole("button", { name: "Retirer le bulletin de août 2026" }).click();
   await page.getByRole("alertdialog", { name: "Retirer le bulletin de août 2026 ?" }).getByRole("button", { name: "Retirer" }).click();
   await expect(samplesList.locator("li")).toHaveCount(2);

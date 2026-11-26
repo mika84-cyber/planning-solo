@@ -15,6 +15,11 @@ export const signedEuros = (amount: number) => `${amount < 0 ? "−" : "+"} ${eu
 const ICON_CHECK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
 const ICON_LETTER = <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2" /><path d="m4 7 8 6 8-6" /></svg>;
 
+const GROSS_LINE_KEYS = new Set([
+  "base", "residence", "ifse", "other-fixed", "status", "carence",
+  "cia", "overtime", "mecenat", "one-off", "sunday-flat", "holidays", "sundays", "gross-other",
+]);
+
 /**
  * Le résultat de la vérification d'un bulletin : ce qui manque (ou est en
  * plus) sur le net, le prévu face au payé, puis d'où vient l'écart, ligne à
@@ -50,6 +55,9 @@ export function PayslipGapResult({
   const actual = net ? explanation.actual.net : explanation.actual.gross;
   const explained = isPayslipGapExplained(explanation);
   const hasGap = !explanation.matches;
+  const hasFollowLines = net && lines.some((line) => line.kind === "follow");
+  const allCausesApplied = explained && lines.some((line) => Boolean(line.applied))
+    && lines.every((line) => line.kind === "follow" || Boolean(line.applied));
   let causeNumber = 0;
   return (
     <section className="payslip-gap-result" aria-label="Résultat de la vérification">
@@ -70,10 +78,12 @@ export function PayslipGapResult({
           <ol>
             {lines.map((line) => {
               const choices = choicesFor(line);
-              if (line.kind === "cause") causeNumber += 1;
+              const isApplied = Boolean(line.applied);
+              if (line.kind === "cause" && !isApplied) causeNumber += 1;
+              const isGrossStep = hasFollowLines && GROSS_LINE_KEYS.has(line.key);
               return (
-                <li key={line.key} className={line.kind}>
-                  <i aria-hidden="true">{line.kind === "follow" ? "↳" : line.kind === "unknown" ? "?" : causeNumber}</i>
+                <li key={line.key} className={`${line.kind}${isApplied ? " applied" : ""}`}>
+                  <i aria-hidden="true">{line.kind === "follow" ? "↳" : line.kind === "unknown" ? "?" : isApplied ? "✓" : causeNumber}</i>
                   <span>
                     <strong>{line.title}</strong>
                     <small>
@@ -86,14 +96,19 @@ export function PayslipGapResult({
                       ))}
                     </small>
                   </span>
-                  <b className={line.amount < 0 ? "minus" : "plus"}>{signedEuros(line.amount)}</b>
+                  <b className={line.amount < 0 ? "minus" : "plus"}>
+                    {signedEuros(line.amount)}
+                    {isGrossStep ? <em className="payslip-gap-unit">brut</em> : null}
+                  </b>
                 </li>
               );
             })}
           </ol>
-          <p className="payslip-gap-total"><span>{explained ? "Écart expliqué" : "Écart total"}</span><b>{signedEuros(gap)}</b></p>
+          <p className="payslip-gap-total"><span>{explained ? (hasFollowLines ? "Écart expliqué (net)" : "Écart expliqué") : "Écart total"}</span><b>{signedEuros(gap)}</b></p>
           {explained ? (
-            <p className="payslip-gap-verdict ok">Tout l’écart est expliqué</p>
+            <p className="payslip-gap-verdict ok">
+              {allCausesApplied ? "Tout l’écart est expliqué — votre profil est déjà à jour" : "Tout l’écart est expliqué"}
+            </p>
           ) : (
             <p className="payslip-gap-verdict warn">
               Une partie de l’écart reste sans explication : mieux vaut écrire à votre hiérarchie.

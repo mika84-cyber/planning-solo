@@ -270,7 +270,12 @@ export function PayslipSettingsSections({
           </div>
           )}
           </div>
-          <PayslipRateSampleList samples={rateCalibration.samples ?? []} onRemove={onRemoveRateSample} />
+          <PayslipRateSampleList
+            samples={rateCalibration.samples ?? []}
+            averageError={rateCalibration.averageError}
+            taxBaseCalibrated={rateCalibration.taxBaseCalibrated}
+            onRemove={onRemoveRateSample}
+          />
             </>
           ) : (
             <button

@@ -10,6 +10,7 @@
  *  d'annoncer « tout est bon » à tort.
  */
 
+import { EXEMPT_TAXABLE_SHARE } from "./payEstimate";
 import type { PayslipProof, PayslipRowsReading } from "./payslipRows";
 
 /** Un montant relevé sur le bulletin. */
@@ -77,6 +78,9 @@ export type PayslipReading = {
   netPaid?: number;
   /** Net imposable : l'assiette du prélèvement à la source. */
   taxableNet?: number;
+  /** Brut des heures sup et mécénats exonérés d'impôt, quand un échantillon
+   *  mémorisé le garde pour calibrer le net imposable. */
+  exemptGross?: number;
   /** Totaux du pied du bulletin : « A payer » et « A déduire ». */
   totalEarnings?: number;
   totalDeductions?: number;
@@ -189,6 +193,11 @@ export type NetRatioCalibration = {
   reason: "ready" | "approximate" | "need-more-readable" | "not-enough-variation" | "inconsistent";
   /** Bulletins écartés du calcul car incohérents (voir incoherentNetRatioReadings). */
   rejectedCount?: number;
+  /** Écart moyen en euros entre le net reconstitué et le net réel des
+   *  bulletins retenus. */
+  averageError?: number;
+  /** Le facteur du net imposable est calibré sur au moins un bulletin réel. */
+  taxBaseCalibrated?: boolean;
   /** Les bulletins gardés qui calent les taux, du plus récent au plus ancien,
    *  pour les montrer dans le profil et retirer un bulletin mal lu. */
   samples?: NetRatioSample[];
@@ -203,6 +212,8 @@ export type NetRatioSample = {
   netBeforeTax: number;
   /** Écarté du calcul : il ne concorde pas avec les autres. */
   rejected: boolean;
+  /** Raison chiffrée quand le bulletin est écarté (ex. « −29 % vs autres »). */
+  rejectionDetail?: string;
 };
 
 /** Les cotisations ont changé avec l'entrée en vigueur du contrat collectif
@@ -452,9 +463,9 @@ function readPasLine(tokens: string[]) {
   if (index === -1) return undefined;
   const [base, second, third] = [1, 2, 3].map((offset) => parseAmount(tokens[index + offset]));
   if (base === undefined || second === undefined || base < 100) return undefined;
-  if (third !== undefined && Math.abs((base * second) / 100 - third) < 0.05) return { rate: second, amount: Math.abs(third) };
+  if (third !== undefined && Math.abs((base * second) / 100 - third) < 0.05) return { rate: second, amount: Math.abs(third), taxableNet: base };
   const rate = Math.round((Math.abs(second) / base) * 10000) / 100;
-  return rate > 0 && rate < 50 ? { rate, amount: Math.abs(second) } : undefined;
+  return rate > 0 && rate < 50 ? { rate, amount: Math.abs(second), taxableNet: base } : undefined;
 }
 
 /** La date d'un « Jour de carence », telle que son libellé la porte :
@@ -635,7 +646,7 @@ function readOtherFixed(tokens: string[]): number | undefined {
  * varient. Le calcul résout y = fixe × tauxFixe + variable × tauxPrime par
  * moindres carrés. Deux bulletins identiques ne suffisent pas : il faut une
  * variation réelle des primes pour séparer les deux effets. */
-type NetRatioRow = { fixed: number; variable: number; netFromGross: number };
+type NetRatioRow = { fixed: number; variable: number; netFromGross: number; order?: number };
 
 /** Ce qu'un bulletin apporte au calcul : la part fixe du brut (traitement,
  *  IFSE, éléments fixes, moins la carence), la part variable (le reste) et
@@ -658,10 +669,24 @@ function netRatioRows(readings: PayslipReading[]): NetRatioRow[] {
       reading.netBeforeTax -
       (reading.navigo || 0) +
       (reading.mealVoucherDeduction || 0);
+    const order = reading.year !== undefined && reading.month !== undefined
+      ? reading.year * 12 + reading.month
+      : undefined;
     return Number.isFinite(fixed) && Number.isFinite(variable)
-      ? [{ fixed, variable, netFromGross }]
+      ? [{ fixed, variable, netFromGross, order }]
       : [];
   });
+}
+
+/** Poids d'ancienneté : les deux premiers bulletins pèsent autant ; dès trois
+ *  bulletins datés, les plus récents pèsent un peu plus (de 0,65 à 1) pour
+ *  suivre plus vite un changement de cotisation ou de mutuelle. */
+function recencyWeights(rows: NetRatioRow[]) {
+  if (rows.length < 3 || rows.some((row) => row.order === undefined)) return rows.map(() => 1);
+  const sorted = [...new Set(rows.map((row) => row.order as number))].sort((a, b) => a - b);
+  if (sorted.length < 2) return rows.map(() => 1);
+  const rankByOrder = new Map(sorted.map((order, index) => [order, index]));
+  return rows.map((row) => 0.65 + 0.35 * ((rankByOrder.get(row.order as number) ?? 0) / (sorted.length - 1)));
 }
 
 const plausibleRate = (rate: number) => Number.isFinite(rate) && rate >= 40 && rate <= 105;
@@ -675,10 +700,11 @@ const roundRate = (rate: number) => Math.round(rate * 100) / 100;
  *  suivant resserre l'ajustement. */
 function proportionalNetRatios(rows: NetRatioRow[], fallback: NetRatios) {
   if (!rows.length) return undefined;
+  const weights = recencyWeights(rows);
   const predicted = rows.map((row) =>
     (row.fixed * fallback.netRatioFixed + row.variable * fallback.netRatioVariable) / 100);
-  const numerator = rows.reduce((sum, row, index) => sum + row.netFromGross * predicted[index], 0);
-  const denominator = predicted.reduce((sum, value) => sum + value * value, 0);
+  const numerator = rows.reduce((sum, row, index) => sum + weights[index] * row.netFromGross * predicted[index], 0);
+  const denominator = predicted.reduce((sum, value, index) => sum + weights[index] * value * value, 0);
   if (denominator < 1) return undefined;
   const scale = numerator / denominator;
   const fixed = fallback.netRatioFixed * scale;
@@ -687,7 +713,7 @@ function proportionalNetRatios(rows: NetRatioRow[], fallback: NetRatios) {
   return { netRatioFixed: roundRate(fixed), netRatioVariable: roundRate(variable) };
 }
 
-/** Les deux taux séparés par moindres carrés, quand les bulletins le
+/** Les deux taux séparés par moindres carrés pondérés, quand les bulletins le
  *  permettent (voir calculateNetRatios). */
 function separateNetRatios(rows: NetRatioRow[]) {
   if (rows.length < 2) return undefined;
@@ -698,12 +724,13 @@ function separateNetRatios(rows: NetRatioRow[]) {
   const exposureRatios = rows.map((row) => row.variable / row.fixed);
   if (Math.max(...exposureRatios) - Math.min(...exposureRatios) < 0.01)
     return undefined;
-  const ff = rows.reduce((sum, row) => sum + row.fixed * row.fixed, 0);
-  const fv = rows.reduce((sum, row) => sum + row.fixed * row.variable, 0);
-  const vv = rows.reduce((sum, row) => sum + row.variable * row.variable, 0);
-  const fy = rows.reduce((sum, row) => sum + row.fixed * row.netFromGross, 0);
+  const weights = recencyWeights(rows);
+  const ff = rows.reduce((sum, row, index) => sum + weights[index] * row.fixed * row.fixed, 0);
+  const fv = rows.reduce((sum, row, index) => sum + weights[index] * row.fixed * row.variable, 0);
+  const vv = rows.reduce((sum, row, index) => sum + weights[index] * row.variable * row.variable, 0);
+  const fy = rows.reduce((sum, row, index) => sum + weights[index] * row.fixed * row.netFromGross, 0);
   const vy = rows.reduce(
-    (sum, row) => sum + row.variable * row.netFromGross,
+    (sum, row, index) => sum + weights[index] * row.variable * row.netFromGross,
     0,
   );
   const determinant = ff * vv - fv * fv;
@@ -712,6 +739,15 @@ function separateNetRatios(rows: NetRatioRow[]) {
   const variable = ((vy * ff - fy * fv) / determinant) * 100;
   if (!plausibleRate(fixed) || !plausibleRate(variable)) return undefined;
   return { netRatioFixed: roundRate(fixed), netRatioVariable: roundRate(variable) };
+}
+
+function averageNetRatioError(rows: NetRatioRow[], rates: NetRatios) {
+  if (!rows.length) return undefined;
+  const total = rows.reduce(
+    (sum, row) => sum + Math.abs(row.netFromGross - (row.fixed * rates.netRatioFixed + row.variable * rates.netRatioVariable) / 100),
+    0,
+  );
+  return Math.round((total / rows.length) * 100) / 100;
 }
 
 /** Un bulletin mal lu (un montant pris pour un autre, un mauvais mois)
@@ -724,10 +760,15 @@ function separateNetRatios(rows: NetRatioRow[]) {
 const MAX_GAP_FROM_STATUS = 0.12;
 const MAX_GAP_FROM_OTHERS = 0.06;
 
-/** Les positions, dans `readings`, des bulletins écartés du calcul. */
-export function incoherentNetRatioReadings(readings: PayslipReading[], fallback?: NetRatios) {
-  const rejected = new Set<number>();
-  if (!fallback) return rejected;
+const formatSignedPercent = (delta: number) => {
+  const pct = Math.round(Math.abs(delta) * 100);
+  return `${delta < 0 ? "−" : "+"}${pct} %`;
+};
+
+/** Les raisons d'écartement des bulletins incohérents, par position dans `readings`. */
+export function netRatioRejectionReasons(readings: PayslipReading[], fallback?: NetRatios) {
+  const reasons = new Map<number, string>();
+  if (!fallback) return reasons;
   const ratios = readings.map((reading) => {
     const row = netRatioRows([reading])[0];
     if (!row) return undefined;
@@ -735,17 +776,62 @@ export function incoherentNetRatioReadings(readings: PayslipReading[], fallback?
     return predicted > 0 ? row.netFromGross / predicted : undefined;
   });
   ratios.forEach((ratio, index) => {
-    if (ratio !== undefined && Math.abs(ratio - 1) > MAX_GAP_FROM_STATUS) rejected.add(index);
+    if (ratio !== undefined && Math.abs(ratio - 1) > MAX_GAP_FROM_STATUS)
+      reasons.set(index, `${formatSignedPercent(ratio - 1)} vs taux du statut`);
   });
-  const kept = ratios.filter((ratio, index): ratio is number => ratio !== undefined && !rejected.has(index)).sort((a, b) => a - b);
+  const kept = ratios.filter((ratio, index): ratio is number => ratio !== undefined && !reasons.has(index)).sort((a, b) => a - b);
   if (kept.length >= 3) {
     const middle = kept.length / 2;
     const median = kept.length % 2 ? kept[Math.floor(middle)] : (kept[middle - 1] + kept[middle]) / 2;
     ratios.forEach((ratio, index) => {
-      if (ratio !== undefined && !rejected.has(index) && Math.abs(ratio / median - 1) > MAX_GAP_FROM_OTHERS) rejected.add(index);
+      if (ratio !== undefined && !reasons.has(index) && Math.abs(ratio / median - 1) > MAX_GAP_FROM_OTHERS)
+        reasons.set(index, `${formatSignedPercent(ratio / median - 1)} vs autres bulletins`);
     });
   }
-  return rejected;
+  return reasons;
+}
+
+/** Les positions, dans `readings`, des bulletins écartés du calcul. */
+export function incoherentNetRatioReadings(readings: PayslipReading[], fallback?: NetRatios) {
+  return new Set(netRatioRejectionReasons(readings, fallback).keys());
+}
+
+/** Brut exonéré d'impôt (heures sup et mécénats) lu ou mémorisé sur un bulletin. */
+export function exemptGrossFromReading(reading: PayslipReading) {
+  if (typeof reading.exemptGross === "number" && Number.isFinite(reading.exemptGross) && reading.exemptGross > 0)
+    return Math.round(reading.exemptGross * 100) / 100;
+  const total = (reading.extraLines || [])
+    .filter((line) => isComputedVariableLabel(line.label))
+    .reduce((sum, line) => sum + line.amount, 0);
+  return total > 0 ? Math.round(total * 100) / 100 : 0;
+}
+
+/** Calibre le facteur du net imposable (net imposable / net avant impôt, hors
+ *  heures sup et mécénats exonérés) sur les bulletins cohérents de la
+ *  personne. Revient au facteur par défaut tant qu'aucun bulletin ne porte de
+ *  net imposable lisible. */
+export function calculatePasBaseAdjustment(
+  readings: PayslipReading[],
+  fallback: number,
+  netFallback?: NetRatios,
+): { adjustment: number; calibrated: boolean } {
+  const kept = coherentReadings(readings, netFallback).kept;
+  const entries = kept
+    .flatMap((reading) => {
+      if (!reading.netBeforeTax || !reading.taxableNet || reading.netBeforeTax <= 0 || reading.taxableNet <= 0) return [];
+      const exempt = exemptGrossFromReading(reading);
+      const ratio = (reading.taxableNet + exempt * EXEMPT_TAXABLE_SHARE) / reading.netBeforeTax;
+      if (!Number.isFinite(ratio) || ratio < 0.95 || ratio > 1.2) return [];
+      const order = reading.year !== undefined && reading.month !== undefined ? reading.year * 12 + reading.month : 0;
+      return [{ ratio, order }];
+    })
+    .sort((a, b) => a.order - b.order)
+    .slice(-6);
+  if (!entries.length) return { adjustment: fallback, calibrated: false };
+  const sorted = entries.map((item) => item.ratio).sort((a, b) => a - b);
+  const middle = sorted.length / 2;
+  const median = sorted.length % 2 ? sorted[Math.floor(middle)] : (sorted[middle - 1] + sorted[middle]) / 2;
+  return { adjustment: Math.round(median * 10000) / 10000, calibrated: true };
 }
 
 const coherentReadings = (readings: PayslipReading[], fallback?: NetRatios) => {
@@ -787,9 +873,9 @@ export function inspectNetRatioCalibration(
     ...(screened.rejectedCount ? { rejectedCount: screened.rejectedCount } : {}),
   };
   const separate = separateNetRatios(rows);
-  if (separate) return { ...summary, rates: separate, reason: "ready" };
+  if (separate) return { ...summary, rates: separate, averageError: averageNetRatioError(rows, separate), reason: "ready" };
   const proportional = fallback ? proportionalNetRatios(rows, fallback) : undefined;
-  if (proportional) return { ...summary, rates: proportional, reason: "approximate" };
+  if (proportional) return { ...summary, rates: proportional, averageError: averageNetRatioError(rows, proportional), reason: "approximate" };
   if (usable.length < 2) return { ...summary, reason: "need-more-readable" };
   const exposureRatios = rows.map((row) => row.variable / row.fixed);
   return {
@@ -833,6 +919,7 @@ function isHolidayLine(label: string) {
 }
 
 export function readPayslip(tokens: string[]): PayslipReading {
+  const pasLine = readPasLine(tokens);
   return {
     gross: amountAfter(tokens, "CUMUL BRUT"),
     netBeforeTax: readNetBeforeTax(tokens),
@@ -850,7 +937,8 @@ export function readPayslip(tokens: string[]): PayslipReading {
       tokens.filter((token) => normalizedLabel(token).startsWith("JOUR DE CARENCE")),
     ),
     pasRate: readPasRate(tokens),
-    incomeTax: readPasLine(tokens)?.amount,
+    incomeTax: pasLine?.amount,
+    ...(pasLine?.taxableNet !== undefined ? { taxableNet: pasLine.taxableNet } : {}),
     // Absente la plupart des mois : aucun férié payé, ce n'est pas un échec de lecture.
     holidayPay: sumLineAmounts(tokens, isHolidayLine) ?? 0,
     sundayFlat: sumLineAmounts(tokens, (label) => normalizedLabel(label).startsWith("INDEM TRAV DOMINICAL REGULIER")),

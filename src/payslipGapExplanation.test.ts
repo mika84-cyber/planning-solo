@@ -149,4 +149,37 @@ describe("heures sup et mécénats payés en rappel", () => {
     expect(recalibrated?.applied).toBe("taux de cotisations recalés sur ce bulletin");
     expect(explanation?.lines.find((line) => line.key === "income-tax")?.detail).toBe("5,7 % sur ce qui reste ; heures sup et mécénats exonérés");
   });
+
+  it("explique un écart d'impôt quand le net imposable lu correspond au taux PAS", () => {
+    const checks: PayslipReviewCheck[] = [
+      { key: "gross", label: "Cumul brut", found: 2822.48, expected: 2822.48 },
+      { key: "net-before-tax", label: "Net avant impôt", found: 2277.19, expected: 2277.19, tolerance: 0.5 },
+      { key: "pas-rate", label: "Taux d’imposition (PAS)", found: 3.2, expected: 3.2, tolerance: 0.01 },
+    ];
+    const baseExplanation = explainPayslipGapChain({
+      checks,
+      expected: { gross: 2822.48, netBeforeTax: 2277.19, incomeTax: 77.02 },
+      actual: { gross: 2822.48, netBeforeTax: 2277.19, incomeTax: 80.0, taxableNet: 2500 },
+      netRatioFixed: 79.5,
+      netRatioVariable: 89.7,
+      taxBase: { pasRate: 3.2, adjustment: 1.057, exemptActual: 0 },
+    });
+    const taxLine = baseExplanation?.lines.find((line) => line.key === "income-tax");
+    expect(taxLine?.kind).toBe("cause");
+    expect(taxLine?.title).toBe("Assiette imposable différente");
+    expect(plain(taxLine?.detail ?? "")).toContain("Net imposable lu : 2 500,00 €");
+    expect(baseExplanation && isPayslipGapExplained(baseExplanation)).toBe(true);
+
+    // Si taux × net imposable ne donne pas l'impôt prélevé, l'écart reste inexpliqué.
+    const mismatch = explainPayslipGapChain({
+      checks,
+      expected: { gross: 2822.48, netBeforeTax: 2277.19, incomeTax: 77.02 },
+      actual: { gross: 2822.48, netBeforeTax: 2277.19, incomeTax: 92.0, taxableNet: 2500 },
+      netRatioFixed: 79.5,
+      netRatioVariable: 89.7,
+      taxBase: { pasRate: 3.2, adjustment: 1.057, exemptActual: 0 },
+    });
+    expect(mismatch?.lines.find((line) => line.key === "income-tax")?.kind).toBe("unknown");
+    expect(plain(mismatch?.lines.find((line) => line.key === "income-tax")?.detail ?? "")).toContain("vérifiez la ligne PAS");
+  });
 });

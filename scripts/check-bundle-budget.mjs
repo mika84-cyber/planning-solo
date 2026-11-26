@@ -187,7 +187,13 @@ const budgets = {
   // l'administrateur (« ok publie tout ») : bouton « Copier » sur les contacts
   // (téléphones et e-mails) et bouton flottant « Retour en haut » au-dessus
   // du dock (2 171,5 / 723,0 Kio mesurés).
-  totalJavaScript: { raw: 2_173 * KIB, gzip: 724 * KIB },
+  // Relevé le 26 novembre 2026 à 2 178 / 726 Kio, avec l'accord de
+  // l'administrateur (« publie ») : affinage de la paie (calibration du net
+  // imposable sur les bulletins réels, pondération récente des taux, précision
+  // mesurée, raisons d'écartement) et explications d'écarts enrichies
+  // (assiette PAS, report mécénat direct, dates de carence, cascade BRUT/net) ;
+  // 2 176,2 / 724,8 Kio mesurés.
+  totalJavaScript: { raw: 2_178 * KIB, gzip: 726 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.

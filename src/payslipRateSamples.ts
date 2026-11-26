@@ -9,7 +9,7 @@
  * Partagé par l'application et par la fonction Netlify qui les garde. Écrit
  * sobrement : il fait partie du chargement initial.
  */
-import type { PayslipReading } from "./payslip";
+import { isComputedVariableLabel, type PayslipReading } from "./payslip";
 
 export type PayslipRateSample = {
   year: number;
@@ -22,6 +22,8 @@ export type PayslipRateSample = {
   carenceDay?: number;
   navigo?: number;
   mealVoucherDeduction?: number;
+  taxableNet?: number;
+  exemptGross?: number;
 };
 
 /** Les montants du profil qu'un bulletin peut poser (voir amountsPosedOnlyBy). */
@@ -54,7 +56,7 @@ export type PayslipRateSamples = Record<string, PayslipRateSample>;
  *  le profil. Les plus anciens laissent la place aux nouveaux. */
 const MAX_SAMPLES = 24;
 /** Les trois premiers sont indispensables au calcul, et jamais nuls. */
-const FIELDS = ["gross", "netBeforeTax", "baseSalary", "ifse", "otherFixed", "carenceDay", "navigo", "mealVoucherDeduction"] as const;
+const FIELDS = ["gross", "netBeforeTax", "baseSalary", "ifse", "otherFixed", "carenceDay", "navigo", "mealVoucherDeduction", "taxableNet", "exemptGross"] as const;
 
 /** Le mois d'un bulletin, « AAAA-MM », sous lequel ses montants sont gardés. */
 export const payslipPeriodKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -65,9 +67,16 @@ const periodKey = payslipPeriodKey;
 export function payslipRateSampleFromReading({ year, month, ...reading }: PayslipReading): PayslipRateSample | null {
   if (!Number.isInteger(year) || !Number.isInteger(month) || year! < 2000 || year! > 2100 || month! < 0 || month! > 11) return null;
   const sample: Record<string, number> = { year: year!, month: month! };
+  const exemptFromLines = (reading.extraLines || [])
+    .filter((line) => isComputedVariableLabel(line.label))
+    .reduce((sum, line) => sum + line.amount, 0);
+  const readingWithExempt: Record<string, unknown> = {
+    ...reading,
+    ...(reading.exemptGross === undefined && exemptFromLines > 0 ? { exemptGross: exemptFromLines } : {}),
+  };
   for (const [index, field] of FIELDS.entries()) {
-    const value = reading[field];
-    if (typeof value === "number" && Math.abs(value) <= 1e6 && (index > 2 || value > 0))
+    const value = readingWithExempt[field];
+    if (typeof value === "number" && Math.abs(value) <= 1e6 && (index > 2 || value > 0) && (field !== "taxableNet" && field !== "exemptGross" || value > 0))
       sample[field] = Math.round(value * 100) / 100;
     else if (index < 3) return null;
   }

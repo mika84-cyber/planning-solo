@@ -2,9 +2,10 @@ import type { FormProfile, PayProfile } from "./appModel";
 import { mealVoucherPlanFor } from "./mealVouchers";
 import { dailyMinutesForQuota, type WorkQuota } from "./overtime";
 import {
+  calculatePasBaseAdjustment,
   defaultNetRatiosForPeriod,
-  incoherentNetRatioReadings,
   inspectNetRatioCalibration,
+  netRatioRejectionReasons,
   payCalibrationRegime,
   readingsForCalibrationRegime,
   type PayslipReading,
@@ -105,9 +106,12 @@ export function usePayProfileValues({ formProfile, payProfiles, payView, payslip
   );
   // Les bulletins qui calent les taux, montrés dans le profil : un bulletin
   // mal lu s'y repère (écarté, ou à retirer) au lieu de fausser les taux.
-  const rejectedReadings = incoherentNetRatioReadings(calibrationReadings, defaultNetRatios);
+  const rejectionReasons = netRatioRejectionReasons(calibrationReadings, defaultNetRatios);
+  const defaultPasBaseAdjustment = confirmedContractuel ? 1.069 : 1.057;
+  const pasCalibration = calculatePasBaseAdjustment(calibrationReadings, defaultPasBaseAdjustment, defaultNetRatios);
   const payslipRateCalibration = {
     ...inspectNetRatioCalibration(calibrationReadings, defaultNetRatios),
+    taxBaseCalibrated: pasCalibration.calibrated,
     samples: calibrationReadings
       .flatMap((reading, index) =>
         reading.year !== undefined && reading.month !== undefined && reading.gross !== undefined && reading.netBeforeTax !== undefined
@@ -117,7 +121,8 @@ export function usePayProfileValues({ formProfile, payProfiles, payView, payslip
               month: reading.month,
               gross: reading.gross,
               netBeforeTax: reading.netBeforeTax,
-              rejected: rejectedReadings.has(index),
+              rejected: rejectionReasons.has(index),
+              ...(rejectionReasons.has(index) ? { rejectionDetail: rejectionReasons.get(index) } : {}),
             }]
           : [])
       .sort((a, b) => b.period.localeCompare(a.period)),
@@ -129,16 +134,10 @@ export function usePayProfileValues({ formProfile, payProfiles, payView, payslip
   const mealVoucherPlan = mealVoucherPlanFor(formProfile?.mealVoucherPlans, payView.getFullYear());
   const pasRate = activePayProfile.pasRate ?? 0;
   /** L'administration prélève le PAS sur une assiette « net imposable »
-   *  toujours un peu plus large que le net avant impôt reconstitué ici —
-   *  jamais détaillée sur le bulletin. Facteur correcteur calibré sur 3
-   *  bulletins réels (2026), stable à ± 0,7 point près sur les trois : sans
-   *  lui, appliquer le taux affiché tel quel sous-estime l'impôt retenu. */
-  const pasBaseAdjustment = confirmedContractuel
-    // Contractuel : net imposable 2 322,05 € pour 2 171,39 € de net avant
-    // impôt sur un bulletin réel (juin 2026), la part employeur de la
-    // mutuelle et la CSG non déductible s'y ajoutant.
-    ? 1.069
-    : 1.057;
+   *  toujours un peu plus large que le net avant impôt reconstitué ici.
+   *  Calibré sur les vrais bulletins de la personne dès que le net imposable
+   *  est lu, sinon 1,057 (fonctionnaire) ou 1,069 (contractuel). */
+  const pasBaseAdjustment = pasCalibration.adjustment;
   const sundayCarryover = formProfile?.sundayCarryover || 0;
   const sundayCarryoverYear = formProfile?.sundayCarryoverYear;
   const sundayCarryoverMonth = formProfile?.sundayCarryoverMonth;

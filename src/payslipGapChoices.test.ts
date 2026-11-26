@@ -83,6 +83,10 @@ describe("choix proposés devant un écart du bulletin", () => {
     expect(january.label).toBe("Reporter le mécénat sur janvier 2027");
     // Un brut plus élevé que prévu n'est pas un mécénat manquant.
     expect(payslipGapChoices({ key: "gross", label: "Cumul brut", found: 2800, expected: 2700 }, { ...context, mecenatLines: lines })).toEqual([]);
+    // Le report se propose aussi directement sur la ligne « Mécénats ».
+    const [onLine] = payslipGapChoices({ key: "mecenat", label: "Mécénats", found: 103.7, expected: 153.7 }, { ...context, mecenatLines: lines, bulletinMecenatCents: 10_370 });
+    expect(onLine.label).toBe("Reporter le mécénat sur novembre 2026");
+    expect((onLine.action as { entries: MecenatEntry[] }).entries.map((item) => item.id)).toEqual(["m2"]);
   });
 
   it("ne propose rien pour un écart qu’aucun geste simple n’explique", () => {

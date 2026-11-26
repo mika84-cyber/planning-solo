@@ -3,12 +3,14 @@ import {
   DEFAULT_NET_RATIO_FIXED,
   DEFAULT_NET_RATIO_VARIABLE,
   calculateNetRatios,
+  calculatePasBaseAdjustment,
   carenceDateFromLabel,
   defaultNetRatiosForPeriod,
   fixedExtraTotal,
   incoherentNetRatioReadings,
   inspectNetRatioCalibration,
   isAutomaticExtraLine,
+  netRatioRejectionReasons,
   oneOffExtraTotal,
   payCalibrationRegime,
   readPayslip,
@@ -669,10 +671,52 @@ describe("lecture des éléments de paie ajoutés au profil", () => {
     expect(readPayslip(mars2024).pasRate).toBe(1.9);
   });
 
-  it("relève l'impôt prélevé, pour retrouver le net versé", () => {
+  it("relève l'impôt prélevé et son assiette (net imposable), pour retrouver le net versé", () => {
     expect(readPayslip(mars2024).incomeTax).toBe(41.8);
-    expect(readPayslip(["PAS prélèvement à la source", "2380.97", "2.20", "52.38"])).toMatchObject({ pasRate: 2.2, incomeTax: 52.38 });
+    expect(readPayslip(mars2024).taxableNet).toBe(2200);
+    expect(readPayslip(["PAS prélèvement à la source", "2380.97", "2.20", "52.38"])).toMatchObject({ pasRate: 2.2, incomeTax: 52.38, taxableNet: 2380.97 });
     expect(readPayslip(janvier2026).incomeTax).toBeUndefined();
+    expect(readPayslip(janvier2026).taxableNet).toBeUndefined();
+  });
+
+  it("calibre le facteur du net imposable sur les bulletins réels et explique les bulletins écartés", () => {
+    const calibrated = calculatePasBaseAdjustment(
+      [
+        { year: 2026, month: 8, gross: 2600, baseSalary: 1900, netBeforeTax: 2100, taxableNet: 2268, sundaysBeyondTen: 0 },
+        { year: 2026, month: 9, gross: 2800, baseSalary: 1900, netBeforeTax: 2280, taxableNet: 2274.82, exemptGross: 200, sundaysBeyondTen: 0 },
+      ],
+      1.057,
+    );
+    expect(calibrated.calibrated).toBe(true);
+    expect(calibrated.adjustment).toBeGreaterThan(1.07);
+    expect(calibrated.adjustment).toBeLessThan(1.09);
+
+    // Sans net imposable lisible, revient au facteur par défaut.
+    expect(calculatePasBaseAdjustment([{ year: 2026, month: 8, gross: 2600, baseSalary: 1900, netBeforeTax: 2100, sundaysBeyondTen: 0 }], 1.057)).toEqual({
+      adjustment: 1.057,
+      calibrated: false,
+    });
+
+    // Explique pourquoi un bulletin incohérent est écarté et mesure la précision moyenne.
+    const fallback = { netRatioFixed: DEFAULT_NET_RATIO_FIXED, netRatioVariable: DEFAULT_NET_RATIO_VARIABLE };
+    const reasons = netRatioRejectionReasons(
+      [
+        { year: 2026, month: 6, gross: 2400, baseSalary: 1900, ifse: 400, netBeforeTax: 1916.25, sundaysBeyondTen: 0 },
+        { year: 2026, month: 7, gross: 2800, baseSalary: 1900, ifse: 400, netBeforeTax: 1500, sundaysBeyondTen: 4 },
+      ],
+      fallback,
+    );
+    expect(reasons.get(1)).toMatch(/^−\d+ % vs taux du statut$/);
+
+    const inspection = inspectNetRatioCalibration(
+      [
+        { year: 2026, month: 6, gross: 2400, baseSalary: 1900, ifse: 400, netBeforeTax: 1916.35, sundaysBeyondTen: 0 },
+        { year: 2026, month: 7, gross: 2900, baseSalary: 1900, ifse: 400, netBeforeTax: 2365.95, sundaysBeyondTen: 4 },
+      ],
+      fallback,
+    );
+    expect(inspection.reason).toBe("ready");
+    expect(inspection.averageError).toBeLessThanOrEqual(0.05);
   });
 
   it("ne renvoie rien pour les lignes absentes du bulletin", () => {

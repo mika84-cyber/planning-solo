@@ -21,11 +21,13 @@
 .payslip-gap-why li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 9px 0; border-top: 1px solid #f0e4da; }
 .payslip-gap-why li:first-child { padding-top: 2px; border-top: 0; }
 .payslip-gap-why li > i { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #8a3d22; color: #fff; font: 800 0.72rem var(--font-body, inherit); font-style: normal; }
+.payslip-gap-why li.applied > i { background: #2f6e4a; }
 .payslip-gap-why li.follow > i { background: #e9d8cc; color: #8a3d22; }
 .payslip-gap-why li.unknown > i { background: #a5283a; }
 .payslip-gap-why li strong { display: block; font-size: 0.9rem; }
 .payslip-gap-why li small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.76rem; line-height: 1.35; }
-.payslip-gap-why li > b { font-size: 0.9rem; font-weight: 850; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.payslip-gap-why li > b { display: grid; justify-items: end; font-size: 0.9rem; font-weight: 850; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.payslip-gap-unit { color: var(--muted); font-size: 0.64rem; font-style: normal; font-weight: 750; letter-spacing: 0.04em; text-transform: uppercase; }
 .payslip-gap-why .minus { color: #a5283a; }
 .payslip-gap-why .plus { color: #2f6e4a; }
 .payslip-gap-total { display: flex; justify-content: space-between; align-items: baseline; margin: 0; padding-top: 8px; border-top: 1.5px solid #2c2621; font-weight: 850; }

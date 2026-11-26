@@ -139,4 +139,24 @@ describe("montants gardés des bulletins vérifiés", () => {
     // Un montant modifié à la main depuis ne lui appartient plus.
     expect(amountsPosedOnlyBy(misread, { ...profile, otherFixed: 54.05 }, [kept])).toEqual(["navigo"]);
   });
+
+  it("mémorise le net imposable et le brut exonéré pour calibrer l’impôt", () => {
+    const withTaxBase: PayslipReading = {
+      ...september,
+      taxableNet: 2048.5,
+      extraLines: [
+        { label: "Mécénat soirée", amount: 120, recall: false },
+        { label: "Heures sup", amount: 80, recall: false },
+      ],
+    };
+    const stored = payslipRateSamplesFromReadings([withTaxBase]);
+    expect(stored["2026-09"]).toMatchObject({
+      taxableNet: 2048.5,
+      exemptGross: 200,
+    });
+    expect(sanitizePayslipRateSamples(stored)["2026-09"]).toMatchObject({
+      taxableNet: 2048.5,
+      exemptGross: 200,
+    });
+  });
 });

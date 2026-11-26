@@ -11,18 +11,26 @@ import { MONTHS, s } from "./planningLogic";
  */
 export function PayslipRateSampleList({
   samples,
+  averageError,
+  taxBaseCalibrated,
   onRemove,
 }: {
   samples: NetRatioSample[];
+  averageError?: number;
+  taxBaseCalibrated?: boolean;
   onRemove: (period: string) => void;
 }) {
   const confirmAction = useConfirm();
   if (!samples.length) return null;
   const rejected = samples.filter((sample) => sample.rejected).length;
+  const keptCount = samples.length - rejected;
   return (
     <section className="payslip-rate-samples" aria-labelledby="payslip-rate-samples-title">
       <h4 id="payslip-rate-samples-title">Bulletins qui calent vos taux</h4>
       <p>
+        {keptCount > 0 && averageError !== undefined
+          ? `Précision constatée sur ${keptCount} bulletin${s(keptCount)} : ± ${euros(averageError)} sur le net avant impôt${taxBaseCalibrated ? " · assiette d’impôt calibrée" : ""}. `
+          : ""}
         {rejected
           ? `${rejected} bulletin${s(rejected)} écarté${s(rejected)} : ${rejected > 1 ? "ils ne concordent" : "il ne concorde"} pas avec les autres. `
           : ""}
@@ -37,7 +45,7 @@ export function PayslipRateSampleList({
                 <b>{label[0].toUpperCase()}{label.slice(1)}</b>
                 <small>
                   brut {euros(sample.gross)} · net avant impôt {euros(sample.netBeforeTax)}
-                  {sample.rejected ? " · écarté" : ""}
+                  {sample.rejected ? `${sample.rejectionDetail ? ` · ${sample.rejectionDetail}` : ""} · écarté` : ""}
                 </small>
               </span>
               <button
