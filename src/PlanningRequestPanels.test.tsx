@@ -39,6 +39,21 @@ describe("transformation des congés souhaités", () => {
     expect(html).toContain("Annuler le souhait");
     expect(html).not.toContain("Demi-journée · matin");
   });
+
+  it("affiche le solde CA, RTT et fractionnement dans le bandeau de soldes", () => {
+    const html = renderToStaticMarkup(
+      <WishConversionDialog
+        dates={["2027-05-15", "2027-06-05"]}
+        balancesByYear={{ 2027: { annual: 25, rtt: 9, fraction: 2 } }}
+        onClose={() => {}}
+        onContinue={() => {}}
+      />,
+    );
+    expect(html).toContain("25\u00A0j");
+    expect(html).toContain("9\u00A0j");
+    expect(html).toContain("2\u00A0j");
+    expect(html).toContain("Soldes 2027");
+  });
 });
 
 describe("fenêtre « Que voulez-vous poser ? »", () => {

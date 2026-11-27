@@ -353,13 +353,35 @@ export function wishConversionSummary(
   ].join(" · ");
 }
 
+/** Soldes CA, RTT et fractionnement par année, affichés sous chaque bouton. */
+export type WishBalancesByYear = Record<number, Partial<Record<"annual" | "rtt" | "fraction", number>>>;
+
+type WishBalanceKey = "annual" | "rtt" | "fraction";
+
+function wishChoiceBalanceKey(choice: WishChoice): WishBalanceKey | null {
+  if (choice === "annual" || choice === "half:morning" || choice === "half:afternoon") return "annual";
+  if (choice === "rtt" || choice === "fraction") return choice;
+  return null;
+}
+
+function wishChoiceDays(choice: WishChoice, moment?: "morning" | "afternoon") {
+  if (choice === "half:morning" || choice === "half:afternoon") return 0.5;
+  if (choice === "annual" && moment) return 0.5;
+  return 1;
+}
+
+function formatWishBalance(days: number) {
+  return `${days.toLocaleString("fr-FR")}\u00A0j`;
+}
+
 /** Transformer des congés souhaités : une ligne par souhait. On choisit la
  *  nature des souhaits à transformer ; une ligne laissée vide reste un
  *  souhait. « Tout en » règle toutes les lignes d'un geste. Les soldes sont
- *  contrôlés ensuite, à l'étape de vérification de la demande. */
+ *  affichés en direct et contrôlés ensuite à l'étape de vérification. */
 export function WishConversionDialog({
   dates,
   moments = {},
+  balancesByYear,
   onClose,
   onContinue,
 }: {
@@ -367,6 +389,8 @@ export function WishConversionDialog({
   /** Souhaits du matin ou de l'après-midi : ils deviennent une demi-journée
    *  de CA, RTT ou FRA au même moment. */
   moments?: Record<string, "morning" | "afternoon" | undefined>;
+  /** Soldes restants par année, pour afficher CA, RTT et FRA sur chaque choix. */
+  balancesByYear?: WishBalancesByYear;
   onClose: () => void;
   /** Les souhaits à transformer, avec leur nature, et ceux à annuler. */
   onContinue: (choices: Record<string, WishChoice>, cancelled: string[]) => void;
@@ -380,7 +404,31 @@ export function WishConversionDialog({
     setChoices((previous) => ({ ...previous, [date]: choice }));
   const setAll = (choice: WishChoice) =>
     setChoices(allSame(choice) ? {} : Object.fromEntries(dates.map((date) => [date, choice])));
-  const chip = (choice: WishChoice, label: string, active: boolean, onClick: () => void, name: string) => (
+  const uniqueYears = [...new Set(dates.map((date) => Number(date.slice(0, 4))))];
+  const singleYear = uniqueYears.length === 1 ? uniqueYears[0] : null;
+  const usedByYear: Record<number, Record<WishBalanceKey, number>> = {};
+  for (const [date, choice] of Object.entries(convertChoices)) {
+    const key = wishChoiceBalanceKey(choice);
+    if (!key) continue;
+    const year = Number(date.slice(0, 4));
+    usedByYear[year] ??= { annual: 0, rtt: 0, fraction: 0 };
+    usedByYear[year][key] += wishChoiceDays(choice, moments[date]);
+  }
+  const remainingFor = (year: number | null, choice: WishChoice): number | undefined => {
+    if (year === null || !balancesByYear) return undefined;
+    const key = wishChoiceBalanceKey(choice);
+    if (!key) return undefined;
+    const base = balancesByYear[year]?.[key];
+    if (base === undefined) return undefined;
+    return Math.round((base - (usedByYear[year]?.[key] || 0)) * 10) / 10;
+  };
+  const chip = (
+    choice: WishChoice,
+    label: string,
+    active: boolean,
+    onClick: () => void,
+    name: string,
+  ) => (
     <button
       key={choice}
       type="button"
@@ -391,10 +439,63 @@ export function WishConversionDialog({
       onClick={onClick}
     >
       <i aria-hidden="true" />
-      {label}
+      <span>{label}</span>
     </button>
   );
   const onlyCancelling = !toConvert.length && toCancel.length > 0;
+  const fullNames: Record<WishBalanceKey, string> = { annual: "Congés (CA)", rtt: "RTT", fraction: "Fraction." };
+  const renderBalanceCards = (year: number | null, interactive: boolean) => (
+    <div
+      className={`wish-balance-strip${interactive ? " is-interactive" : ""}`}
+      role="group"
+      aria-label={interactive ? "Appliquer une nature à tous les souhaits" : "Soldes disponibles"}
+    >
+      {WISH_MAIN_CHOICES.map(({ choice, label }) => {
+        const key = choice as WishBalanceKey;
+        const remaining = remainingFor(year, choice);
+        const used = year !== null ? usedByYear[year]?.[key] || 0 : 0;
+        const active = interactive && allSame(choice);
+        const over = remaining !== undefined && remaining < 0;
+        const style = { "--type-color": TYPE_COLORS[wishChoiceType(choice)] } as CSSProperties;
+        const content = (
+          <>
+            <span className="wish-balance-label">
+              <i aria-hidden="true" />
+              {fullNames[key]}
+            </span>
+            {remaining !== undefined ? (
+              <strong className="wish-balance-value">
+                {formatWishBalance(remaining)}
+                {used > 0 ? <em className="wish-balance-delta">−{used.toLocaleString("fr-FR")}</em> : null}
+              </strong>
+            ) : (
+              <strong className="wish-balance-value">{label}</strong>
+            )}
+          </>
+        );
+        if (!interactive) {
+          return (
+            <div key={choice} className={`wish-balance-tile${over ? " is-over" : ""}`} style={style}>
+              {content}
+            </div>
+          );
+        }
+        return (
+          <button
+            key={choice}
+            type="button"
+            className={`wish-balance-tile${active ? " active" : ""}${over ? " is-over" : ""}`}
+            aria-pressed={active}
+            aria-label={`Tout en ${label}`}
+            style={style}
+            onClick={() => setAll(choice)}
+          >
+            {content}
+          </button>
+        );
+      })}
+    </div>
+  );
   return (
     <div
       className="modal-backdrop"
@@ -415,15 +516,30 @@ export function WishConversionDialog({
           <h2 id="wish-conversion-title">
             {dates.length > 1 ? `Transformer ${dates.length} souhaits` : "Transformer ce souhait"}
           </h2>
-          <p>Choisissez la nature des souhaits à transformer. Une ligne laissée vide reste un souhait. Vos soldes seront vérifiés à l’étape suivante.</p>
-          {dates.length > 1 ? (
+          <p>Une ligne laissée vide reste un souhait.</p>
+          {dates.length > 1 || balancesByYear ? (
             <div className="wish-conversion-all">
-              <span>Tout en :</span>
-              <div className="wish-conversion-chips" role="group" aria-label="Appliquer une nature à tous les souhaits">
-                {WISH_MAIN_CHOICES.map(({ choice, label }) =>
-                  chip(choice, label, allSame(choice), () => setAll(choice), `Tout en ${label}`),
-                )}
-              </div>
+              <span className="wish-conversion-all-kicker">
+                {balancesByYear
+                  ? dates.length > 1
+                    ? `Soldes${singleYear ? ` ${singleYear}` : ""} · toucher pour tout appliquer`
+                    : `Soldes disponibles${singleYear ? ` · ${singleYear}` : ""}`
+                  : "Tout appliquer en :"}
+              </span>
+              {renderBalanceCards(singleYear, dates.length > 1)}
+              {singleYear === null && balancesByYear ? (
+                <div className="wish-balance-years">
+                  {uniqueYears.map((year) => (
+                    <span key={year}>
+                      <b>{year}</b>
+                      {WISH_MAIN_CHOICES.map(({ choice, label }) => {
+                        const rem = remainingFor(year, choice);
+                        return rem !== undefined ? ` ${label} ${formatWishBalance(rem)}` : "";
+                      }).join(" ·")}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -434,31 +550,44 @@ export function WishConversionDialog({
             const cancelled = current === WISH_CANCEL;
             const otherSelected = cancelled || WISH_OTHER_CHOICES.some(({ choice }) => choice === current);
             const moment = moments[date];
+            const rowYear = Number(date.slice(0, 4));
             const rawDate = wishDateLabel(date);
-            const displayDate = rawDate.charAt(0).toUpperCase() + rawDate.slice(1);
+            const displayDate = `${rawDate.charAt(0).toUpperCase() + rawDate.slice(1)}${singleYear === null ? ` ${rowYear}` : ""}`;
             const rowTone = current && !cancelled ? TYPE_COLORS[wishChoiceType(current as WishChoice)] : undefined;
+            const statusText = cancelled
+              ? "Annulé"
+              : current
+                ? WISH_CHOICES.find((item) => item.choice === current)?.short
+                : "";
             return (
               <li
                 key={date}
                 className={cancelled ? "cancelled" : current ? "picked" : "kept"}
                 style={rowTone ? ({ "--row-tone": rowTone } as CSSProperties) : undefined}
               >
-                <span className="wish-conversion-date">
-                  {displayDate}
-                  {moment ? <small>{moment === "morning" ? "matin" : "après-midi"}</small> : null}
-                </span>
-                <div className="wish-conversion-chips" role="group" aria-label={`Nature du ${longLabel}`}>
-                  {WISH_MAIN_CHOICES.map(({ choice, label }) =>
-                    chip(
-                      choice,
-                      label,
-                      current === choice,
-                      () => setChoice(date, current === choice ? undefined : choice),
-                      `${label} le ${longLabel}`,
-                    ),
-                  )}
+                <div className="wish-conversion-row-top">
+                  <span className="wish-conversion-date">
+                    {displayDate}
+                    {moment ? <small>{moment === "morning" ? "matin" : "après-midi"}</small> : null}
+                  </span>
+                  {statusText ? (
+                    <span className={`wish-row-status${cancelled ? " is-cancel" : ""}`}>{statusText}</span>
+                  ) : null}
+                </div>
+                <div className="wish-conversion-controls">
+                  <div className="wish-conversion-segment" role="group" aria-label={`Nature du ${longLabel}`}>
+                    {WISH_MAIN_CHOICES.map(({ choice, label }) =>
+                      chip(
+                        choice,
+                        label,
+                        current === choice,
+                        () => setChoice(date, current === choice ? undefined : choice),
+                        `${label} le ${longLabel}`,
+                      ),
+                    )}
+                  </div>
                   <select
-                    className={otherSelected ? `active${cancelled ? " cancel" : ""}` : ""}
+                    className={`wish-conversion-other${otherSelected ? ` active${cancelled ? " cancel" : ""}` : ""}`}
                     style={otherSelected && current && !cancelled ? ({ "--type-color": TYPE_COLORS[wishChoiceType(current as WishChoice)] } as CSSProperties) : undefined}
                     aria-label={`Autre nature le ${longLabel}`}
                     value={otherSelected ? current : ""}

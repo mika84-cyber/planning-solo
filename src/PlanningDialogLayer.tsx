@@ -192,6 +192,12 @@ export function PlanningDialogLayer({
         <WishConversionDialog
           dates={wishConversionDates}
           moments={Object.fromEntries(wishConversionDates.map((date) => [date, entries[date]?.wishMoment]))}
+          balancesByYear={Object.fromEntries(
+            [...new Set(wishConversionDates.map((date) => Number(date.slice(0, 4))))].map((year) => [
+              year,
+              remainingLeaveForYear(year, now, periods, group, formProfile?.manualAdjustments),
+            ]),
+          )}
           onClose={() => setWishConversionDates(null)}
           onContinue={(types, cancelled) => {
             setWishConversionDates(null);
