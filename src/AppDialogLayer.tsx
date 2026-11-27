@@ -22,6 +22,7 @@ const SolidarityHoursDialog = lazy(() => deferred().then(({ SolidarityHoursDialo
 const RecoveryRangeDialog = lazy(() => deferred().then(({ RecoveryRangeDialog: Component }) => ({ default: Component })));
 const RecoveryUseDialog = lazy(() => deferred().then(({ RecoveryUseDialog: Component }) => ({ default: Component })));
 const DataManagementDialog = lazy(() => deferred().then(({ DataManagementDialog: Component }) => ({ default: Component })));
+import type { LeavePeriod } from "./appModel";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { usePlanningUiState } from "./usePlanningUiState";
 import type { useToast } from "./useToast";
@@ -47,6 +48,8 @@ type PlanningDialogsState = Pick<
   | "setWarningDate"
   | "deletingPeriod"
   | "setDeletingPeriod"
+  | "deletingPeriodDate"
+  | "setDeletingPeriodDate"
   | "savingRange"
   | "recoveryRangeOpen"
 >;
@@ -98,6 +101,7 @@ type ToastDialogsState = Pick<
 type Props = {
   manualAdjustments: ComponentProps<typeof ManualAdjustmentsDialog>;
   planning: PlanningDialogsState;
+  periods?: LeavePeriod[];
   workTime: WorkTimeDialogsState;
   shell: ShellDialogsState;
   toast: ToastDialogsState;
@@ -122,7 +126,7 @@ type Props = {
   onSaveRecoveryUse: () => void;
   onConfirmTime: () => void;
   onConfirmNonWorkingDay: () => void;
-  onDeletePeriod: () => void;
+  onDeletePeriod: (dates?: string[]) => void;
   onCheckForUpdate: () => void;
   onExportData: () => void;
   onImportData: (file: File) => void;
@@ -138,6 +142,7 @@ type Props = {
 export function AppDialogLayer({
   manualAdjustments,
   planning,
+  periods = [],
   workTime,
   shell,
   toast,
@@ -280,8 +285,13 @@ export function AppDialogLayer({
       />
       <DeletePeriodDialog
         period={planning.deletingPeriod}
+        focusDate={planning.deletingPeriodDate}
+        monthPeriods={periods}
         saving={planning.savingRange}
-        onCancel={() => planning.setDeletingPeriod(null)}
+        onCancel={() => {
+          planning.setDeletingPeriod(null);
+          planning.setDeletingPeriodDate(null);
+        }}
         onConfirm={onDeletePeriod}
       />
 

@@ -55,6 +55,47 @@ describe("fenêtres communes du planning", () => {
     expect(warning).toContain('role="alertdialog"');
     expect(warning).toContain("groupe 2");
     expect(deletion).toContain("Annuler cette période ?");
+    expect(deletion).toContain("Toute la période (2 j)");
+  });
+
+  it("propose d’annuler un jour précis ou plusieurs sur une période de plusieurs jours", () => {
+    const html = renderToStaticMarkup(
+      <DeletePeriodDialog
+        period={{
+          id: "period-1",
+          from: "2026-12-03",
+          to: "2026-12-06",
+          leaveType: "annual",
+          updatedAt: "2026-12-03T12:00:00.000Z",
+        }}
+        focusDate="2026-12-04"
+        monthPeriods={[
+          {
+            id: "period-1",
+            from: "2026-12-03",
+            to: "2026-12-06",
+            leaveType: "annual",
+            updatedAt: "2026-12-03T12:00:00.000Z",
+          },
+          {
+            id: "period-2",
+            from: "2026-12-15",
+            to: "2026-12-16",
+            leaveType: "rtt",
+            updatedAt: "2026-12-15T12:00:00.000Z",
+          },
+        ]}
+        saving={false}
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("Tous vos congés posés en décembre 2026");
+    expect(html).toContain("Ce jour uniquement");
+    expect(html).toContain("Cette période (4 j)");
+    expect(html).toContain("Tout le mois (6 j)");
+    expect(html).toContain("Annuler 1 journée");
   });
 
   it("demande aussi les horaires pour une récupération sur formation", () => {

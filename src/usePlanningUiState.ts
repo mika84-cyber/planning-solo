@@ -51,6 +51,7 @@ export function usePlanningUiState() {
   const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
   const [editingLegacyPeriod, setEditingLegacyPeriod] = useState<LeavePeriod | null>(null);
   const [deletingPeriod, setDeletingPeriod] = useState<LeavePeriod | null>(null);
+  const [deletingPeriodDate, setDeletingPeriodDate] = useState<string | null>(null);
   const [savingRange, setSavingRange] = useState(false);
   const [requestChooser, setRequestChooser] = useState(false);
   const [requestChooserDate, setRequestChooserDate] = useState<string | null>(null);
@@ -67,6 +68,9 @@ export function usePlanningUiState() {
   // Les heures posées le matin et l'après-midi, chacun les siennes.
   const [leaveHours, setLeaveHours] = useState<LeaveHoursByMoment>(emptyLeaveHours);
   const [selections, setSelections] = useState<Record<string, SelectedDay>>({});
+  // Mode plage (début → fin en 2 clics) pendant une demande de congé.
+  const [requestRangeMode, setRequestRangeMode] = useState(false);
+  const [requestRangeAnchor, setRequestRangeAnchor] = useState<string | null>(null);
   const [timeDate, setTimeDate] = useState<string | null>(null);
   const [timeStart, setTimeStart] = useState("09:15");
   // Gardé d'une date à l'autre : plusieurs demi-journées de RTT se posent
@@ -89,11 +93,13 @@ export function usePlanningUiState() {
     recoveryRangeOpen, setRecoveryRangeOpen, recoveryRangeSelecting, setRecoveryRangeSelecting,
     recoveryRangePrefillDate, setRecoveryRangePrefillDate, recoveryRangeDates, setRecoveryRangeDates,
     separatePeople, setSeparatePeople, editingPeriodId, setEditingPeriodId,
-    editingLegacyPeriod, setEditingLegacyPeriod, deletingPeriod, setDeletingPeriod,
+    editingLegacyPeriod, setEditingLegacyPeriod, deletingPeriod, setDeletingPeriod, deletingPeriodDate, setDeletingPeriodDate,
     savingRange, setSavingRange, requestChooser, setRequestChooser,
     requestChooserDate, setRequestChooserDate, requestSeedDate, setRequestSeedDate, directDurationSave, setDirectDurationSave,
     requestKind, setRequestKind, sickRequest, setSickRequest, savingRequest, setSavingRequest,
-    activeType, setActiveType, leaveMoment, setLeaveMoment, leaveHours, setLeaveHours, selections, setSelections, timeDate, setTimeDate,
+    activeType, setActiveType, leaveMoment, setLeaveMoment, leaveHours, setLeaveHours, selections, setSelections,
+    requestRangeMode, setRequestRangeMode, requestRangeAnchor, setRequestRangeAnchor,
+    timeDate, setTimeDate,
     timeStart, setTimeStart, timeEnd, setTimeEnd, timeHalfBalance, setTimeHalfBalance, warningDate, setWarningDate,
   };
 }

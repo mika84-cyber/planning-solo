@@ -51,7 +51,7 @@ type Props = {
   >;
   shell: Pick<ReturnType<typeof useAppShellUiState>, "setHomeSection">;
   pay: Pick<ReturnType<typeof usePayUiState>, "setPayScreen">;
-  actions: Pick<ReturnType<typeof useWorkTimeActions>, "deleteOvertimeEntry" | "deleteRecoveryUse" | "deleteMecenatEntry" | "addMecenatSignup" | "deleteMecenatSignup" | "retainMecenatSignup">
+  actions: Pick<ReturnType<typeof useWorkTimeActions>, "deleteOvertimeEntry" | "deleteRecoveryUse" | "deleteMecenatEntry" | "addMecenatSignup" | "updateMecenatSignup" | "deleteMecenatSignup" | "retainMecenatSignup">
     & Pick<ReturnType<typeof usePlanningRequestActions>, "openBlankForm">
     & Pick<ReturnType<typeof usePlanningInteractionActions>, "beginRequest">
     & Pick<ReturnType<typeof useProfileAdjustmentActions>, "openManualAdjustments" | "saveCetAccount">
@@ -85,7 +85,7 @@ export function LeaveSectionScreen({
   const { setPayScreen } = pay;
   const {
     openRequestChooser, openBlankForm, beginRequest, openManualAdjustments, saveCetAccount,
-    deleteOvertimeEntry, deleteRecoveryUse, deleteMecenatEntry, addMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
+    deleteOvertimeEntry, deleteRecoveryUse, deleteMecenatEntry, addMecenatSignup, updateMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
   } = actions;
   return (
         <Suspense fallback={<DeferredSection label="vos congés et récupérations" />}>
@@ -139,6 +139,7 @@ export function LeaveSectionScreen({
               />
             </Suspense>
           }
+          group={group}
           recoveryBalance={recoveryBalance}
           paidOvertimeEstimate={(year, month) => paidOvertimeForPayPeriod(year, month)}
           recoveryEarningsCount={recoveryEarnings.length}
@@ -177,6 +178,7 @@ export function LeaveSectionScreen({
           onDeleteMecenat={(entry) => void deleteMecenatEntry(entry)}
           onToggleMecenatSignups={() => setMecenatSignupsOpen((current) => !current)}
           onAddMecenatSignup={(date, start, end) => void addMecenatSignup(date, start, end)}
+          onUpdateMecenatSignup={(signup, date, start, end) => void updateMecenatSignup(signup, date, start, end)}
           onRetainMecenatSignup={retainMecenatSignup}
           onDeleteMecenatSignup={(signup) => void deleteMecenatSignup(signup)}
           onToggleArchive={() => setArchiveOpen((current) => !current)}

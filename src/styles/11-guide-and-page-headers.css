@@ -162,6 +162,12 @@
   font-weight: 800;
   white-space: nowrap;
 }
+.request-validation-header-actions { display: flex; align-items: center; gap: 8px; }
+.request-clear-dates { min-height: 0; border: 0; padding: 0; background: none; color: var(--muted); font: inherit; font-size: 11px; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.request-validation-date-end { display: flex; align-items: center; gap: 6px; flex: none; }
+.request-remove-date { display: grid; place-items: center; width: 24px; height: 24px; min-height: 0; border: 0; border-radius: 50%; padding: 0; background: var(--bg); color: var(--muted); font: 800 15px/1 inherit; cursor: pointer; }
+.request-remove-date:hover { background: #f3dfd8; color: #a5283a; }
+.request-validation-impact .request-validation-fraction-hint { color: #2f6e4a; }
 .request-validation-impact { display: grid; gap: 3px; border-radius: 11px; padding: 9px 10px; background: var(--surface); color: var(--muted); }
 .request-validation-impact strong { font-size: 12px; }
 .request-validation-impact span { font-size: 11px; font-weight: 700; }

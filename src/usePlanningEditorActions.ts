@@ -146,6 +146,90 @@ export function buildDaySaveOperations({
   return { nextEntry, operations };
 }
 
+/** Calcule les dates annulées et les segments conservés lorsqu'on annule tout
+ *  ou partie d'une période de congés. */
+export function buildPartialPeriodDeletion(
+  period: LeavePeriod,
+  datesToCancel: readonly string[] | undefined,
+  group: number,
+  nowIso: string,
+  createId: (prefix: string) => string = createClientId,
+) {
+  const allDates = rangeKeys(period.from, period.to);
+  const cancelSet = new Set(datesToCancel?.length ? datesToCancel : allDates);
+  const cancelledDates = allDates.filter((key) => cancelSet.has(key));
+  const remainingDates = allDates.filter((key) => !cancelSet.has(key));
+  const replacements: LeavePeriod[] = groupConsecutive(remainingDates).map((segment) => ({
+    ...period,
+    id: createId("period"),
+    from: segment.from,
+    to: segment.to,
+    legacy: false,
+    updatedAt: nowIso,
+  }));
+  const operations: Array<Record<string, unknown>> = [
+    {
+      action: "delete-period",
+      id: period.id,
+      expectedUpdatedAt: period.updatedAt,
+    },
+    ...replacements.map((segment) => ({
+      action: "save-period",
+      id: segment.id,
+      from: segment.from,
+      to: segment.to,
+      leaveType: period.leaveType || "annual",
+      halfMoment: period.leaveType === "half" ? period.halfMoment || "" : "",
+      halfBalance: period.leaveType === "half" ? halfBalanceOf(period) : undefined,
+      group: period.group || group,
+    })),
+  ];
+  return { allDates, cancelledDates, remainingDates, replacements, operations };
+}
+
+/** Calcule les opérations de suppression / découpe sur une ou plusieurs
+ *  périodes touchées par les dates choisies (ex. plusieurs congés du mois). */
+export function buildMultiPeriodDeletion(
+  periods: readonly LeavePeriod[],
+  fallbackTarget: LeavePeriod,
+  datesToCancel: readonly string[] | undefined,
+  group: number,
+  nowIso: string,
+  createId: (prefix: string) => string = createClientId,
+) {
+  const cancelSet = new Set(datesToCancel?.length ? datesToCancel : rangeKeys(fallbackTarget.from, fallbackTarget.to));
+  const pool = periods.some((item) => item.id === fallbackTarget.id) ? periods : [...periods, fallbackTarget];
+  const affectedPeriods: LeavePeriod[] = [];
+  const legacyCancelledDates: string[] = [];
+  const allCancelledDates = new Set<string>();
+  const replacements: LeavePeriod[] = [];
+  const operations: Array<Record<string, unknown>> = [];
+
+  for (const period of pool) {
+    const periodDates = rangeKeys(period.from, period.to);
+    const cancelled = periodDates.filter((key) => cancelSet.has(key));
+    if (!cancelled.length) continue;
+    affectedPeriods.push(period);
+    for (const key of cancelled) allCancelledDates.add(key);
+    if (period.legacy) {
+      legacyCancelledDates.push(...cancelled);
+      continue;
+    }
+    const split = buildPartialPeriodDeletion(period, cancelled, group, nowIso, createId);
+    replacements.push(...split.replacements);
+    operations.push(...split.operations);
+  }
+
+  return {
+    affectedPeriods,
+    affectedNormalPeriods: affectedPeriods.filter((item) => !item.legacy),
+    legacyCancelledDates: [...new Set(legacyCancelledDates)].sort(),
+    cancelledDates: [...allCancelledDates].sort(),
+    replacements,
+    operations,
+  };
+}
+
 export function usePlanningEditorActions({
   planningUi,
   entries,
@@ -201,6 +285,7 @@ export function usePlanningEditorActions({
     editingLegacyPeriod,
     deletingPeriod,
     setDeletingPeriod,
+    setDeletingPeriodDate,
     setSavingRange,
   } = planningUi;
 
@@ -435,50 +520,47 @@ export function usePlanningEditorActions({
     });
   }
 
-  async function restoreLeavePeriod(
-    period: LeavePeriod,
+  async function restoreLeavePeriods(
+    restoredPeriods: LeavePeriod[],
     periodsToReplace: LeavePeriod[] = [],
   ) {
-    const restoredId = createClientId("period");
+    const restoredWithIds = restoredPeriods.map((period) => ({
+      ...period,
+      id: createClientId("period"),
+      legacy: false,
+      updatedAt: new Date().toISOString(),
+    }));
     try {
       if (!demoMode) {
-        const operations: Array<Record<string, unknown>> = periodsToReplace.map(
-          (replacement) => ({
+        const operations: Array<Record<string, unknown>> = [
+          ...periodsToReplace.map((replacement) => ({
             action: "delete-period",
             id: replacement.id,
             expectedUpdatedAt: replacement.updatedAt,
-          }),
-        );
-        operations.push({
-          action: "save-period",
-          id: restoredId,
-          from: period.from,
-          to: period.to,
-          leaveType: period.leaveType || "annual",
-          halfMoment:
-            period.leaveType === "half" ? period.halfMoment || "" : "",
-          halfBalance: period.leaveType === "half" ? halfBalanceOf(period) : undefined,
-          group: period.group || group,
-        });
+          })),
+          ...restoredWithIds.map((period) => ({
+            action: "save-period",
+            id: period.id,
+            from: period.from,
+            to: period.to,
+            leaveType: period.leaveType || "annual",
+            halfMoment: period.leaveType === "half" ? period.halfMoment || "" : "",
+            halfBalance: period.leaveType === "half" ? halfBalanceOf(period) : undefined,
+            group: period.group || group,
+          })),
+        ];
         await postCalendarBatch(operations);
         await loadCalendar();
       } else {
         setPeriods((current) => [
           ...current.filter(
             (candidate) =>
-              !periodsToReplace.some(
-                (replacement) => replacement.id === candidate.id,
-              ),
+              !periodsToReplace.some((replacement) => replacement.id === candidate.id),
           ),
-          {
-            ...period,
-            id: restoredId,
-            legacy: false,
-            updatedAt: new Date().toISOString(),
-          },
+          ...restoredWithIds,
         ].sort((a, b) => a.from.localeCompare(b.from)));
       }
-      confirm("L’absence précédente a été rétablie.");
+      confirm(restoredPeriods.length > 1 ? "Les absences précédentes ont été rétablies." : "L’absence précédente a été rétablie.");
     } catch (error) {
       notify(
         calendarErrorMessage(
@@ -487,6 +569,13 @@ export function usePlanningEditorActions({
         ),
       );
     }
+  }
+
+  async function restoreLeavePeriod(
+    period: LeavePeriod,
+    periodsToReplace: LeavePeriod[] = [],
+  ) {
+    await restoreLeavePeriods([period], periodsToReplace);
   }
 
   async function saveSeparateLeaveDates() {
@@ -690,22 +779,75 @@ export function usePlanningEditorActions({
       setSavingRange(false);
     }
   }
-  async function deleteLeavePeriod() {
+  async function deleteLeavePeriod(datesToCancel?: string[]) {
     if (!deletingPeriod) return;
     const target = deletingPeriod;
+    const nowIso = new Date().toISOString();
+    const {
+      affectedPeriods,
+      affectedNormalPeriods,
+      legacyCancelledDates,
+      cancelledDates,
+      replacements,
+      operations,
+    } = buildMultiPeriodDeletion(periods, target, datesToCancel, group, nowIso);
+    if (!cancelledDates.length) return;
+    const removedIds = new Set(affectedNormalPeriods.map((item) => item.id));
+    const fullSingleTarget =
+      affectedPeriods.length === 1 &&
+      affectedPeriods[0].id === target.id &&
+      replacements.length === 0 &&
+      !target.legacy;
     setSavingRange(true);
     try {
-      if (target.legacy) {
-        await clearLegacyPeriod(target);
-      } else if (!demoMode) {
-        await postCalendar({ action: "delete-period", id: target.id });
+      const batchOps: Array<Record<string, unknown>> = [
+        ...operations,
+        ...legacyCancelledDates.map((date) => ({
+          action: "save-leaves",
+          date,
+          leave: false,
+          wish: Boolean(entries[date]?.wish),
+          expectedUpdatedAt: entries[date]?.updatedAt || "",
+        })),
+      ];
+      if (!demoMode) {
+        if (fullSingleTarget) {
+          await postCalendar({ action: "delete-period", id: target.id });
+        } else if (target.legacy && affectedPeriods.length === 1 && legacyCancelledDates.length === rangeKeys(target.from, target.to).length) {
+          await clearLegacyPeriod(target);
+        } else {
+          await postCalendarBatch(batchOps);
+          await loadCalendar();
+        }
       }
-      if (!target.legacy)
-        setPeriods((current) =>
-          current.filter((period) => period.id !== target.id),
-        );
+      if (legacyCancelledDates.length) {
+        setEntries((current) => {
+          const next = { ...current };
+          for (const key of legacyCancelledDates) {
+            const entry = next[key];
+            if (!entry) continue;
+            const nextEntry: SharedEntry = { ...entry, leave: false };
+            if (!nextEntry.noteText && !nextEntry.leave && !nextEntry.wish && !nextEntry.holidayPay)
+              delete next[key];
+            else next[key] = nextEntry;
+          }
+          return next;
+        });
+      }
+      if (affectedNormalPeriods.length) {
+        setPeriods((current) => [
+          ...current.filter((period) => !removedIds.has(period.id)),
+          ...replacements,
+        ].sort((a, b) => a.from.localeCompare(b.from)));
+      }
       setDeletingPeriod(null);
-      offerUndo("L’absence a été supprimée.", () => restoreLeavePeriod(target));
+      setDeletingPeriodDate(null);
+      const undoMessage = fullSingleTarget
+        ? "L’absence a été supprimée."
+        : cancelledDates.length === 1
+          ? "La journée a été annulée."
+          : `${cancelledDates.length} journées ont été annulées.`;
+      offerUndo(undoMessage, () => restoreLeavePeriods(affectedPeriods, replacements));
     } catch {
       notify("La période n’a pas pu être annulée. Réessayez.");
     } finally {

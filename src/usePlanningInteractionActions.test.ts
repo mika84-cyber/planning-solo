@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPlanningRequestStart,
+  sameSelectionChoice,
+  selectableDatesInRange,
   toggleSortedDate,
 } from "./usePlanningInteractionActions";
 
@@ -53,5 +55,32 @@ describe("interactions du planning", () => {
     expect(start.sickRequest).toBe(true);
     expect(start.selections).toEqual({});
     expect(start.warningDate).toBe("2026-09-13");
+  });
+
+  it("distingue journée entière, matin et après-midi pour basculer ou retirer une demi-journée CA", () => {
+    expect(sameSelectionChoice(
+      { date: "2026-09-10", type: "half", halfMoment: "morning" },
+      { date: "2026-09-10", type: "half", halfMoment: "morning" },
+    )).toBe(true);
+    expect(sameSelectionChoice(
+      { date: "2026-09-10", type: "half", start: "09:15", end: "13:00" },
+      { date: "2026-09-10", type: "half", halfMoment: "morning" },
+    )).toBe(true);
+    expect(sameSelectionChoice(
+      { date: "2026-09-10", type: "half", halfMoment: "morning" },
+      { date: "2026-09-10", type: "half", halfMoment: "afternoon" },
+    )).toBe(false);
+    expect(sameSelectionChoice(
+      { date: "2026-09-10", type: "annual" },
+      { date: "2026-09-10", type: "half", halfMoment: "morning" },
+    )).toBe(false);
+  });
+
+  it("sélectionne toutes les journées travaillées d'une plage, dans les deux sens, hors dates exclues", () => {
+    const forward = selectableDatesInRange("2026-09-07", "2026-09-13", 2, (date) => date === "2026-09-10");
+    const reverse = selectableDatesInRange("2026-09-13", "2026-09-07", 2, (date) => date === "2026-09-10");
+    expect(forward).toEqual(reverse);
+    expect(forward.length).toBeGreaterThan(0);
+    expect(forward).not.toContain("2026-09-10");
   });
 });

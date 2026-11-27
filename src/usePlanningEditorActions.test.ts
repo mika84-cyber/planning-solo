@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyEntry, type LeavePeriod } from "./appModel";
-import { buildDaySaveOperations } from "./usePlanningEditorActions";
+import { buildDaySaveOperations, buildMultiPeriodDeletion, buildPartialPeriodDeletion } from "./usePlanningEditorActions";
 
 describe("édition d'une fiche du planning", () => {
   it("construit un lot cohérent pour une note, une demi-journée et un souhait étendu", () => {
@@ -114,5 +114,40 @@ describe("édition d'une fiche du planning", () => {
 
     expect(nextEntry.noteText).toBe("");
     expect(nextEntry.noteUpdatedAt).toBe("");
+  });
+
+  it("découpe une période lorsqu’une ou plusieurs journées seulement sont annulées", () => {
+    const period: LeavePeriod = {
+      id: "period-dec",
+      from: "2026-12-03",
+      to: "2026-12-06",
+      leaveType: "annual",
+      group: 2,
+      updatedAt: "v1",
+    };
+    let seq = 0;
+    const split = buildPartialPeriodDeletion(period, ["2026-12-04"], 2, "2026-12-01T10:00:00.000Z", (prefix) => `${prefix}-${++seq}`);
+    expect(split.cancelledDates).toEqual(["2026-12-04"]);
+    expect(split.replacements.map((item) => [item.from, item.to])).toEqual([
+      ["2026-12-03", "2026-12-03"],
+      ["2026-12-05", "2026-12-06"],
+    ]);
+    expect(split.operations).toHaveLength(3);
+    expect(split.operations[0]).toMatchObject({ action: "delete-period", id: "period-dec" });
+  });
+
+  it("annule des journées choisies à travers plusieurs périodes distinctes du mois", () => {
+    const periods: LeavePeriod[] = [
+      { id: "p1", from: "2026-12-03", to: "2026-12-06", leaveType: "annual", group: 2, updatedAt: "v1" },
+      { id: "p2", from: "2026-12-15", to: "2026-12-16", leaveType: "rtt", group: 2, updatedAt: "v2" },
+    ];
+    let seq = 0;
+    const result = buildMultiPeriodDeletion(periods, periods[0], ["2026-12-03", "2026-12-15"], 2, "2026-12-01T10:00:00.000Z", (prefix) => `${prefix}-${++seq}`);
+    expect(result.affectedPeriods.map((item) => item.id)).toEqual(["p1", "p2"]);
+    expect(result.cancelledDates).toEqual(["2026-12-03", "2026-12-15"]);
+    expect(result.replacements.map((item) => [item.leaveType, item.from, item.to])).toEqual([
+      ["annual", "2026-12-04", "2026-12-06"],
+      ["rtt", "2026-12-16", "2026-12-16"],
+    ]);
   });
 });

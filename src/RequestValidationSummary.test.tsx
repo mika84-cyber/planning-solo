@@ -324,4 +324,33 @@ describe("résumé avant validation", () => {
     expect(html).toContain("Seuls les congés annuels");
     expect(html).toContain("autres congés resteront annulables manuellement");
   });
+
+  it("affiche le solde CET, l'indice de fractionnement 2027 et les actions de retrait", () => {
+    const cetExceeded = renderToStaticMarkup(
+      <RequestValidationSummary
+        items={[{ date: "2026-08-11", type: "cet" }, { date: "2026-08-12", type: "cet" }]}
+        requestKind="leave"
+        sickRequest={false}
+        group={2}
+        cetRemaining={1}
+        onRemoveDate={() => {}}
+        onClearDates={() => {}}
+      />,
+    );
+    expect(cetExceeded).toContain("Il ne vous reste que 1 jour CET disponible. Vous en avez sélectionné 2.");
+    expect(cetExceeded).toContain("Tout effacer");
+    expect(cetExceeded).toContain('aria-label="Retirer le mardi 11 août 2026"');
+
+    const fraction2027 = renderToStaticMarkup(
+      <RequestValidationSummary
+        items={[{ date: "2027-01-05", type: "annual" }, { date: "2027-01-06", type: "annual" }]}
+        requestKind="leave"
+        sickRequest={false}
+        group={2}
+        leaveRemaining={{ annual: 25 }}
+      />,
+    );
+    expect(fraction2027).toContain("23 CA restants (sur 25)");
+    expect(fraction2027).toContain("Fractionnement 2027");
+  });
 });

@@ -1,9 +1,12 @@
-import type { LeavePeriod } from "./appModel";
+import { useEffect, useState, type CSSProperties } from "react";
+import { rangeKeys, type LeavePeriod } from "./appModel";
 import { ClockTimePicker } from "./ClockTimePicker";
 import { DEFAULT_WORK_SCHEDULE, workScheduleHalfTimes, type WorkSchedule } from "./overtime";
 import {
+  TYPE_COLORS,
   TYPE_LABELS,
   fromKey,
+  halfBalanceOf,
   longDate,
   periodLabel,
   periodTypeLabel,
@@ -166,46 +169,186 @@ export function NonWorkingDayWarningDialog({
   );
 }
 
+function shortChipDay(key: string) {
+  const text = fromKey(key).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function periodTone(period: LeavePeriod) {
+  const kind = period.leaveType === "half" ? halfBalanceOf(period) : period.leaveType || "annual";
+  return TYPE_COLORS[kind] ?? TYPE_COLORS.annual;
+}
+
+function collectCancelableMonthDays(period: LeavePeriod, focusDate: string | null | undefined, monthPeriods: readonly LeavePeriod[]) {
+  const periodDates = rangeKeys(period.from, period.to);
+  const anchor = focusDate && periodDates.includes(focusDate) ? focusDate : period.from;
+  const monthPrefix = anchor.slice(0, 7);
+  const byDate = new Map<string, { date: string; color: string; typeLabel: string }>();
+
+  for (const candidate of monthPeriods) {
+    for (const date of rangeKeys(candidate.from, candidate.to)) {
+      if (!date.startsWith(monthPrefix)) continue;
+      if (!byDate.has(date)) {
+        byDate.set(date, { date, color: periodTone(candidate), typeLabel: periodTypeLabel(candidate) });
+      }
+    }
+  }
+  for (const date of periodDates) {
+    if (!byDate.has(date)) {
+      byDate.set(date, { date, color: periodTone(period), typeLabel: periodTypeLabel(period) });
+    }
+  }
+  const days = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  const monthLabel = fromKey(`${monthPrefix}-01`).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  return { periodDates, anchor, days, monthLabel };
+}
+
 export function DeletePeriodDialog({
   period,
+  focusDate,
+  monthPeriods = [],
   saving,
   onCancel,
   onConfirm,
 }: {
   period: LeavePeriod | null;
+  focusDate?: string | null;
+  monthPeriods?: LeavePeriod[];
   saving: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (dates?: string[]) => void;
 }) {
-  if (!period) return null;
+  const collected = period ? collectCancelableMonthDays(period, focusDate, monthPeriods) : null;
+  const allDates = collected ? collected.days.map((item) => item.date) : [];
+  const periodDates = collected ? collected.periodDates : [];
+  const multiChoice = allDates.length > 1;
+  const focusedInPeriod = Boolean(period && focusDate && periodDates.includes(focusDate));
+  const initialSelected = multiChoice && focusedInPeriod && focusDate ? [focusDate] : periodDates;
+  const [selectedDates, setSelectedDates] = useState<string[]>(initialSelected);
+
+  useEffect(() => {
+    if (!period) return;
+    const next = collectCancelableMonthDays(period, focusDate, monthPeriods);
+    const hasMulti = next.days.length > 1;
+    const focused = Boolean(focusDate && next.periodDates.includes(focusDate));
+    setSelectedDates(hasMulti && focused && focusDate ? [focusDate] : next.periodDates);
+  }, [period, focusDate, monthPeriods]);
+
+  if (!period || !collected) return null;
   const strike = period.leaveType === "strike";
+  const selectedSet = new Set(selectedDates);
+  const hasOtherMonthDays = allDates.length > periodDates.length;
+  const allSelected = selectedDates.length === allDates.length;
+  const onlyFocusedSelected = focusedInPeriod && selectedDates.length === 1 && selectedSet.has(focusDate!);
+  const exactPeriodSelected =
+    periodDates.length > 1 &&
+    selectedDates.length === periodDates.length &&
+    periodDates.every((date) => selectedSet.has(date));
+
+  const toggleDate = (key: string) => {
+    setSelectedDates((current) =>
+      current.includes(key)
+        ? current.filter((date) => date !== key)
+        : [...current, key].sort(),
+    );
+  };
+
+  const confirmLabel = (() => {
+    if (saving) return strike ? "Suppression…" : "Annulation…";
+    if (!multiChoice) return strike ? "Supprimer la grève" : "Annuler la période";
+    if (!selectedDates.length) return "Choisissez au moins un jour";
+    if (allSelected) {
+      if (hasOtherMonthDays) return `Annuler tout le mois (${allDates.length} j)`;
+      return strike ? "Supprimer toute la période" : "Annuler toute la période";
+    }
+    if (selectedDates.length === 1) return strike ? "Supprimer 1 journée" : "Annuler 1 journée";
+    return `${strike ? "Supprimer" : "Annuler"} ${selectedDates.length} journées`;
+  })();
+
   return (
     <div className="modal-backdrop" role="presentation">
       <section
-        className="modal-card warning-modal"
+        className={`modal-card warning-modal${multiChoice ? " delete-period-modal" : ""}`}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="delete-period-title"
       >
         <span className="warning-symbol">!</span>
         <h2 id="delete-period-title">
-          {strike ? "Supprimer cette journée de grève ?" : "Annuler cette période ?"}
+          {strike && !hasOtherMonthDays ? "Supprimer cette journée de grève ?" : "Annuler cette période ?"}
         </h2>
         <p>
           {periodLabel(period.from, period.to)} · {periodTypeLabel(period)}
         </p>
+        {multiChoice ? (
+          <div className="delete-period-picker">
+            {hasOtherMonthDays ? (
+              <small className="delete-period-hint">
+                Tous vos congés posés en {collected.monthLabel}
+              </small>
+            ) : null}
+            <div className="delete-period-presets" role="group" aria-label="Choix rapide">
+              {focusedInPeriod && focusDate ? (
+                <button
+                  type="button"
+                  className={onlyFocusedSelected ? "active" : undefined}
+                  onClick={() => setSelectedDates([focusDate])}
+                >
+                  Ce jour uniquement
+                </button>
+              ) : null}
+              {hasOtherMonthDays && periodDates.length > 1 ? (
+                <button
+                  type="button"
+                  className={exactPeriodSelected ? "active" : undefined}
+                  onClick={() => setSelectedDates(periodDates)}
+                >
+                  Cette période ({periodDates.length} j)
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={allSelected ? "active" : undefined}
+                onClick={() => setSelectedDates(allDates)}
+              >
+                {hasOtherMonthDays ? `Tout le mois (${allDates.length} j)` : `Toute la période (${allDates.length} j)`}
+              </button>
+            </div>
+            <div className="delete-period-days" role="group" aria-label="Jours à annuler">
+              {collected.days.map((item) => {
+                const picked = selectedSet.has(item.date);
+                return (
+                  <button
+                    type="button"
+                    key={item.date}
+                    className={`delete-period-day${picked ? " selected" : ""}`}
+                    style={{ "--chip-color": item.color } as CSSProperties}
+                    title={item.typeLabel}
+                    aria-pressed={picked}
+                    onClick={() => toggleDate(item.date)}
+                  >
+                    <span className="delete-period-day-label">
+                      <b aria-hidden="true" />
+                      {shortChipDay(item.date)}
+                    </span>
+                    <i aria-hidden="true">{picked ? "×" : "+"}</i>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
         <div className="modal-actions">
           <button className="secondary-button" type="button" data-modal-close onClick={onCancel}>
             Conserver
           </button>
-          <button className="delete-confirm-button" type="button" onClick={onConfirm} disabled={saving}>
-            {saving
-              ? strike
-                ? "Suppression…"
-                : "Annulation…"
-              : strike
-                ? "Supprimer la grève"
-                : "Annuler la période"}
+          <button
+            className="delete-confirm-button"
+            type="button"
+            onClick={() => onConfirm(multiChoice ? selectedDates : allDates)}
+            disabled={saving || (multiChoice && selectedDates.length === 0)}
+          >
+            {confirmLabel}
           </button>
         </div>
       </section>

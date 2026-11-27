@@ -902,11 +902,25 @@
    avec « Retenir » (la déclaration s'ouvre, date remplie) et « Effacer ». */
 .mecenat-signups { display: grid; gap: 10px; margin-top: 10px; border: 1px solid rgba(44, 38, 33, 0.4); border-radius: 14px; padding: 12px; background: #fdfbf8; }
 .mecenat-signups-intro { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-.mecenat-signups-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
-.mecenat-signups-hours { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.mecenat-signups-add label { display: grid; gap: 3px; flex: 1; font-size: 12px; font-weight: 700; }
-.mecenat-signups-add input { height: 38px; border: 1px solid var(--border-control); border-radius: 10px; padding: 0 10px; font: inherit; font-size: 14px; background: #fff; color: var(--text); }
-.mecenat-signups-add .secondary-button { height: 38px; padding: 0 14px; }
+.mecenat-signups-add { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.mecenat-signups-hours { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.mecenat-signups-submit { width: 100%; height: 40px; padding: 0 14px; font-weight: 800; }
+.mecenat-mini-cal { display: grid; gap: 6px; padding: 10px; border: 1px solid var(--border-control); border-radius: 14px; background: var(--surface); }
+.mecenat-mini-cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mecenat-mini-cal-head strong { font-family: var(--font-display); font-size: 0.96rem; color: var(--text); }
+.mecenat-mini-cal-step { display: grid; place-items: center; width: 28px; height: 28px; min-height: 28px; border: 1px solid var(--border-control); border-radius: 50%; padding: 0; background: var(--surface-soft); color: var(--text); font: 700 1.05rem/1 inherit; cursor: pointer; }
+.mecenat-mini-cal-step:hover { filter: brightness(0.95); }
+.mecenat-mini-cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; color: var(--muted); font-size: 0.66rem; font-weight: 800; }
+.mecenat-mini-cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.mecenat-mini-cal-empty { height: 32px; }
+.mecenat-mini-cal-day { position: relative; display: grid; place-items: center; width: 100%; height: 32px; min-height: 32px; border: 1px solid rgba(44, 38, 33, 0.14); border-radius: 8px; padding: 0; background: #fff; color: #231e19; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: background 0.12s ease, color 0.12s ease; }
+.mecenat-mini-cal-day.off:not(.sel) { border-color: transparent; background: #1d1916; color: #a9a096; font-weight: 600; }
+.mecenat-mini-cal-day.training:not(.sel) { border-color: transparent; background: #969089; color: #fff; }
+.mecenat-mini-cal-day.holiday:not(.sel) { border-color: transparent; background: #1d1916; color: #f27482; }
+.mecenat-mini-cal-day.sel { border-color: transparent; background: #4a66a8; color: #fff; font-weight: 850; }
+.mecenat-mini-cal-day.today::after { content: ""; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+.mecenat-mini-cal-day.sel.today::after { background: #fff; }
+.mecenat-mini-cal-day.marked::before { content: ""; position: absolute; top: 3px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: #d48a28; }
 .mecenat-signups-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .mecenat-signups-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; border-top: 1px solid rgba(44, 38, 33, 0.07); padding-top: 8px; }
 .mecenat-signups-list li:first-child { border-top: 0; padding-top: 0; }
@@ -914,11 +928,18 @@
 .mecenat-signups-list time b { font-size: 14px; }
 .mecenat-signups-list time small { color: var(--muted); font-size: 11.5px; }
 .mecenat-signups-list li.is-past time small { color: #a5283a; }
-/* Les deux gestes, serrés à droite : « Retenir » en petit bouton plein,
+.mecenat-signups-list li.is-editing { grid-template-columns: minmax(0, 1fr); }
+/* Les trois gestes : « Retenir » en bouton plein, « Modifier » en secondaire,
    « Effacer » en simple lien. */
-.mecenat-signups-actions { display: flex; align-items: center; gap: 10px; }
+.mecenat-signups-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .mecenat-signups-actions .primary-action { width: auto; min-width: 0; min-height: 32px; margin: 0; padding: 0 12px; border-radius: 10px; font-size: 13px; box-shadow: none; }
+.mecenat-signups-actions .mecenat-signup-edit-btn { width: auto; min-width: 0; min-height: 32px; height: 32px; margin: 0; padding: 0 10px; border-radius: 10px; font-size: 13px; }
 .mecenat-signups-actions .text-button { padding: 0; font-size: 13px; }
+.mecenat-signup-edit { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--border-control); border-radius: 12px; background: var(--surface); }
+.mecenat-signup-edit label { display: grid; gap: 3px; font-size: 12px; font-weight: 700; }
+.mecenat-signup-edit input { height: 38px; border: 1px solid var(--border-control); border-radius: 10px; padding: 0 10px; font: inherit; font-size: 14px; background: var(--surface-high); color: var(--text); }
+.mecenat-signup-edit-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.mecenat-signup-edit-actions .primary-action { width: auto; min-width: 0; min-height: 34px; margin: 0; padding: 0 14px; border-radius: 10px; font-size: 13px; box-shadow: none; }
 .mecenat-signups-count { margin: 0; color: var(--muted); font-size: 12px; text-align: right; }
 
 /* ---- CET dans la page ------------------------------------------------------ */

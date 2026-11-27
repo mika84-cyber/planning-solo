@@ -193,7 +193,12 @@ const budgets = {
   // mesurée, raisons d'écartement) et explications d'écarts enrichies
   // (assiette PAS, report mécénat direct, dates de carence, cascade BRUT/net) ;
   // 2 176,2 / 724,8 Kio mesurés.
-  totalJavaScript: { raw: 2_178 * KIB, gzip: 726 * KIB },
+  // Relevé le 27 novembre 2026 à 2 200 / 735 Kio, avec l'accord explicite de
+  // l'administrateur (« oui ») : nouvelle fenêtre dédiée de pose de congés
+  // (LeaveRequestWindow chargée à la demande), annulation sélective multi-jours
+  // sur tout le mois et mini-calendrier/édition des inscriptions mécénat ;
+  // 2 188,5 / 729,1 Kio mesurés (le chargement initial baisse à 558,8 / 173 Kio).
+  totalJavaScript: { raw: 2_200 * KIB, gzip: 735 * KIB },
   // Le moteur OCR est chargé uniquement lorsque l'utilisateur choisit une
   // photo. Trois noyaux sont livrés pour laisser le navigateur sélectionner
   // la variante compatible ; un seul est téléchargé sur l'appareil.
@@ -254,7 +259,12 @@ const budgets = {
   // officiel Expos en pastille, bouton Copier des contacts, bouton Retour en
   // haut et nouvelles couleurs des dossiers Formulaires) ; 547,5 / 106,5 Kio
   // mesurés.
-  totalCss: { raw: 549 * KIB, gzip: 107 * KIB },
+  // Relevé le 27 novembre 2026 à 575 / 115 Kio, avec l'accord explicite de
+  // l'administrateur (« oui ») : feuille dédiée de la fenêtre de pose de congé
+  // (leaveRequestWindow.css chargée à la demande), sélecteur d'annulation
+  // multi-jours et mini-calendrier des inscriptions mécénat ; 566,3 / 110,6 Kio
+  // mesurés (le CSS principal reste à 296,3 / 53,1 Kio).
+  totalCss: { raw: 575 * KIB, gzip: 115 * KIB },
 };
 
 async function filesUnder(directory) {

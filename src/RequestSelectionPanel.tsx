@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { RequestValidationSummary, type LeaveRemainingByYear } from "./RequestValidationSummary";
+import { RequestValidationSummary, requestLeaveBalanceUsage, type LeaveRemainingByYear } from "./RequestValidationSummary";
 import type { RequestKind, SelectedDay } from "./appModel";
 import type { WorkQuota } from "./overtime";
 import {
   TYPE_COLORS,
   TYPE_LABELS,
+  fromKey,
+  getDayInfo,
+  s,
   type SelectionType,
 } from "./planningLogic";
 
@@ -22,11 +25,15 @@ export type RequestSelectionPanelProps = {
   leaveRemainingByType: Record<string, number>;
   /** Solde de chaque année touchée par la sélection. */
   leaveRemainingByYear?: LeaveRemainingByYear;
+  /** Solde CET disponible, pour alerter en direct dans le résumé. */
+  cetRemaining?: number;
   currentYear?: number;
   savingRequest: boolean;
   /** Sélection incomplète ou solde à zéro : l'enregistrement reste fermé. */
   selectionBlocked: boolean;
   onCancel: () => void;
+  onRemoveDate?: (date: string) => void;
+  onClearDates?: () => void;
   onSelectRecoveryType: (type: SelectionType) => void;
   onValidateAndOpenForm: () => void;
   onSaveToPlanning: () => void;
@@ -45,10 +52,13 @@ export function RequestSelectionPanel({
   recoveryBalanceRemaining,
   leaveRemainingByType,
   leaveRemainingByYear,
+  cetRemaining,
   currentYear,
   savingRequest,
   selectionBlocked,
   onCancel,
+  onRemoveDate,
+  onClearDates,
   onSelectRecoveryType,
   onValidateAndOpenForm,
   onSaveToPlanning,
@@ -221,7 +231,10 @@ export function RequestSelectionPanel({
         recoveryBalanceRemaining={recoveryBalanceRemaining}
         leaveRemaining={leaveRemainingByType}
         leaveRemainingByYear={leaveRemainingByYear}
+        cetRemaining={cetRemaining}
         currentYear={currentYear}
+        onRemoveDate={onRemoveDate}
+        onClearDates={onClearDates}
       />
       <div className="request-bottom request-bottom-stack">
         {selectedList.length ? (
@@ -278,20 +291,32 @@ export function RequestSelectionPanel({
         </>
       ) : null}
       {hasActions && selectedList.length && actionsOffscreen && typeof document !== "undefined"
-        ? createPortal(
-            <div className="request-floating-review" role="region" aria-label="Demande en cours">
-              <span>
-                <strong>{selectedList.length}</strong> {selectedList.length > 1 ? "dates sélectionnées" : "date sélectionnée"}
-              </span>
-              <button type="button" onClick={goToReview}>
-                Vérifier et enregistrer
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d={actionsOffscreen === "above" ? "M12 19V5m-6 6 6-6 6 6" : "M12 5v14m-6-6 6 6 6-6"} />
-                </svg>
-              </button>
-            </div>,
-            document.body,
-          )
+        ? (() => {
+            const leaveUsage = requestLeaveBalanceUsage(selectedList, group);
+            const cetCount = selectedList.filter((item) => item.type === "cet" && !getDayInfo(fromKey(item.date), group).holiday && getDayInfo(fromKey(item.date), group).kind !== "off").length;
+            const deducted = leaveUsage.annual + leaveUsage.rtt + leaveUsage.fraction + cetCount;
+            return createPortal(
+              <div className={`request-floating-review${selectionBlocked ? " is-blocked" : ""}`} role="region" aria-label="Demande en cours">
+                <span>
+                  {selectionBlocked ? (
+                    <strong className="request-floating-warn">Solde dépassé</strong>
+                  ) : (
+                    <>
+                      <strong>{selectedList.length}</strong> {selectedList.length > 1 ? "dates sélectionnées" : "date sélectionnée"}
+                      {requestKind === "leave" && !sickRequest && deducted > 0 ? ` · ${deducted.toLocaleString("fr-FR")} j déduit${s(deducted)}` : ""}
+                    </>
+                  )}
+                </span>
+                <button type="button" onClick={goToReview}>
+                  Vérifier et enregistrer
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d={actionsOffscreen === "above" ? "M12 19V5m-6 6 6-6 6 6" : "M12 5v14m-6-6 6 6 6-6"} />
+                  </svg>
+                </button>
+              </div>,
+              document.body,
+            );
+          })()
         : null}
     </section>
   );

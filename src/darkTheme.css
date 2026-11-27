@@ -327,3 +327,13 @@ html[data-theme="dark"] :is(.meal-vouchers-model, .meal-vouchers-custom)[aria-ch
 html[data-theme="dark"] :is(.meal-vouchers-model, .meal-vouchers-custom)[aria-checked="true"] .meal-vouchers-check::after { border-color: #fff; }
 /* La courbe « à remplir » de Sur mesure : des pointillés lisibles sur le fond sombre. */
 html[data-theme="dark"] .meal-vouchers-custom-curve i { border-color: #b8925a; }
+
+/* Annulation partielle de congés et mini-calendrier des inscriptions mécénat. */
+html[data-theme="dark"] .delete-period-presets button.active { border-color: rgba(235, 114, 122, 0.58); background: rgba(224, 92, 102, 0.2); color: #ffb3b8; }
+html[data-theme="dark"] .delete-period-day.selected { border-color: rgba(235, 114, 122, 0.6); background: rgba(224, 92, 102, 0.22); color: #ffc2c6; }
+html[data-theme="dark"] .delete-period-day.selected i { color: #ff8e96; }
+html[data-theme="dark"] .mecenat-mini-cal-day.work:not(.sel) { border-color: transparent; background: #eae2d5; color: #1c1916; }
+html[data-theme="dark"] .mecenat-mini-cal-day.off:not(.sel) { border-color: rgba(255, 245, 235, 0.1); background: #0c0a08; color: #7c7268; }
+html[data-theme="dark"] .mecenat-mini-cal-day.training:not(.sel) { border-color: rgba(255, 245, 235, 0.12); background: #5b5650; color: #f3eee8; }
+html[data-theme="dark"] .mecenat-mini-cal-day.holiday:not(.sel) { border-color: rgba(255, 245, 235, 0.1); background: #0c0a08; color: #f26b7a; }
+html[data-theme="dark"] .mecenat-mini-cal-day.sel { background: #5574bd; }

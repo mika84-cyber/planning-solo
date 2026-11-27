@@ -44,6 +44,8 @@ const baseProps = {
     setWarningDate: noop,
     deletingPeriod: null,
     setDeletingPeriod: noop,
+    deletingPeriodDate: null,
+    setDeletingPeriodDate: noop,
     savingRange: false,
     recoveryRangeOpen: false,
   },

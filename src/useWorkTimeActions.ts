@@ -487,6 +487,31 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
     }
   }
 
+  async function updateMecenatSignup(signup: MecenatSignup, date: string, start = "", end = "") {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      notify("Choisissez une date valide.");
+      return;
+    }
+    const hours = start && end ? { start, end } : { start: "", end: "" };
+    if (mecenatSignups.some((item) => item.id !== signup.id && item.date === date && item.start === hours.start)) {
+      notify("Cette date est déjà dans vos inscriptions.");
+      return;
+    }
+    const updated: MecenatSignup = { ...signup, date, ...hours, updatedAt: new Date().toISOString() };
+    try {
+      if (!demoMode) {
+        const result = await post<{ mecenat_signup?: { updated_at?: string } }>({ action: "save-mecenat-signup", id: signup.id, date, ...hours });
+        updated.updatedAt = result.mecenat_signup?.updated_at || updated.updatedAt;
+      }
+      setMecenatSignups((current) =>
+        current.map((item) => (item.id === signup.id ? updated : item)).sort((a, b) => a.date.localeCompare(b.date)),
+      );
+      confirmMessage("La date d’inscription a été modifiée.");
+    } catch (error) {
+      notify(calendarErrorMessage(error, "La date d’inscription n’a pas pu être modifiée."));
+    }
+  }
+
   async function deleteMecenatSignup(signup: MecenatSignup) {
     if (!(await confirmAction({ title: "Effacer cette date d’inscription ?", confirmLabel: "Effacer", tone: "danger" }))) return;
     try {
@@ -552,7 +577,7 @@ export function useWorkTimeActions(options: WorkTimeActionsOptions) {
   return {
     saveOvertimeEntry, saveSolidarityHours, deleteOvertimeEntry,
     saveRecoveryUse, beginRecoveryRangeSelection, cancelRecoveryRangeSelection,
-    saveRecoveryRangeDates, deleteRecoveryUse, saveMecenatEntry, deleteMecenatEntry, addMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
+    saveRecoveryRangeDates, deleteRecoveryUse, saveMecenatEntry, deleteMecenatEntry, addMecenatSignup, updateMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
     markMecenatsPaidEarly, deferMecenats, markOvertimePaidEarly,
   };
 }

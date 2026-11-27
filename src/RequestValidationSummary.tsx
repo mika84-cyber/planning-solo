@@ -1,4 +1,5 @@
 import type { BalanceType, RequestKind, SelectedDay } from "./appModel";
+import { isOffSeasonDate, usesFractionRule } from "./fractionRules";
 import { minutesLabel, recoveryRequestMinutes, type RecoveryRequestType, type WorkQuota } from "./overtime";
 import { TYPE_LABELS, fromKey, getDayInfo, halfBalanceOf, longDate, periodTypeLabel, s } from "./planningLogic";
 
@@ -136,7 +137,10 @@ export function RequestValidationSummary({
   recoveryBalanceRemaining = 0,
   leaveRemaining = {},
   leaveRemainingByYear,
+  cetRemaining,
   currentYear,
+  onRemoveDate,
+  onClearDates,
 }: {
   items: SelectedDay[];
   requestKind: RequestKind;
@@ -147,8 +151,14 @@ export function RequestValidationSummary({
   leaveRemaining?: LeaveRemaining;
   /** Prioritaire sur `leaveRemaining` pour les années qu'il contient. */
   leaveRemainingByYear?: LeaveRemainingByYear;
+  /** Jours CET disponibles ; vérifié en direct quand la demande pose du CET. */
+  cetRemaining?: number;
   /** Année en cours : une autre année est nommée devant son solde. */
   currentYear?: number;
+  /** Retire une date précise directement depuis le récapitulatif. */
+  onRemoveDate?: (date: string) => void;
+  /** Vide toute la sélection d'un seul geste. */
+  onClearDates?: () => void;
 }) {
   if (!items.length) return null;
   const recoveryMinutes = requestKind === "recovery"
@@ -158,6 +168,17 @@ export function RequestValidationSummary({
     item.type.startsWith("recovery_") && requestRecoveryMinutes([item], workQuota) <= 0
   );
   const leaveItems = items.filter((item) => item.type === "annual" || item.type === "half" || item.type === "rtt" || item.type === "fraction");
+  const cetDays = items.filter((item) => {
+    if (item.type !== "cet") return false;
+    const info = getDayInfo(fromKey(item.date), group);
+    return !info.holiday && info.kind !== "off";
+  }).length;
+  const cetShortage = cetDays > 0 && cetRemaining !== undefined && cetDays > Math.max(0, cetRemaining)
+    ? Math.max(0, cetRemaining) === 0
+      ? "Vous n’avez plus de jours CET disponibles."
+      : `Il ne vous reste que ${dayAmount(Math.max(0, cetRemaining))} CET disponible${Math.max(0, cetRemaining) > 1 ? "s" : ""}. Vous en avez sélectionné ${cetDays}.`
+    : "";
+  const offSeasonAnnualByYear = yearGroupsOffSeason(items, group);
   const requestedBalanceTypes = new Set(
     leaveItems.map((item) => item.type === "half" ? halfBalanceOf(item) : item.type),
   );
@@ -174,7 +195,7 @@ export function RequestValidationSummary({
       units: balanceUsage[type],
     })).filter(({ type, units }) => requestedBalanceTypes.has(type) && (units > 0 || yearGroups.length === 1));
   });
-  const deductedDays = leaveUsage.reduce((total, usage) => total + usage.units, 0);
+  const deductedDays = leaveUsage.reduce((total, usage) => total + usage.units, 0) + cetDays;
   const skippedDays = leaveItems.filter((item) => {
     const info = getDayInfo(fromKey(item.date), group);
     return info.holiday || info.kind === "off";
@@ -184,9 +205,14 @@ export function RequestValidationSummary({
     <section className="request-validation-summary" aria-label="Résumé avant validation">
       <header>
         <span>Résumé avant validation</span>
-        <strong>
-          {items.length} date{s(items.length)}
-        </strong>
+        <div className="request-validation-header-actions">
+          {onClearDates && items.length >= 2 ? (
+            <button type="button" className="request-clear-dates" onClick={onClearDates}>Tout effacer</button>
+          ) : null}
+          <strong>
+            {items.length} date{s(items.length)}
+          </strong>
+        </div>
       </header>
       <div className="request-validation-dates">
         {items.map((item) => (
@@ -195,15 +221,28 @@ export function RequestValidationSummary({
               <strong>{longDate(fromKey(item.date))}</strong>
               <small>{item.type === "half" ? periodTypeLabel({ leaveType: "half", halfBalance: item.halfBalance }) : TYPE_LABELS[item.type]}</small>
             </span>
-            {item.type.startsWith("recovery_") ? (
-              <em>{minutesLabel(recoveryRequestMinutes(item.type as RecoveryRequestType, workQuota, item.start, item.end))}</em>
-            ) : item.halfMoment ? (
-              <em>{item.halfMoment === "morning" ? "Matin" : "Après-midi"}</em>
-            ) : item.start || item.end ? (
-              <em>
-                {item.start || "—"} → {item.end || "—"}
-              </em>
-            ) : null}
+            <div className="request-validation-date-end">
+              {item.type.startsWith("recovery_") ? (
+                <em>{minutesLabel(recoveryRequestMinutes(item.type as RecoveryRequestType, workQuota, item.start, item.end))}</em>
+              ) : item.halfMoment ? (
+                <em>{item.halfMoment === "morning" ? "Matin" : "Après-midi"}</em>
+              ) : item.start || item.end ? (
+                <em>
+                  {item.start || "—"} → {item.end || "—"}
+                </em>
+              ) : null}
+              {onRemoveDate ? (
+                <button
+                  type="button"
+                  className="request-remove-date"
+                  onClick={() => onRemoveDate(item.date)}
+                  aria-label={`Retirer le ${longDate(fromKey(item.date))}`}
+                  title="Retirer cette date"
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
           </article>
         ))}
       </div>
@@ -218,7 +257,7 @@ export function RequestValidationSummary({
             <span>Solde disponible : {minutesLabel(recoveryBalanceRemaining)} → {minutesLabel(recoveryBalanceRemaining - recoveryMinutes)}</span>
           )}
         </div>
-      ) : leaveItems.length ? (
+      ) : leaveItems.length || cetDays > 0 ? (
         <div className="request-validation-impact" aria-live="polite">
           <strong>{items.length} date{s(items.length)} sélectionnée{s(items.length)} · {deductedDays.toLocaleString("fr-FR")} jour{s(deductedDays)} déduit{s(deductedDays)}</strong>
           {leaveUsage.map(({ year, type, units }) => {
@@ -231,10 +270,24 @@ export function RequestValidationSummary({
                   ? `${leaveBalanceLabel(type)} : ${dayAmount(units)} déduit${s(units)}`
                   : shortage
                     ? shortage
-                    : leaveBalanceRemainingLabel(type, remaining - units)}
+                    : `${leaveBalanceRemainingLabel(type, remaining - units)}${units > 0 ? ` (sur ${Math.max(0, remaining).toLocaleString("fr-FR")})` : ""}`}
               </span>
             );
           })}
+          {cetDays > 0 ? (
+            <span className={cetShortage ? "request-validation-warning" : undefined}>
+              {cetRemaining === undefined
+                ? `CET : ${dayAmount(cetDays)} déduit${s(cetDays)}`
+                : cetShortage
+                  ? cetShortage
+                  : `${Math.max(0, cetRemaining - cetDays).toLocaleString("fr-FR")} jour${Math.max(0, cetRemaining - cetDays) > 1 ? "s" : ""} CET restant${Math.max(0, cetRemaining - cetDays) > 1 ? "s" : ""} (sur ${Math.max(0, cetRemaining).toLocaleString("fr-FR")})`}
+            </span>
+          ) : null}
+          {offSeasonAnnualByYear.map(([year, days]) => (
+            <span key={`fraction-${year}`} className="request-validation-fraction-hint">
+              Fractionnement {year} : {dayAmount(days)} de CA hors mai–octobre (4 j → +1 j, 7 j → +2 j).
+            </span>
+          ))}
           {skippedDays ? <span>{skippedDays} jour{s(skippedDays)} de repos ou férié non décompté{s(skippedDays)}.</span> : null}
         </div>
       ) : null}
@@ -244,4 +297,20 @@ export function RequestValidationSummary({
       </p>
     </section>
   );
+}
+
+/** CA (entiers ou demi-journées) posés hors mai–octobre sur une année qui
+ *  applique le barème de fractionnement (à partir de 2027). */
+function yearGroupsOffSeason(items: SelectedDay[], group: number) {
+  const byYear = new Map<number, number>();
+  for (const item of items) {
+    const itemType = item.type === "half" ? halfBalanceOf(item) : item.type;
+    if (itemType !== "annual") continue;
+    const year = Number(item.date.slice(0, 4));
+    if (!usesFractionRule(year) || !isOffSeasonDate(item.date)) continue;
+    const info = getDayInfo(fromKey(item.date), group);
+    if (info.holiday || info.kind === "off") continue;
+    byYear.set(year, (byYear.get(year) ?? 0) + (item.type === "half" ? 0.5 : 1));
+  }
+  return [...byYear.entries()].sort((a, b) => a[0] - b[0]);
 }

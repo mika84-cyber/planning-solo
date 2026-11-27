@@ -9,12 +9,14 @@ import type { WishChoice } from "./PlanningRequestPanels";
 import { DEFAULT_WORK_SCHEDULE, splitOvertimeRange, workScheduleHalfTimes, type WorkQuota, type WorkSchedule } from "./overtime";
 import { durationLeaveDay, usualHalfHours } from "./useRequestTypeSelection";
 import {
+  addDays,
   dateKey,
   fromKey,
   getDayInfo,
   halfBalanceOf,
   halfMomentFromStart,
   localDate,
+  longDate,
   type LeaveType,
   type MultiDatePerson,
   type SelectionType,
@@ -49,6 +51,34 @@ export function toggleSortedDate(dates: readonly string[], key: string) {
   return dates.includes(key)
     ? dates.filter((date) => date !== key)
     : [...dates, key].sort();
+}
+
+/** Deux sélections sur la même date portent-elles le même type et, pour une
+ *  demi-journée, le même moment et le même solde ? Évite qu'une demi-journée
+ *  de CA (type « half » alors que le bouton actif est « annual ») refuse de se
+ *  désélectionner au second toucher. */
+export function sameSelectionChoice(existing: SelectedDay, target: SelectedDay) {
+  if (existing.type !== target.type) return false;
+  if (existing.type !== "half") return true;
+  const momentOf = (item: SelectedDay) => item.halfMoment ?? (item.start ? halfMomentFromStart(item.start) : undefined);
+  return momentOf(existing) === momentOf(target) && halfBalanceOf(existing) === halfBalanceOf(target);
+}
+
+/** Toutes les dates sélectionnables entre deux bornes (incluses, plafonnées
+ *  à 90 jours), hors repos, fériés fermés et dates exclues. */
+export function selectableDatesInRange(
+  startKey: string,
+  endKey: string,
+  group: number,
+  skipDate: (date: string) => boolean = () => false,
+) {
+  const [from, to] = startKey <= endKey ? [startKey, endKey] : [endKey, startKey];
+  const dates: string[] = [];
+  for (let date = fromKey(from), count = 0; dateKey(date) <= to && count < 90; date = addDays(date, 1), count += 1) {
+    const key = dateKey(date);
+    if (getDayInfo(date, group).selectable && !skipDate(key)) dates.push(key);
+  }
+  return dates;
 }
 
 type RequestStartOptions = {
@@ -112,6 +142,8 @@ type PlanningInteractionActionsOptions = {
   saveStrikeDateDirect: (date: string) => Promise<void>;
   notify: (message: string) => void;
   isExchangeDate?: (date: string) => boolean;
+  /** Date portant déjà une absence enregistrée (hors maladie qui peut remplacer). */
+  hasExistingAbsence?: (date: string) => boolean;
   /** Congés annuels : la date en journée entière ou en demi-journée, selon
    *  la durée et les heures choisies dans le panneau. */
   leaveDay?: (date: string, type: SelectionType) => SelectedDay;
@@ -135,6 +167,7 @@ export function usePlanningInteractionActions({
   saveStrikeDateDirect,
   notify,
   isExchangeDate = () => false,
+  hasExistingAbsence = () => false,
   leaveDay = (date, type) => ({ date, type }),
 }: PlanningInteractionActionsOptions) {
   const {
@@ -185,11 +218,16 @@ export function usePlanningInteractionActions({
     setDirectDurationSave,
     requestKind,
     setRequestKind,
+    sickRequest,
     setSickRequest,
     activeType,
     setActiveType,
     selections,
     setSelections,
+    requestRangeMode,
+    setRequestRangeMode,
+    requestRangeAnchor,
+    setRequestRangeAnchor,
     timeDate,
     setTimeDate,
     timeStart,
@@ -457,6 +495,8 @@ export function usePlanningInteractionActions({
       setTimeDate(seedDate);
     }
     setSelections(nextSelections);
+    setRequestRangeMode(false);
+    setRequestRangeAnchor(null);
     setRequestSeedDate(seedDate);
     setWarningDate(start.warningDate);
     setHomeSection("home");
@@ -571,9 +611,38 @@ export function usePlanningInteractionActions({
       void saveStrikeDateDirect(key);
       return;
     }
-    // Une date déjà choisie avec un autre type prend le type actif : c'est
-    // ainsi qu'on change la nature d'un souhait transformé, date par date.
-    if (selections[key] && selections[key].type !== activeType) {
+    if (requestKind === "leave" && requestRangeMode) {
+      const skip = (candidate: string) => isExchangeDate(candidate) || (!sickRequest && hasExistingAbsence(candidate));
+      if (!requestRangeAnchor) {
+        if (!sickRequest && hasExistingAbsence(key)) {
+          notify(`${longDate(date)} comporte déjà une absence. Modifiez ou retirez-la avant de continuer.`);
+          return;
+        }
+        setRequestRangeAnchor(key);
+        if (getDayInfo(date, group).selectable) {
+          setSelections((current) => ({ ...current, [key]: leaveDay(key, activeType) }));
+        }
+        return;
+      }
+      const dates = selectableDatesInRange(requestRangeAnchor, key, group, skip);
+      setRequestRangeAnchor(null);
+      if (!dates.length) {
+        notify("Aucune journée travaillée disponible sur cette plage.");
+        return;
+      }
+      setSelections((current) => ({
+        ...current,
+        ...Object.fromEntries(dates.map((dateItem) => [dateItem, leaveDay(dateItem, activeType)])),
+      }));
+      return;
+    }
+    // Une date déjà choisie avec un autre type (ou un autre moment de
+    // demi-journée) prend le choix actif ; avec le même choix, elle se retire.
+    const targetSelection =
+      activeType.startsWith("recovery_") || activeType === "other" || activeType === "half"
+        ? { date: key, type: activeType }
+        : leaveDay(key, activeType);
+    if (selections[key] && !sameSelectionChoice(selections[key], targetSelection)) {
       recordSelection(key);
       return;
     }
@@ -583,6 +652,10 @@ export function usePlanningInteractionActions({
         delete next[key];
         return next;
       });
+      return;
+    }
+    if (requestKind === "leave" && !sickRequest && hasExistingAbsence(key)) {
+      notify(`${longDate(date)} comporte déjà une absence. Modifiez ou retirez-la avant de continuer.`);
       return;
     }
     const info = getDayInfo(date, group);

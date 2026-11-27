@@ -312,17 +312,39 @@ async function goToCurrentMonth(page: Page) {
  *  défilement, sans quoi le toucher peut tomber à côté de la case (vu sur
  *  iPhone dans la suite complète, les 9 et 10 novembre 2026). */
 async function pickWorkDay(page: Page, index = 0) {
-  await expect(page.locator("#request-panel")).toBeVisible();
-  await expect.poll(async () => {
-    const before = await page.evaluate(() => window.scrollY);
-    await page.waitForTimeout(200);
-    return (await page.evaluate(() => window.scrollY)) === before;
-  }, { message: "le défilement vers le calendrier doit être terminé" }).toBe(true);
-  // La case au milieu de l'écran, sans défilement en douceur : elle ne bouge
-  // plus pendant le toucher, et le bloc collant du haut ne la cache pas.
-  const day = page.locator(".month-card .day.work").nth(index);
-  await day.evaluate((node) => node.scrollIntoView({ block: "center", behavior: "instant" }));
+  const panel = page.locator("#request-panel");
+  await expect(panel).toBeVisible();
+  const day = panel.locator(".day.work").nth(index);
+  await day.scrollIntoViewIfNeeded();
   await day.click();
+}
+
+async function chooseRequestType(request: Locator, name: string | RegExp) {
+  await request.getByRole("button", { name: "Choisir le type d’absence" }).click();
+  await request.getByRole("menuitemradio", { name }).click();
+}
+
+async function chooseRequestDuration(request: Locator, name: string | RegExp) {
+  await request.getByRole("button", { name: /Durée du congé|Mode de récupération/ }).click();
+  await request.getByRole("menuitemradio", { name }).click();
+}
+
+async function openRequestDetail(request: Locator) {
+  const region = request.getByRole("region", { name: "Résumé avant validation" });
+  if (!(await region.count())) await request.locator(".lrw-detail-toggle").click();
+  return region;
+}
+
+async function saveRequestPlanningOnly(request: Locator) {
+  const toggle = request.getByRole("radio", { name: "Planning seul" });
+  if (await toggle.count()) await toggle.click();
+  await request.locator(".lrw-cta").click();
+}
+
+async function saveRequestWithForm(request: Locator) {
+  const toggle = request.getByRole("radio", { name: "Avec formulaire PDF" });
+  if (await toggle.count()) await toggle.click();
+  await request.locator(".lrw-cta").click();
 }
 
 /** Ouvre une rubrique par le dock, seul chemin vers les pages. */
@@ -1664,7 +1686,7 @@ test("sans horaires enregistrés, les heures d’une récupération restent à s
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ }).click();
-  await page.locator("#request-panel").getByRole("button", { name: /Récupération en heures/ }).click();
+  await chooseRequestDuration(page.locator("#request-panel"), /En heures/);
   await pickWorkDay(page);
 
   // Mieux vaut une saisie à faire qu'une heure inventée qu'on oublierait de
@@ -3603,39 +3625,23 @@ test("les vues des Expos forment une bande de couleurs, la vue choisie en plein"
   expect(new Set(heights).size).toBe(1);
 });
 
-test("pendant le choix des dates, une barre ramène à l’enregistrement resté hors de l’écran", async ({ page }) => {
-  // Écran peu haut, comme un petit téléphone : boutons et calendrier n’y tiennent pas ensemble.
+test("pendant le choix des dates, le bouton d’enregistrement reste toujours accessible même sur un petit écran", async ({ page }) => {
+  // Écran peu haut, comme un petit téléphone : la fenêtre compacte garde le bouton Enregistrer à l'écran.
   await page.setViewportSize({ width: page.viewportSize()!.width, height: 560 });
   await page.clock.setFixedTime(new Date("2026-09-29T12:00:00"));
   await prepareDemo(page);
   await pickCalendarMonth(page, "octobre");
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
-  const floating = page.getByRole("region", { name: "Demande en cours" });
-  const actions = page.locator("#request-panel .request-actions");
-  // Les dates se touchent dans le calendrier, sous le panneau de la demande :
-  // un jour travaillé de fin de mois laisse les boutons loin au-dessus.
-  const workDays = page.locator(".calendar-grid .day.work");
-  const pick = async (day: Locator) => {
-    await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
-    await day.click();
-  };
-  await expect(floating).toHaveCount(0);
-  await pick(workDays.last());
-  // On redescend dans le calendrier pour une deuxième date, puis jusqu’en bas.
-  await pick(workDays.nth(-2));
-  await page.locator(".calendar-grid").evaluate((grid) => grid.scrollIntoView({ block: "end" }));
-  await expect(actions).not.toBeInViewport();
-  await expect(floating).toBeVisible();
-  await expect(floating).toContainText("2 dates sélectionnées");
-  // Elle reste au-dessus de la navigation du bas.
-  const [floatingBox, dockBox] = await Promise.all([floating.boundingBox(), page.locator(".section-dock").boundingBox()]);
-  expect(floatingBox!.y + floatingBox!.height).toBeLessThanOrEqual(dockBox!.y);
-  await floating.getByRole("button", { name: "Vérifier et enregistrer" }).click();
-  // Les boutons d’enregistrement arrivent entiers à l’écran, le récapitulatif au-dessus.
-  await expect(actions).toBeInViewport({ ratio: 0.9 });
-  await expect(page.locator(".request-validation-dates, #request-panel [aria-label='Résumé avant validation']").first()).toBeInViewport();
-  await expect(floating).toHaveCount(0);
+  const request = page.locator("#request-panel");
+  const cta = request.locator(".lrw-cta");
+  const workDays = request.locator(".day.work");
+  await expect(cta).toBeDisabled();
+  await workDays.last().click();
+  await workDays.nth(-2).click();
+  await expect(request.locator(".lrw-detail-toggle")).toContainText("2 dates choisies");
+  await expect(cta).toBeInViewport({ ratio: 0.9 });
+  await expect(cta).toBeEnabled();
 });
 
 test("plusieurs congés souhaités se posent d’un coup puis se transforment en congés au choix", async ({ page }) => {
@@ -3698,10 +3704,11 @@ test("plusieurs congés souhaités se posent d’un coup puis se transforment en
   await expect(summary).toHaveText("1 CA · 1 RTT · 1 gardé en souhait");
   await conversion.getByRole("button", { name: "Continuer avec 2 congés" }).click();
   const request = page.locator("#request-panel");
-  await expect(request.locator(".request-selection-count strong")).toHaveText("2 dates sélectionnées");
-  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
-  await expect(request.getByLabel("Résumé avant validation")).toContainText("Congés annuels");
-  await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
+  await expect(request.locator(".lrw-detail-toggle")).toContainText("2 dates choisies");
+  const detail = await openRequestDetail(request);
+  await expect(detail).toContainText("RTT");
+  await expect(detail).toContainText("CA");
+  await saveRequestPlanningOnly(request);
 
   // Ces deux souhaits deviennent des congés ; le troisième reste souhaité.
   await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(1);
@@ -3794,22 +3801,17 @@ test("le mois, son panneau et ses flèches se lisent en tête du calendrier, pen
   await expect(title).toHaveText(/^mars 2026$/i);
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
-  // Le panneau de la demande sépare le haut de la carte de la grille : la barre
-  // du mois reste juste au-dessus des jours. L'application défile d'abord, en
-  // douceur, jusqu'au panneau de la demande ; on descend ensuite aux jours, et
-  // l'on recommence si ce défilement nous rattrape (WebKit sous charge).
-  await expect(page.locator("#request-panel")).toBeInViewport();
-  await expect(async () => {
-    await page.locator(".month-card").evaluate((card) => card.scrollIntoView({ block: "start" }));
-    await expect(nav).toBeInViewport({ timeout: 1000 });
-    await expect(page.locator(".month-card .calendar-grid")).toBeInViewport({ ratio: 0.5, timeout: 1000 });
-  }).toPass({ timeout: 10_000 });
-  await nav.getByRole("button", { name: "Mois suivant" }).click();
-  await expect(title).toHaveText(/^avril 2026$/i);
-  await nav.getByRole("button", { name: "Mois précédent" }).click();
-  await expect(title).toHaveText(/^mars 2026$/i);
-  // La demande annulée, la barre du mois reste en tête du calendrier.
-  await page.locator("#request-panel").getByRole("button", { name: "Annuler la demande" }).first().click();
+  const request = page.locator("#request-panel");
+  await expect(request).toBeInViewport();
+  const reqNav = request.locator(".month-card-nav");
+  const reqTitle = reqNav.locator(".month-card-title");
+  await expect(reqNav).toBeVisible();
+  await reqNav.getByRole("button", { name: "Mois suivant" }).click();
+  await expect(reqTitle).toHaveText(/^avril 2026$/i);
+  await reqNav.getByRole("button", { name: "Mois précédent" }).click();
+  await expect(reqTitle).toHaveText(/^mars 2026$/i);
+  // La demande fermée, la barre du mois reste en tête du calendrier.
+  await request.getByRole("button", { name: "Fermer" }).click();
   await expect(nav).toBeVisible();
   await expect(title).toHaveText(/^mars 2026$/i);
 });
@@ -3819,17 +3821,16 @@ test("un congé de l’année suivante se pose à l’avance sur le solde de cet
   await prepareDemo(page);
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
-  // Les flèches posées au-dessus des jours.
-  for (let step = 0; step < 3; step += 1) await page.locator(".month-card-nav").getByRole("button", { name: "Mois suivant" }).click();
-  await expect(page.locator(".month-card-title")).toHaveText(/^janvier 2027$/i);
-  const day = page.locator(".calendar-grid .day.work").first();
+  const request = page.locator("#request-panel");
+  for (let step = 0; step < 3; step += 1) await request.locator(".month-card-nav").getByRole("button", { name: "Mois suivant" }).click();
+  await expect(request.locator(".month-card-title")).toHaveText(/^janvier 2027$/i);
+  const day = request.locator(".day.work").first();
   await expect(day).toHaveAttribute("aria-label", /janvier 2027/);
-  await day.evaluate((cell) => cell.scrollIntoView({ block: "center" }));
   await day.click();
-  const summary = page.locator("#request-panel").getByLabel("Résumé avant validation");
   // Le solde repart au 1er janvier : la date compte sur le solde de 2027.
-  await expect(summary).toContainText(/2027 · \d+ CA restants?/);
-  await expect(summary).not.toContainText("Vous n’avez plus de congés annuels disponibles.");
+  await expect(request.getByRole("button", { name: "Choisir le type d’absence" })).toContainText(/reste \d+\s*j/);
+  await expect(request.locator(".lrw-alert")).toHaveCount(0);
+  await expect(request.locator(".lrw-cta")).toBeEnabled();
 });
 
 test("depuis une case du planning, les souhaits se posent et se transforment par le même parcours", async ({ page }) => {
@@ -3865,9 +3866,10 @@ test("depuis une case du planning, les souhaits se posent et se transforment par
   await conversion.locator(".wish-conversion-list li").getByRole("button", { name: /^RTT/ }).click();
   await conversion.getByRole("button", { name: "Continuer" }).click();
   const request = page.locator("#request-panel");
-  await expect(request.locator(".request-selection-count strong")).toHaveText("1 date sélectionnée");
-  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
-  await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
+  await expect(request.locator(".lrw-detail-toggle")).toContainText("1 date choisie");
+  const detail = await openRequestDetail(request);
+  await expect(detail).toContainText("RTT");
+  await saveRequestPlanningOnly(request);
   await expect(page.locator(".calendar-grid .day.wish-day")).toHaveCount(1);
 
   // Depuis une case souhaitée, « Transformer mes souhaits » reprend ceux qui
@@ -3932,9 +3934,10 @@ test("un congé souhaité se pose aussi le matin ou l’après-midi et se transf
   await expect(conversion.locator(".wish-conversion-summary")).toHaveText("1 RTT");
   await conversion.getByRole("button", { name: "Continuer" }).click();
   const request = page.locator("#request-panel");
-  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
-  await expect(request.getByLabel("Résumé avant validation")).not.toContainText(/demi-journée/i);
-  await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
+  const detail = await openRequestDetail(request);
+  await expect(detail).toContainText("RTT");
+  await expect(detail).not.toContainText(/demi-journée/i);
+  await saveRequestPlanningOnly(request);
   await expect(workDays.nth(-2)).toHaveAttribute("aria-label", /RTT/);
   await expect(workDays.nth(-2)).not.toHaveAttribute("aria-label", /Demi-journée/);
   await expect(workDays.nth(-2)).not.toHaveClass(/wish-day/);
@@ -3950,24 +3953,24 @@ test("un jour exceptionnel se pose en journée entière, un Divers aussi en demi
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
   const panel = page.locator("#request-panel");
-  await panel.locator(".request-advanced-types > summary").click();
-  await panel.getByRole("button", { name: /Jour exceptionnel/ }).click();
-  await day(/^jeudi 1 octobre 2026/i).click();
+  await chooseRequestType(panel, /Jour exceptionnel/);
+  await panel.getByRole("button", { name: /^jeudi 1 octobre 2026/i }).click();
   const duration = page.locator(".time-modal");
   await expect(duration).toHaveCount(0);
-  await expect(panel.locator(".request-validation-dates")).toContainText("Jour exceptionnel");
-  await expect(panel.locator(".request-validation-dates")).not.toContainText("demi-journée");
-  await panel.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
+  const detail = await openRequestDetail(panel);
+  await expect(detail).toContainText("Jour exceptionnel");
+  await expect(detail).not.toContainText("demi-journée");
+  await saveRequestPlanningOnly(panel);
   await expect(day(/^jeudi 1 octobre 2026/i)).not.toHaveAttribute("aria-label", /Demi-journée/);
 
   // Divers l'après-midi.
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
   await chooser.getByRole("button", { name: /^Divers/ }).click();
-  await day(/^vendredi 2 octobre 2026/i).click();
+  await panel.getByRole("button", { name: /^vendredi 2 octobre 2026/i }).click();
   await duration.getByRole("radio", { name: /L’après-midi/ }).click();
   await duration.getByRole("button", { name: "Valider" }).click();
-  await page.locator("#request-panel").getByRole("button", { name: "Enregistrer Divers" }).click();
+  await panel.locator(".lrw-cta").click();
   await expect(day(/^vendredi 2 octobre 2026/i)).toHaveAttribute("aria-label", /Demi-journée après-midi · Divers/);
   // La moitié posée garde le jaune de Divers en journée entière.
   expect(await day(/^vendredi 2 octobre 2026/i).evaluate((cell) => getComputedStyle(cell, "::after").backgroundColor)).toBe("rgb(243, 216, 132)");
@@ -5910,7 +5913,7 @@ test("les horaires du profil préremplissent une récupération", async ({ page 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ }).click();
-  await page.locator("#request-panel").getByRole("button", { name: /Récupération en heures/ }).click();
+  await chooseRequestDuration(page.locator("#request-panel"), /En heures/);
   await pickWorkDay(page);
 
   const hours = page.getByRole("dialog", { name: "Choisissez les horaires" });
@@ -5941,15 +5944,13 @@ test("Divers est explicite et le résumé apparaît avant validation", async ({ 
   await expect(other.locator(".other-choice-dot")).toHaveCount(0);
   await other.click();
 
-  await expect(page.getByRole("heading", { name: "Sélectionnez vos dates Divers" })).toBeVisible();
-  await page.locator(".month-card :is(.day.today.work, .day.today ~ .day.work):not(.exceptional-closure-day)").first().click();
+  const panel = page.locator("#request-panel");
+  await expect(panel.getByRole("heading", { name: "Dates Divers" })).toBeVisible();
+  await panel.locator(":is(.day.today.work, .day.today ~ .day.work)").first().click();
   // La durée se choisit à la date : journée entière par défaut.
   await page.locator(".time-modal").getByRole("button", { name: "Valider" }).click();
-  const summary = page.getByLabel("Résumé avant validation");
-  await expect(summary).toBeVisible();
-  await expect(summary).toContainText("1 date");
-  await expect(summary).toContainText("sans effet sur la paie ni les soldes");
-  await page.getByRole("button", { name: "Enregistrer Divers" }).click();
+  await expect(panel.locator(".lrw-detail-toggle")).toContainText("1 date choisie");
+  await panel.locator(".lrw-cta").click();
   await expect(page.locator(".month-card .day.leave-other")).toHaveCSS(
     "background-color",
     "rgb(243, 216, 132)",
@@ -6018,24 +6019,14 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
   await chooser.getByRole("button", { name: /^Grève/ }).click();
-  await expect(page.getByRole("heading", { name: "Ajoutez une journée de grève" })).toBeVisible();
-  await expect(page.getByText("Ajout direct au planning", { exact: true })).toBeVisible();
+  const panel = page.locator("#request-panel");
+  await expect(panel.getByRole("heading", { name: "Journée de grève" })).toBeVisible();
+  await expect(panel).toContainText("l’ajouter immédiatement au planning");
   await expect(page.getByRole("button", { name: /Enregistrer la grève/ })).toHaveCount(0);
-  const strikeElementsOverlap = await page.locator(".strike-request-options").evaluate((panel) => {
-    const choice = panel.querySelector(".type-tabs button")!.getBoundingClientRect();
-    const help = panel.querySelector(".request-help")!.getBoundingClientRect();
-    return (
-      choice.x < help.x + help.width &&
-      choice.x + choice.width > help.x &&
-      choice.y < help.y + help.height &&
-      choice.y + choice.height > help.y
-    );
-  });
-  expect(strikeElementsOverlap).toBe(false);
-  const strikeDay = page.locator(".month-card :is(.day.today.work, .day.today ~ .day.work):not(.exceptional-closure-day)").first();
+  const strikeDay = panel.locator(":is(.day.today.work, .day.today ~ .day.work)").first();
   const strikeDate = await strikeDay.getAttribute("aria-label");
   await strikeDay.click();
-  await expect(page.getByRole("heading", { name: "Ajoutez une journée de grève" })).toHaveCount(0);
+  await expect(panel).toHaveCount(0);
 
   const markedStrike = page.locator(".month-card .day.leave-strike");
   await expect(markedStrike).toHaveCount(1);
@@ -6301,8 +6292,9 @@ test("le congé CET est proposé depuis les demandes et depuis une case", async 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
   await chooser.getByRole("button", { name: /^CET/ }).click();
-  await expect(page.getByRole("button", { name: /Congé CET/ })).toBeVisible();
-  await page.getByRole("button", { name: "Annuler la demande" }).first().click();
+  const panel = page.locator("#request-panel");
+  await expect(panel.getByRole("button", { name: "Choisir le type d’absence" })).toContainText("CET");
+  await panel.getByRole("button", { name: "Fermer" }).click();
 
   await page.locator(".month-card .day").first().click();
   const cetDayDialog = page.getByRole("dialog", { name: /2026/ });
@@ -6375,10 +6367,8 @@ test("les choix principaux et ceux d’une date suivent l’ordre demandé", asy
   await expect(datedChooser).toContainText("Choisissez le type à appliquer");
   await datedChooser.getByRole("button", { name: /^RTT/ }).click();
   const datedRequest = page.locator("#request-panel");
-  await expect(page.getByRole("group", { name: "Congé des dates touchées" }).getByRole("button", { name: /^RTT/ })).toHaveClass(/active/);
-  await expect(datedRequest.locator(".request-advanced-types")).toHaveCSS("border-left-width", "6px");
-  await expect(datedRequest.locator(".request-advanced-types")).not.toHaveCSS("box-shadow", "none");
-  await expect(datedRequest.getByLabel("Résumé avant validation").getByText("1 date", { exact: true })).toBeVisible();
+  await expect(datedRequest.getByRole("button", { name: "Choisir le type d’absence" })).toContainText("RTT");
+  await expect(datedRequest.locator(".lrw-detail-toggle")).toContainText("1 date choisie");
 });
 
 test("la demande guide sans masquer les options avancées", async ({ page }) => {
@@ -6390,14 +6380,13 @@ test("la demande guide sans masquer les options avancées", async ({ page }) => 
   await chooser.getByRole("button", { name: /^CA/ }).click();
 
   const request = page.locator("#request-panel");
-  await expect(request.getByText(/Étape 2 sur 3/)).toBeVisible();
-  // CA, RTT et fractionnement : au-dessus du planning, plus dans le panneau.
-  await expect(page.getByRole("group", { name: "Congé des dates touchées" }).getByRole("button", { name: /^CA/ })).toBeVisible();
-  await expect(request.getByText("Choix courants")).toHaveCount(0);
-  const advanced = request.locator(".request-advanced-types");
-  await expect(advanced).not.toHaveAttribute("open", "");
-  await advanced.getByText("Autres types de congé").click();
-  await expect(advanced.getByRole("button", { name: /Congé CET/ })).toBeVisible();
+  await expect(request.getByRole("heading", { name: "Nouveau congé" })).toBeVisible();
+  const typePill = request.getByRole("button", { name: "Choisir le type d’absence" });
+  await expect(typePill).toContainText("CA");
+  await typePill.click();
+  await expect(request.getByRole("menuitemradio", { name: /Compte épargne-temps \(CET\)/ })).toBeVisible();
+  await expect(request.getByRole("menuitemradio", { name: /Arrêt maladie/ })).toBeVisible();
+  await expect(request.getByRole("menuitemradio", { name: /Grève/ })).toBeVisible();
 });
 
 test("un CA choisi depuis une case se pose en journée entière, ou le matin ou l’après-midi aux heures choisies", async ({ page }) => {
@@ -6409,28 +6398,26 @@ test("un CA choisi depuis une case se pose en journée entière, ou le matin ou 
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
   await chooser.getByRole("button", { name: /^CA/ }).click();
   const request = page.locator("#request-panel");
-  // La durée se choisit au-dessus du planning : journée entière par défaut.
-  const duration = page.getByRole("group", { name: "Durée des dates touchées" });
-  await expect(duration.getByRole("button", { name: "Journée", exact: true })).toHaveAttribute("aria-pressed", "true");
-  const summary = request.getByLabel("Résumé avant validation");
-  await expect(summary).toContainText("Congés annuels");
+  const durationBtn = request.getByRole("button", { name: "Durée du congé" });
+  await expect(durationBtn).toContainText("Journée");
+  const summary = await openRequestDetail(request);
+  await expect(summary).toContainText("CA");
   // « Après-midi » vaut pour les dates touchées ensuite, aux heures saisies
   // dessous ; la date déjà choisie reste une journée : les deux se mélangent.
-  await duration.getByRole("button", { name: "Après-midi" }).click();
-  await expect(duration.getByRole("button", { name: "Après-midi" })).toHaveAttribute("aria-pressed", "true");
-  const hours = page.getByRole("group", { name: "Heures posées l’après-midi" });
+  await chooseRequestDuration(request, "Après-midi");
+  await expect(durationBtn).toContainText("Après-midi");
+  const hours = request.getByRole("group", { name: "Heures posées l’après-midi" });
   await hours.getByRole("combobox", { name: "Début — heures" }).selectOption("14");
   await hours.getByRole("combobox", { name: "Fin — heures" }).selectOption("17");
   await pickWorkDay(page, 1);
-  await expect(summary).toContainText("Congés annuels");
-  await expect(summary).toContainText("Congés en demi-journée");
-  await expect(summary).toContainText("14:00 → 17:00");
-  await duration.getByRole("button", { name: "Journée", exact: true }).click();
-  await expect(page.getByRole("group", { name: "Heures posées l’après-midi" })).toHaveCount(0);
+  await expect(summary).toContainText("CA");
+  await expect(summary).toContainText("½");
+  await chooseRequestDuration(request, "Journée");
+  await expect(request.getByRole("group", { name: "Heures posées l’après-midi" })).toHaveCount(0);
   // Puis d'un toucher sous la ligne CA de « Que voulez-vous poser ? » : les
   // heures d'abord, la date touchée est déjà une demi-journée du matin, et
-  // la durée se retrouve au-dessus du planning, pour les dates suivantes.
-  await request.getByRole("button", { name: "Annuler la demande" }).first().click();
+  // la durée se retrouve dans la fenêtre pour les dates suivantes.
+  await request.getByRole("button", { name: "Fermer" }).click();
   await page.locator(".month-card .day.work").first().click();
   await page.getByRole("dialog", { name: /2026/ }).getByRole("button", { name: /^Congé/ }).click();
   await chooser.getByRole("group", { name: "Durée du CA" }).getByRole("button", { name: "Matin" }).click();
@@ -6439,13 +6426,13 @@ test("un CA choisi depuis une case se pose en journée entière, ou le matin ou 
   await chooserHours.getByRole("combobox", { name: "Début — heures" }).selectOption("9");
   await chooserHours.getByRole("combobox", { name: "Fin — heures" }).selectOption("13");
   await chooserHours.getByRole("button", { name: "Choisir les dates" }).click();
-  await expect(duration.getByRole("button", { name: "Matin" })).toHaveAttribute("aria-pressed", "true");
-  await expect(summary).toContainText("Congés en demi-journée");
-  await expect(summary).toContainText("09:00 → 13:00");
-  await duration.getByRole("button", { name: "Journée", exact: true }).click();
+  await expect(durationBtn).toContainText("Matin");
+  const summary2 = await openRequestDetail(request);
+  await expect(summary2).toContainText("½");
+  await chooseRequestDuration(request, "Journée");
   await pickWorkDay(page, 1);
-  await expect(summary).toContainText("Congés annuels");
-  await expect(summary).toContainText("Congés en demi-journée");
+  await expect(summary2).toContainText("CA");
+  await expect(summary2.locator(".lrw-chip")).toHaveCount(2);
 });
 
 test("les RTT et le fractionnement se posent en journée entière", async ({ page }) => {
@@ -6456,35 +6443,31 @@ test("les RTT et le fractionnement se posent en journée entière", async ({ pag
     .click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
   const request = page.locator("#request-panel");
-  // Le congé et la durée des dates touchées, au-dessus du planning.
-  const nearCalendar = page.getByRole("group", { name: "Congé des dates touchées" });
-  const duration = page.getByRole("group", { name: "Durée des dates touchées" });
-  await expect(duration).toBeVisible();
+  const durationBtn = request.getByRole("button", { name: "Durée du congé" });
+  await expect(durationBtn).toBeVisible();
   // Ni demi-journée de RTT, ni de fractionnement : la durée disparaît.
-  const summary = request.getByLabel("Résumé avant validation");
-  await nearCalendar.getByRole("button", { name: /^RTT/ }).click();
-  await expect(duration).toHaveCount(0);
+  const summary = await openRequestDetail(request);
+  await chooseRequestType(request, /^RTT/);
+  await expect(durationBtn).toHaveCount(0);
   await expect(summary).toContainText("RTT");
-  await expect(summary).not.toContainText("demi-journée");
-  await nearCalendar.getByRole("button", { name: /^Fractionnement/ }).click();
-  await expect(duration).toHaveCount(0);
-  await expect(summary).not.toContainText("demi-journée");
+  await expect(summary).not.toContainText("½");
+  await chooseRequestType(request, /^Fractionnement/);
+  await expect(durationBtn).toHaveCount(0);
+  await expect(summary).not.toContainText("½");
   // De retour aux congés annuels, la durée revient.
-  await nearCalendar.getByRole("button", { name: /^CA/ }).click();
-  await expect(duration).toBeVisible();
+  await chooseRequestType(request, /^Congés annuels/);
+  await expect(durationBtn).toBeVisible();
   // Deux RTT, puis un CA dans la même demande ; les dates déjà choisies
   // gardent leur type.
-  await nearCalendar.getByRole("button", { name: /^RTT/ }).click();
-  await expect(nearCalendar.getByRole("button", { name: /^RTT/ })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("group", { name: "Durée des dates touchées" })).toHaveCount(0);
+  await chooseRequestType(request, /^RTT/);
+  await expect(durationBtn).toHaveCount(0);
   await pickWorkDay(page, 1);
-  await nearCalendar.getByRole("button", { name: /^CA/ }).click();
-  await expect(page.getByRole("group", { name: "Durée des dates touchées" })).toBeVisible();
+  await chooseRequestType(request, /^Congés annuels/);
+  await expect(durationBtn).toBeVisible();
   await pickWorkDay(page, 2);
-  await expect(nearCalendar.getByRole("button", { name: /^RTT/ })).toContainText("2");
-  await expect(nearCalendar.getByRole("button", { name: /^CA/ })).toContainText("1");
+  await expect(summary.locator(".lrw-chip")).toHaveCount(3);
   await expect(summary).toContainText("RTT");
-  await expect(summary).toContainText("Congés annuels");
+  await expect(summary).toContainText("CA");
 });
 
 test("pendant une demande, le congé et sa durée restent en haut de l’écran, et on n’annule que d’une façon", async ({ page }) => {
@@ -6493,25 +6476,17 @@ test("pendant une demande, le congé et sa durée restent en haut de l’écran,
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA / }).click();
   const request = page.locator("#request-panel");
   await expect(request).toBeVisible();
-  // Un seul jeu de commandes, un seul « Annuler la demande » (le bouton
-  // rouge en tête de panneau a disparu le 12 novembre 2026).
-  await expect(request.getByText("Choix courants")).toHaveCount(0);
-  await expect(page.getByRole("group", { name: "Durée du congé" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Annuler la demande" })).toHaveCount(1);
-  // Le bloc du planning suit le calendrier : descendu jusqu'aux dernières
-  // semaines, il reste en haut de l'écran, au-dessus des cases.
-  const block = page.locator(".planning-request-duration");
-  await expect(block).toHaveCSS("position", "sticky");
-  await page.locator(".month-card .day").last().evaluate((node) => node.scrollIntoView({ block: "end", behavior: "instant" }));
-  // Collé en haut sur un écran court, ou encore à sa place sur un grand :
-  // dans les deux cas visible, au-dessus des dernières cases.
-  await expect(block).toBeInViewport();
-  const [blockBox, lastDay] = await Promise.all([block.boundingBox(), page.locator(".month-card .day").last().boundingBox()]);
-  expect(lastDay!.y).toBeGreaterThan(blockBox!.y + blockBox!.height);
+  await expect(request.getByRole("button", { name: "Fermer" })).toHaveCount(1);
+  // Toute la fenêtre condensée tient dans l'écran, les sélecteurs au-dessus du calendrier.
+  const dropBar = request.locator(".lrw-drop-bar");
+  await expect(dropBar).toBeInViewport();
+  const [barBox, lastDay] = await Promise.all([dropBar.boundingBox(), request.locator(".day").last().boundingBox()]);
+  expect(lastDay!.y).toBeGreaterThan(barBox!.y + barBox!.height);
   // Un type changé d'en haut vaut pour les cases touchées ensuite.
-  await block.getByRole("button", { name: /^RTT/ }).click();
-  await page.locator(".month-card .day.work").last().click();
-  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
+  await chooseRequestType(request, /^RTT/);
+  await request.locator(".day.work").last().click();
+  const detail = await openRequestDetail(request);
+  await expect(detail).toContainText("RTT");
 });
 
 test("sans CA restant, une demi-journée de CA est bloquée ; en RTT, elle devient une journée entière", async ({ page }) => {
@@ -6541,14 +6516,15 @@ test("sans CA restant, une demi-journée de CA est bloquée ; en RTT, elle devie
     .click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
   const request = page.locator("#request-panel");
-  await page.getByRole("group", { name: "Durée des dates touchées" }).getByRole("button", { name: "Matin" }).click();
+  await chooseRequestDuration(request, "Matin");
   // Plus de CA : la demi-journée de CA ne s'enregistre pas ; passée en RTT,
   // qui ne se pose pas en demi-journée, elle devient une journée entière.
-  const save = request.getByRole("button", { name: "Enregistrer sans formulaire" });
+  const save = request.locator(".lrw-cta");
   await expect(save).toBeDisabled();
-  await page.getByRole("group", { name: "Congé des dates touchées" }).getByRole("button", { name: /^RTT/ }).click();
-  await expect(request.getByLabel("Résumé avant validation")).toContainText("RTT");
-  await expect(request.getByLabel("Résumé avant validation")).not.toContainText("demi-journée");
+  await chooseRequestType(request, /^RTT/);
+  const detail = await openRequestDetail(request);
+  await expect(detail).toContainText("RTT");
+  await expect(detail).not.toContainText("½");
   await expect(save).toBeEnabled();
 });
 
@@ -6568,21 +6544,24 @@ test("une récupération propose les cinq choix ensemble", async ({ page }) => {
     .click();
   const recoveryPanel = page.locator("#request-panel");
   await expect(page.getByRole("dialog", { name: "Choisissez les horaires" })).toHaveCount(0);
-  await expect(recoveryPanel.getByRole("group", { name: "Choisir le type de récupération" }).getByRole("button")).toHaveCount(5);
-  await recoveryPanel.getByRole("button", { name: "Récupération en journée" }).click();
-  let durationDialog = page.getByRole("dialog", { name: "Choisissez les horaires" });
+  const modeBtn = recoveryPanel.getByRole("button", { name: "Mode de récupération" });
+  await modeBtn.click();
+  await expect(recoveryPanel.getByRole("menu", { name: "Modes de récupération" }).getByRole("menuitemradio")).toHaveCount(5);
+  await recoveryPanel.getByRole("menuitemradio", { name: "Journée entière" }).click();
+  const durationDialog = page.getByRole("dialog", { name: "Choisissez les horaires" });
   await setClockTime(durationDialog, "Heure de début", "09:00");
   await setClockTime(durationDialog, "Heure de fin", "17:00");
   await durationDialog.getByRole("button", { name: "Valider les horaires" }).click();
-  await expect(recoveryPanel.getByRole("button", { name: "Récupération jour férié" })).toBeVisible();
-  await expect(recoveryPanel.getByRole("button", { name: "Formation" })).toBeVisible();
-  await recoveryPanel.getByRole("button", { name: /Récupération en heures/ }).click();
+  await modeBtn.click();
+  await expect(recoveryPanel.getByRole("menuitemradio", { name: /Récup\. jour férié/ })).toBeVisible();
+  await expect(recoveryPanel.getByRole("menuitemradio", { name: /Récup\. formation/ })).toBeVisible();
+  await recoveryPanel.getByRole("menuitemradio", { name: /En heures/ }).click();
   const timeDialog = page.getByRole("dialog", { name: "Choisissez les horaires" });
   await setClockTime(timeDialog, "Heure de début", "10:00");
   await setClockTime(timeDialog, "Heure de fin", "12:30");
   await timeDialog.getByRole("button", { name: "Valider les horaires" }).click();
-  await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("2 h 30 déduites");
-  await recoveryPanel.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
+  await expect(recoveryPanel.locator(".lrw-cta")).toContainText("2 h 30");
+  await saveRequestPlanningOnly(recoveryPanel);
 
   // 10 h – 12 h 30 : la case se coupe en deux, la moitié du matin (à gauche)
   // en corail avec « 2h30 ».
@@ -6603,39 +6582,28 @@ test("une récupération lancée depuis une case suit aussi le calendrier", asyn
     .click();
   const recoveryPanel = page.locator("#request-panel");
   await expect(page.getByRole("dialog", { name: "Choisissez les horaires" })).toHaveCount(0);
-  await expect(recoveryPanel.getByRole("button", { name: "Récupération en journée" })).toBeVisible();
-  await recoveryPanel.getByRole("button", { name: "Récupération en journée" }).click();
+  await chooseRequestDuration(recoveryPanel, "Journée entière");
   let durationDialog = page.getByRole("dialog", { name: "Choisissez les horaires" });
   await setClockTime(durationDialog, "Heure de début", "09:00");
   await setClockTime(durationDialog, "Heure de fin", "17:00");
   await durationDialog.getByRole("button", { name: "Valider les horaires" }).click();
-  await expect(recoveryPanel.getByLabel("Résumé avant validation").getByText("1 date", { exact: true })).toBeVisible();
-  await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("Vous n’avez plus d’heures de récupération disponibles.");
-  await expect(recoveryPanel.getByRole("button", { name: "Récupération en journée" })).toHaveClass(/active/);
-  await recoveryPanel.getByRole("button", { name: "Formation" }).click();
+  await expect(recoveryPanel.locator(".lrw-detail-toggle")).toContainText("1 date choisie");
+  await expect(recoveryPanel.locator(".lrw-alert")).toContainText("Vous n’avez plus d’heures de récupération disponibles.");
+  await chooseRequestDuration(recoveryPanel, /Récup\. formation/);
   durationDialog = page.getByRole("dialog", { name: "Choisissez les horaires" });
   await setClockTime(durationDialog, "Heure de début", "10:00");
   await setClockTime(durationDialog, "Heure de fin", "16:00");
   await durationDialog.getByRole("button", { name: "Valider les horaires" }).click();
-  await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("6 h déduites");
-  await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("Formation");
-  await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("Vous n’avez plus d’heures de récupération disponibles.");
-  await recoveryPanel.getByRole("button", { name: "Récupération en demi-journée" }).click();
+  await expect(recoveryPanel.locator(".lrw-cta")).toContainText("6 h");
+  await expect(recoveryPanel.locator(".lrw-alert")).toContainText("Vous n’avez plus d’heures de récupération disponibles.");
+  await chooseRequestDuration(recoveryPanel, "Demi-journée");
   durationDialog = page.getByRole("dialog", { name: "Choisissez les horaires" });
   await setClockTime(durationDialog, "Heure de début", "09:00");
   await setClockTime(durationDialog, "Heure de fin", "13:00");
   await durationDialog.getByRole("button", { name: "Valider les horaires" }).click();
-  await expect(recoveryPanel.getByLabel("Résumé avant validation")).toContainText("4 h déduites");
-  await expect(recoveryPanel.getByRole("button", { name: "Enregistrer et préparer le formulaire" })).toBeDisabled();
-  const directPlanningChoice = recoveryPanel.getByRole("button", { name: "Enregistrer sans formulaire" });
-  await expect(directPlanningChoice).toBeVisible();
-  await expect(directPlanningChoice).toBeDisabled();
-  await expect(directPlanningChoice).toHaveClass(/request-planning-choice/);
-  await expect(directPlanningChoice).toHaveCSS("border-radius", "12px");
-  // Sous les deux enregistrements, l'abandon de la demande reste un simple lien.
-  const cancel = recoveryPanel.getByRole("button", { name: "Annuler la demande" }).last();
-  await expect(cancel).toHaveClass(/request-cancel-link/);
-  await expect(cancel).toBeEnabled();
+  await expect(recoveryPanel.locator(".lrw-cta")).toContainText("4 h");
+  await expect(recoveryPanel.locator(".lrw-cta")).toBeDisabled();
+  await expect(recoveryPanel.getByRole("button", { name: "Fermer" })).toBeEnabled();
 });
 
 test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page }) => {
@@ -6655,8 +6623,8 @@ test("les congés mensuels affichent les repères CA RTT et FRA", async ({ page 
       name: index === 0 ? /^CA / : index === 1 ? /^RTT/ : /^Fractionnement/,
     }).click();
     const request = page.locator("#request-panel");
-    await day.click();
-    await request.getByRole("button", { name: "Enregistrer sans formulaire" }).click();
+    await pickWorkDay(page, index);
+    await saveRequestPlanningOnly(request);
     await expect(day.getByText(choices[index].marker, { exact: true })).toBeVisible();
   }
 });
@@ -6672,17 +6640,17 @@ test("une demande mixte accepte 3 CA, 2 RTT et 3 CET", async ({ page }) => {
     .getByRole("button", { name: /^CA / })
     .click();
   const request = page.locator("#request-panel");
-  await expect(request).toContainText("Une même demande peut mélanger plusieurs types.");
   for (let index = 0; index < 3; index += 1) await pickWorkDay(page, index);
-  await page.getByRole("group", { name: "Congé des dates touchées" }).getByRole("button", { name: /^RTT/ }).click();
+  await chooseRequestType(request, /^RTT/);
   for (let index = 3; index < 5; index += 1) await pickWorkDay(page, index);
-  await request.locator(".request-advanced-types > summary").click();
-  await request.getByRole("button", { name: "Congé CET", exact: true }).click();
+  await chooseRequestType(request, /Compte épargne-temps \(CET\)/);
   for (let index = 5; index < 8; index += 1) await pickWorkDay(page, index);
-  const summary = request.getByLabel("Résumé avant validation");
-  await expect(summary).toContainText(/\d+ CA restants?/);
-  await expect(summary).toContainText(/\d+ RTT restants?/);
-  await expect(request.getByRole("button", { name: /^Congé CET/ })).toContainText("3");
+  await expect(request.locator(".lrw-detail-toggle")).toContainText("8 dates choisies");
+  const summary = await openRequestDetail(request);
+  await expect(summary.locator(".lrw-chip")).toHaveCount(8);
+  await expect(summary).toContainText("CA");
+  await expect(summary).toContainText("RTT");
+  await expect(summary).toContainText("CET");
 });
 
 test("une demande plus longue que le solde restant ne peut pas être validée", async ({ page }) => {
@@ -6695,11 +6663,10 @@ test("une demande plus longue que le solde restant ne peut pas être validée", 
     .getByRole("button", { name: /^Fractionnement/ })
     .click();
   const request = page.locator("#request-panel");
-  for (let index = 0; index < 3; index += 1) await workDays.nth(index).click();
-  await expect(request.getByLabel("Résumé avant validation"))
+  for (let index = 0; index < 3; index += 1) await pickWorkDay(page, index);
+  await expect(request.locator(".lrw-alert"))
     .toContainText(/Il ne vous reste|Vous n’avez plus de jours de fractionnement/);
-  await expect(request.getByRole("button", { name: "Enregistrer sans formulaire" })).toBeDisabled();
-  await expect(request.getByRole("button", { name: "Enregistrer et préparer le formulaire" })).toBeDisabled();
+  await expect(request.locator(".lrw-cta")).toBeDisabled();
 });
 
 test("nettoyage et gestion d’un congé utilisent des actions directes", async ({ page }) => {
@@ -6760,36 +6727,26 @@ test("les parcours congé, récupération et maladie s’ouvrent correctement", 
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^CA / })
     .click();
-  await expect(page.getByRole("heading", { name: "Sélectionnez vos congés" })).toBeVisible();
-  await page.locator(".month-card .day").first().click();
-  await expect(page.getByLabel("Résumé avant validation")).toBeVisible();
-  await page.getByRole("button", { name: "Annuler la demande" }).first().click();
+  const request = page.locator("#request-panel");
+  await expect(request.getByRole("heading", { name: "Nouveau congé" })).toBeVisible();
+  await pickWorkDay(page, 0);
+  await expect(request.locator(".lrw-detail-toggle")).toContainText("1 date choisie");
+  await request.getByRole("button", { name: "Fermer" }).click();
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   await page.getByRole("dialog", { name: "Poser un congé" })
     .getByRole("button", { name: /^Récupération/ })
     .click();
-  const recovery = page.locator("#request-panel");
-  await expect(recovery.locator(".type-tabs > button")).toHaveCount(5);
-  await expect(recovery.getByRole("button", { name: /formation/i })).toBeVisible();
-  await recovery.getByRole("button", { name: "Annuler la demande" }).first().click();
+  await request.getByRole("button", { name: "Mode de récupération" }).click();
+  await expect(request.getByRole("menu", { name: "Modes de récupération" }).getByRole("menuitemradio")).toHaveCount(5);
+  await expect(request.getByRole("menuitemradio", { name: /formation/i })).toBeVisible();
+  await request.getByRole("button", { name: "Fermer" }).click();
 
   await page.locator(".planning-leave-panel .planning-leave-action").click();
   const sickChooser = page.getByRole("dialog", { name: "Poser un congé" });
   await sickChooser.getByRole("button", { name: /^Maladie/ }).click();
-  await expect(page.getByRole("heading", { name: "Sélectionnez votre arrêt maladie" })).toBeVisible();
-  const sickElementsOverlap = await page.locator(".sick-request-options").evaluate((panel) => {
-    const choice = panel.querySelector(".type-tabs button")!.getBoundingClientRect();
-    const help = panel.querySelector(".request-help")!.getBoundingClientRect();
-    return (
-      choice.x < help.x + help.width &&
-      choice.x + choice.width > help.x &&
-      choice.y < help.y + help.height &&
-      choice.y + choice.height > help.y
-    );
-  });
-  expect(sickElementsOverlap).toBe(false);
-  await page.getByRole("button", { name: "Annuler la demande" }).first().click();
+  await expect(request.getByRole("heading", { name: "Arrêt maladie" })).toBeVisible();
+  await request.getByRole("button", { name: "Fermer" }).click();
 });
 
 test("les dates choisies sont préremplies dans le formulaire de congé", async ({ page }) => {
@@ -6800,11 +6757,12 @@ test("les dates choisies sont préremplies dans le formulaire de congé", async 
     .getByRole("button", { name: /^CA / })
     .click();
 
+  const request = page.locator("#request-panel");
   await pickWorkDay(page);
-  await expect(page.getByLabel("Résumé avant validation")).toBeVisible();
+  await expect(request.locator(".lrw-detail-toggle")).toContainText("1 date choisie");
   await Promise.all([
     page.waitForURL(/\/formulaire\/index\.html\?planning=1/),
-    page.getByRole("button", { name: "Enregistrer et préparer le formulaire" }).click(),
+    saveRequestWithForm(request),
   ]);
 
   const handoff = await page.evaluate(() =>
@@ -7823,19 +7781,36 @@ test("une date d’inscription à un mécénat se retient en déclaration, ou s�
   await card.getByRole("button", { name: "Mes dates d’inscription" }).click();
   const signups = page.getByRole("region", { name: "Mes dates d’inscription" });
   await expect(signups).toContainText("Aucune date d’inscription pour l’instant.");
-  // Deux dates notées : elles s'affichent dans l'ordre, et le bouton les compte.
+  // Deux dates notées dans le mini-calendrier : elles s'affichent dans l'ordre, et on peut les modifier, retenir ou effacer.
+  const pickMiniCalendarDate = async (container: Locator, target: Date) => {
+    const targetMonth = target.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+    for (let step = 0; step < 6; step += 1) {
+      const heading = (await container.locator(".mecenat-mini-cal-head strong").textContent())?.trim().toLowerCase() ?? "";
+      if (heading === targetMonth.toLowerCase()) break;
+      await container.getByRole("button", { name: "Mois suivant" }).click();
+    }
+    const dayLabel = target.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    await container.getByRole("button", { name: new RegExp(`^${dayLabel}$`, "i") }).click();
+  };
   const first = addDays(new Date(), 12);
   const second = addDays(new Date(), 5);
+  const editedFirst = addDays(new Date(), 13);
   for (const date of [first, second]) {
-    await signups.getByLabel("Date d’inscription").fill(dateKey(date));
-    await setClockTime(signups, "Heure de début", "19:00");
-    await setClockTime(signups, "Heure de fin", "22:00");
-    await signups.getByRole("button", { name: "Ajouter" }).click();
+    await pickMiniCalendarDate(signups.locator(".mecenat-signups-add"), date);
+    await setClockTime(signups.locator(".mecenat-signups-add"), "Heure de début", "19:00");
+    await setClockTime(signups.locator(".mecenat-signups-add"), "Heure de fin", "22:00");
+    await signups.locator(".mecenat-signups-submit").click();
   }
   await expect(signups.locator("li").first()).toContainText("19:00 → 22:00");
   await expect(signups.locator("li")).toHaveCount(2);
   await expect(signups.locator("li").first()).toContainText(String(second.getDate()));
   await expect(card.getByRole("button", { name: "Masquer mes dates d’inscription" })).toBeVisible();
+  // Modification en ligne via le mini-calendrier de la ligne.
+  await signups.locator("li").last().getByRole("button", { name: /^Modifier/ }).click();
+  const inlineEdit = signups.locator(".mecenat-signup-edit");
+  await pickMiniCalendarDate(inlineEdit, editedFirst);
+  await inlineEdit.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(signups.locator("li").last()).toContainText(String(editedFirst.getDate()));
   // Retenue : la déclaration s'ouvre, la date déjà remplie ; enregistrée,
   // la date quitte les inscriptions et le mécénat rejoint l'historique.
   await signups.locator("li").first().getByRole("button", { name: /^Retenir/ }).click();
@@ -7847,7 +7822,7 @@ test("une date d’inscription à un mécénat se retient en déclaration, ou s�
   await dialog.getByRole("button", { name: "Enregistrer le mécénat" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(signups.locator("li")).toHaveCount(1);
-  await expect(signups.locator("li").first()).toContainText(String(first.getDate()));
+  await expect(signups.locator("li").first()).toContainText(String(editedFirst.getDate()));
   await expect(card.locator(".overtime-balance-heading strong")).toContainText("1 enregistré");
   // Effacée, après confirmation : plus aucune date en attente.
   await signups.locator("li").first().getByRole("button", { name: /^Effacer/ }).click();
@@ -8303,8 +8278,8 @@ test("« Liste des raccourcis » ouvre, de n’importe quelle page, la page ou l
   await help.click();
   await sheet.getByRole("button", { name: /^Poser un congé/ }).click();
   await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA/ }).click();
-  await expect(page.locator(".planning-calendar-section .month-card")).toBeInViewport({ ratio: 0.6 });
-  await page.locator("#request-panel").getByRole("button", { name: "Annuler la demande" }).first().click();
+  await expect(page.locator("#request-panel")).toBeVisible();
+  await page.locator("#request-panel").getByRole("button", { name: "Fermer" }).click();
   await help.click();
   await sheet.getByRole("button", { name: /^Échanger un jour avec un collègue/ }).click();
   await expect(page.getByRole("dialog", { name: "Faire un échange" })).toBeVisible();
@@ -8835,4 +8810,52 @@ test("« Compris » sur une annonce d’exposition est retenu par le compte, d�
   await page.waitForLoadState("networkidle");
   await expect(notice).toHaveCount(0);
   expect(saves).toHaveLength(1);
+});
+
+test("la fenêtre de pose de congé et l’annulation sélective du mois fonctionnent de bout en bout", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-12-01T12:00:00"));
+  await prepareDemo(page);
+  await page.locator(".planning-leave-panel .planning-leave-action").click();
+  await page.getByRole("dialog", { name: "Poser un congé" }).getByRole("button", { name: /^CA / }).click();
+
+  const request = page.locator("#request-panel");
+  await expect(request).toBeVisible();
+  // Sélection de 3 journées travaillées + retrait dans le détail + demi-journée désélectionnable.
+  await pickWorkDay(page, 0);
+  await pickWorkDay(page, 1);
+  await pickWorkDay(page, 2);
+  await expect(request.locator(".lrw-detail-toggle")).toContainText("3 dates choisies");
+  const detail = await openRequestDetail(request);
+  await expect(detail.locator(".lrw-chip")).toHaveCount(3);
+  await detail.locator(".lrw-chip button").first().click();
+  await expect(detail.locator(".lrw-chip")).toHaveCount(2);
+  await request.getByRole("button", { name: "Tout effacer" }).click();
+  await expect(request.locator(".lrw-cta")).toBeDisabled();
+
+  // Un CA Matin se désélectionne bien au second toucher.
+  await chooseRequestDuration(request, "Matin");
+  await pickWorkDay(page, 0);
+  await expect(request.locator(".lrw-detail-toggle")).toContainText("1 date choisie");
+  await pickWorkDay(page, 0);
+  await expect(request.locator(".lrw-cta")).toBeDisabled();
+
+  // Enregistrement de 2 CA + 1 RTT dans le mois puis annulation sélective multi-périodes.
+  await chooseRequestDuration(request, "Journée");
+  await pickWorkDay(page, 0);
+  await pickWorkDay(page, 1);
+  await chooseRequestType(request, /^RTT/);
+  await pickWorkDay(page, 4);
+  await saveRequestPlanningOnly(request);
+  await expect(page.locator(".month-card .day.leave-day")).toHaveCount(3);
+
+  // Ouvrir le 1er jour posé, cliquer Annuler le congé : tous les jours posés du mois sont proposés.
+  await page.locator(".month-card .day.leave-day").first().click();
+  await page.getByRole("dialog").getByRole("button", { name: "Annuler le congé" }).click();
+  const deleteDialog = page.getByRole("alertdialog", { name: "Annuler cette période ?" });
+  await expect(deleteDialog).toContainText("Tous vos congés posés en décembre 2026");
+  await expect(deleteDialog.locator(".delete-period-day")).toHaveCount(3);
+  // 1er jour déjà sélectionné ; on ajoute le 3e (RTT) pour annuler 2 journées sur 2 blocs distincts.
+  await deleteDialog.locator(".delete-period-day").last().click();
+  await deleteDialog.getByRole("button", { name: "Annuler 2 journées" }).click();
+  await expect(page.locator(".month-card .day.leave-day")).toHaveCount(1);
 });

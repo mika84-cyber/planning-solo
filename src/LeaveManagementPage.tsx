@@ -25,6 +25,7 @@ export function workTimeHistoryItems(
 }
 
 type LeaveManagementPageProps = {
+  group?: number;
   balancesContent: ReactNode;
   /** Absences de 31 jours et plus, avec leur courrier de dérogation. */
   longAbsenceContent?: ReactNode;
@@ -64,6 +65,7 @@ type LeaveManagementPageProps = {
   onDeleteMecenat: (entry: MecenatEntry) => void;
   onToggleMecenatSignups: () => void;
   onAddMecenatSignup: (date: string, start: string, end: string) => void;
+  onUpdateMecenatSignup?: (signup: MecenatSignup, date: string, start: string, end: string) => void;
   onRetainMecenatSignup: (signup: MecenatSignup) => void;
   onDeleteMecenatSignup: (signup: MecenatSignup) => void;
   onToggleArchive: () => void;
@@ -72,6 +74,7 @@ type LeaveManagementPageProps = {
 };
 
 export function LeaveManagementPage({
+  group,
   balancesContent,
   longAbsenceContent,
   cetContent,
@@ -105,6 +108,7 @@ export function LeaveManagementPage({
   onDeleteMecenat,
   onToggleMecenatSignups,
   onAddMecenatSignup,
+  onUpdateMecenatSignup,
   onRetainMecenatSignup,
   onDeleteMecenatSignup,
   onToggleArchive,
@@ -292,7 +296,7 @@ export function LeaveManagementPage({
                 </button>
               </div>
               {mecenatSignupsOpen ? (
-                <MecenatSignupList signups={mecenatSignups} onAdd={onAddMecenatSignup} onRetain={onRetainMecenatSignup} onDelete={onDeleteMecenatSignup} />
+                <MecenatSignupList signups={mecenatSignups} group={group} onAdd={onAddMecenatSignup} onUpdate={onUpdateMecenatSignup} onRetain={onRetainMecenatSignup} onDelete={onDeleteMecenatSignup} />
               ) : null}
               {mecenatHistoryOpen ? (
                 <div className="overtime-history mecenat-history">

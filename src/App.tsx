@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { AuthScreen } from "./AuthScreen";
+import { cetBalance } from "./cet";
 import { grandPalaisExceptionalClosure } from "./grandPalaisClosures";
 import { resolvePublicDemoAccess } from "./demoAccess";
 import { ConnectionStatus } from "./ConnectionStatus";
@@ -586,6 +587,7 @@ export default function Home() {
     saveStrikeDateDirect,
     notify,
     isExchangeDate: (key) => Boolean(entries[key]?.exchangeId),
+    hasExistingAbsence: (key) => periods.some((period) => key >= period.from && key <= period.to),
     leaveDay: (key, type) => leaveDay(key, type),
   });
   const payMonthNavigation = usePayMonthNavigation({ payUi, allowancesSwipeStart });
@@ -603,7 +605,7 @@ export default function Home() {
     saveRecoveryRangeDates,
     deleteRecoveryUse,
     saveMecenatEntry,
-    deleteMecenatEntry, addMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
+    deleteMecenatEntry, addMecenatSignup, updateMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
     markMecenatsPaidEarly,
     deferMecenats,
     markOvertimePaidEarly,
@@ -688,6 +690,8 @@ export default function Home() {
     setRequestKind(null);
     setSickRequest(false);
     setSelections({});
+    planningUi.setRequestRangeMode(false);
+    planningUi.setRequestRangeAnchor(null);
     setWarningDate(null);
     setTimeDate(null);
   }
@@ -1032,7 +1036,7 @@ export default function Home() {
           actions={{
             openRequestChooser, openBlankForm, beginRequest, openManualAdjustments, saveCetAccount,
             deleteOvertimeEntry, deleteRecoveryUse, deleteMecenatEntry,
-            addMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
+            addMecenatSignup, updateMecenatSignup, deleteMecenatSignup, retainMecenatSignup,
           }}
         />
       ) : null}
@@ -1088,8 +1092,11 @@ export default function Home() {
         workTime={workTimeUi}
         request={{
           selectedList, selectedCounts, leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
+          cetRemaining: formProfile?.cetAccount?.enabled ? Math.max(0, cetBalance(formProfile.cetAccount) - cetPlannedLeaveDays) : 0,
           recoveryBalance, recoverySelectionInsufficient, recoverySelectionIncomplete,
-          cancelRequest, selectLeaveType, selectLeaveMoment, selectLeaveHours, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
+          cancelRequest, onSelectDay: handleDay,
+          hasExistingAbsence: (key) => periods.some((period) => key >= period.from && key <= period.to),
+          selectLeaveType, selectLeaveMoment, selectLeaveHours, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
         }}
         cleanup={{
           calendarDeleteMode, calendarDeleteDates, deletingMultipleDates,
@@ -1099,7 +1106,7 @@ export default function Home() {
         exchange={workExchangeUi}
         renderDay={renderDay}
         actions={{
-          openRequestChooser, chooseWishMoment, cancelRangeSelection, cancelNoteSelection, goToday, startMonthSwipe, endMonthSwipe,
+          openRequestChooser, beginRequest, chooseWishMoment, cancelRangeSelection, cancelNoteSelection, goToday, startMonthSwipe, endMonthSwipe,
           cancelRecoveryRangeSelection, saveRecoveryRangeDates, saveNoteAcrossDates, saveSeparateLeaveDates,
         }}
       />
@@ -1136,6 +1143,7 @@ export default function Home() {
           onSave: () => void saveManualAdjustments(),
         }}
         planning={planningUi}
+        periods={periods}
         workTime={workTimeUi}
         shell={appShellUi}
         toast={toastUi}

@@ -47,6 +47,7 @@ type DayPlanningState = Pick<
   | "setLeaveRangeTo"
   | "savingDay"
   | "setDeletingPeriod"
+  | "setDeletingPeriodDate"
   | "noteText"
   | "setNoteText"
   | "noteGroupId"
@@ -145,6 +146,7 @@ export function DayDetailDialog({
     setLeaveRangeTo,
     savingDay,
     setDeletingPeriod,
+    setDeletingPeriodDate,
     noteText,
     setNoteText,
     noteGroupId,
@@ -512,6 +514,7 @@ export function DayDetailDialog({
               periods={dayStoredPeriods}
               onEdit={editDayLeavePeriod}
               onDelete={(period) => {
+                setDeletingPeriodDate(dayDate);
                 setDayDate(null);
                 setDeletingPeriod(period);
               }}

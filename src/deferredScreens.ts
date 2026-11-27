@@ -13,7 +13,6 @@ export { LeaveManagementPage } from "./LeaveManagementPage";
 export { PayAllowancesSection } from "./PayAllowancesSection";
 export { PaySectionScreen } from "./PaySectionScreen";
 export { PdfDownloadPage } from "./PdfDownloadPage";
-export { RequestSelectionPanel } from "./RequestSelectionPanel";
 export {
   MecenatDialog,
   OvertimeDialog,

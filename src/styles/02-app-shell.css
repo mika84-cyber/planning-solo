@@ -431,6 +431,8 @@ h1 {
   animation: request-floating-review-in 0.18s ease-out;
 }
 .request-floating-review strong { font-weight: 800; }
+.request-floating-review .request-floating-warn { color: #a5283a; }
+.request-floating-review.is-blocked { border-color: #d68a7c; }
 .request-floating-review button {
   display: inline-flex;
   flex: none;

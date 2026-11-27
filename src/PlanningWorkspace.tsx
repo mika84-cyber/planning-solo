@@ -4,9 +4,7 @@ import { CalendarCleanupPanel, CalendarCleanupTrigger } from "./CalendarCleanup"
 import { PlanningCommandCenter } from "./PlanningCommandCenter";
 import { MonthCalendar } from "./PlanningView";
 import { MonthNavigation } from "./MonthNavigation";
-import { LeaveDurationControl } from "./LeaveDurationControl";
-import { LeaveTypeTabs } from "./LeaveTypeTabs";
-import { DURATION_LEAVE_TYPES, TYPE_COLORS, dateKey, localDate, type SchoolVacation, type SelectionType } from "./planningLogic";
+import { dateKey, fromKey, getDayInfo, localDate, type SchoolVacation } from "./planningLogic";
 import type { useAnnualPdfExport } from "./useAnnualPdfExport";
 import type { useAppShellUiState } from "./useAppShellUiState";
 import type { useLeaveBalances } from "./useLeaveBalances";
@@ -23,17 +21,7 @@ import type { useWorkExchangeActions } from "./useWorkExchangeActions";
 import type { useWorkTimeActions } from "./useWorkTimeActions";
 import type { useWorkTimeUiState } from "./useWorkTimeUiState";
 import { WorkExchangePanel } from "./WorkExchangePanel";
-
-/** Au-dessus du planning, les congés qu'on pose le plus, en libellés courts ;
- *  le type choisi dans le panneau s'il est autre s'y ajoute. */
-const CALENDAR_LEAVE_TYPES = ["annual", "rtt", "fraction"] as const;
-const CALENDAR_TYPE_LABELS: Partial<Record<SelectionType, string>> = {
-  annual: "CA",
-  fraction: "Fractionnement",
-  childcare: "Garde d’enfant",
-  exceptional: "Exceptionnel",
-  cet: "CET",
-};
+import type { SelectedDay } from "./appModel";
 
 const AnnualPdfActions = lazy(() =>
   import("./AnnualPdfActions").then(({ AnnualPdfActions: Component }) => ({ default: Component })),
@@ -45,16 +33,12 @@ const NoteSelectionPanel = lazy(() =>
 const RecoveryDatePickingPanel = lazy(() =>
   planningRequestPanelsModule().then(({ RecoveryDatePickingPanel: Component }) => ({ default: Component })),
 );
-// Les étapes 2 et 3 d'une demande : dans le morceau des écrans différés,
-// préparé au repos, et montées seulement pendant une demande.
-const RequestSelectionPanel = lazy(() =>
-  import("./deferredScreens").then(({ RequestSelectionPanel: Component }) => ({ default: Component })),
+const LeaveRequestWindow = lazy(() =>
+  import("./LeaveRequestWindow").then(({ LeaveRequestWindow: Component }) => ({ default: Component })),
 );
 const SchoolVacationMonthSummary = lazy(() =>
   import("./SchoolVacationUi").then(({ SchoolVacationMonthSummary: Component }) => ({ default: Component })),
 );
-
-type RequestSelectionProps = ComponentProps<typeof RequestSelectionPanel>;
 
 type Props = {
   now: Date;
@@ -77,22 +61,27 @@ type Props = {
     | "recoveryRangeSelecting" | "recoveryRangeDates" | "rangeSelecting" | "separatePeople" | "wishMoment"
     | "rangeLeaveType" | "separateDates" | "savingRange" | "noteSelecting" | "noteColor" | "noteText" | "noteDates"
     | "savingDay" | "requestKind" | "sickRequest" | "activeType" | "setActiveType" | "leaveMoment" | "leaveHours" | "savingRequest"
+    | "setSelections" | "requestRangeMode" | "setRequestRangeMode" | "requestRangeAnchor" | "setRequestRangeAnchor"
   >;
   workTime: Pick<
     ReturnType<typeof useWorkTimeUiState>,
     "recoveryDraft" | "setRecoveryDraft" | "savingOvertime" | "recoveryDatePicking" | "setRecoveryDatePicking" | "setRecoveryDialogOpen"
   >;
   /** La demande en cours : dates choisies, soldes et contrôles de l'étape. */
-  request: Pick<RequestSelectionProps, "selectedList" | "selectedCounts">
+  request: {
+    selectedList: SelectedDay[];
+    selectedCounts: Record<string, number>;
+    cetRemaining?: number;
+    recoverySelectionInsufficient: boolean;
+    recoverySelectionIncomplete: boolean;
+    cancelRequest: () => void;
+    onSelectDay: (date: Date) => void;
+    hasExistingAbsence?: (date: string) => boolean;
+  }
     & Pick<ReturnType<typeof useLeaveBalances>, "leaveRemainingByType" | "leaveRemainingByYear" | "leaveSelectionOverBalance">
     & Pick<ReturnType<typeof useMonthPayEstimate>, "recoveryBalance">
     & Pick<ReturnType<typeof useRequestTypeSelection>, "selectLeaveType" | "selectLeaveMoment" | "selectLeaveHours" | "selectRecoveryType">
-    & Pick<ReturnType<typeof usePlanningRequestActions>, "validateAndOpenForm" | "saveRequestToPlanning">
-    & {
-      recoverySelectionInsufficient: boolean;
-      recoverySelectionIncomplete: boolean;
-      cancelRequest: () => void;
-    };
+    & Pick<ReturnType<typeof usePlanningRequestActions>, "validateAndOpenForm" | "saveRequestToPlanning">;
   /** « Effacer plusieurs dates ou notes ». */
   cleanup: Pick<ReturnType<typeof usePlanningInteractionActions>, "startCalendarCleanup" | "cancelCalendarCleanup">
     & Pick<ReturnType<typeof usePlanningEntryActions>, "deleteMultiplePlanningDates">
@@ -106,7 +95,7 @@ type Props = {
   renderDay: ComponentProps<typeof MonthCalendar>["renderDay"];
   actions: Pick<
     ReturnType<typeof usePlanningInteractionActions>,
-    "chooseWishMoment" | "cancelRangeSelection" | "cancelNoteSelection" | "goToday" | "startMonthSwipe" | "endMonthSwipe"
+    "beginRequest" | "chooseWishMoment" | "cancelRangeSelection" | "cancelNoteSelection" | "goToday" | "startMonthSwipe" | "endMonthSwipe"
   >
     & Pick<ReturnType<typeof useWorkTimeActions>, "cancelRecoveryRangeSelection" | "saveRecoveryRangeDates">
     & Pick<ReturnType<typeof usePlanningEditorActions>, "saveNoteAcrossDates" | "saveSeparateLeaveDates">
@@ -130,15 +119,34 @@ export function PlanningWorkspace({
   const {
     recoveryRangeSelecting, recoveryRangeDates, rangeSelecting, separatePeople, wishMoment,
     rangeLeaveType, separateDates, savingRange, noteSelecting, noteColor, noteText, noteDates,
-    savingDay, requestKind, sickRequest, activeType, setActiveType, leaveMoment, leaveHours, savingRequest,
+    savingDay, requestKind, sickRequest, activeType, leaveMoment, leaveHours, savingRequest,
+    setSelections, requestRangeAnchor, setRequestRangeAnchor,
   } = planning;
   const { recoveryDraft, setRecoveryDraft, savingOvertime, recoveryDatePicking, setRecoveryDatePicking, setRecoveryDialogOpen } = workTime;
   const { monthWorkedDays, remainingWorkedDays } = workedDays;
   const {
-    selectedList, selectedCounts, leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance,
+    selectedList, leaveRemainingByType, leaveRemainingByYear, leaveSelectionOverBalance, cetRemaining,
     recoveryBalance, recoverySelectionInsufficient, recoverySelectionIncomplete,
-    cancelRequest, selectLeaveType, selectLeaveMoment, selectLeaveHours, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
+    cancelRequest, onSelectDay, hasExistingAbsence, selectLeaveType, selectLeaveMoment, selectLeaveHours, selectRecoveryType, validateAndOpenForm, saveRequestToPlanning,
   } = request;
+  const selectedCetDays = selectedList.filter((item) => {
+    if (item.type !== "cet") return false;
+    const info = getDayInfo(fromKey(item.date), group);
+    return !info.holiday && info.kind !== "off";
+  }).length;
+  const cetSelectionOverBalance = requestKind === "leave" && !sickRequest && selectedCetDays > 0 && cetRemaining !== undefined && selectedCetDays > Math.max(0, cetRemaining);
+  const removeSelectedDate = (date: string) => {
+    setSelections((current) => {
+      const next = { ...current };
+      delete next[date];
+      return next;
+    });
+    if (requestRangeAnchor === date) setRequestRangeAnchor(null);
+  };
+  const clearSelectedDates = () => {
+    setSelections({});
+    setRequestRangeAnchor(null);
+  };
   const {
     calendarDeleteMode, calendarDeleteDates, deletingMultipleDates,
     startCalendarCleanup, cancelCalendarCleanup, deleteMultiplePlanningDates,
@@ -146,7 +154,7 @@ export function PlanningWorkspace({
   const { pdfDialogOpen, setPdfDialogOpen, pdfExporting, exportAnnualPlanning } = pdf;
   const { exchanges: workExchanges, openNew: openWorkExchange, openEdit: editWorkExchange } = exchange;
   const {
-    openRequestChooser, chooseWishMoment, cancelRangeSelection, cancelNoteSelection, goToday, startMonthSwipe, endMonthSwipe,
+    openRequestChooser, beginRequest, chooseWishMoment, cancelRangeSelection, cancelNoteSelection, goToday, startMonthSwipe, endMonthSwipe,
     cancelRecoveryRangeSelection, saveRecoveryRangeDates, saveNoteAcrossDates, saveSeparateLeaveDates,
   } = actions;
   return (
@@ -254,30 +262,47 @@ export function PlanningWorkspace({
 
       {requestKind ? (
         <Suspense fallback={null}>
-      <RequestSelectionPanel
-        requestKind={requestKind}
-        sickRequest={sickRequest}
-        activeType={activeType}
-        setActiveType={setActiveType}
-        selectedList={selectedList}
-        selectedCounts={selectedCounts}
-        group={group}
-        workQuota={workQuota}
-        recoveryBalanceRemaining={recoveryBalance.remaining}
-        leaveRemainingByType={leaveRemainingByType}
-        leaveRemainingByYear={leaveRemainingByYear}
-        currentYear={now.getFullYear()}
-        savingRequest={savingRequest}
-        selectionBlocked={
-          recoverySelectionInsufficient ||
-          recoverySelectionIncomplete ||
-          leaveSelectionOverBalance
-        }
-        onCancel={cancelRequest}
-        onSelectRecoveryType={selectRecoveryType}
-        onValidateAndOpenForm={() => void validateAndOpenForm()}
-        onSaveToPlanning={() => void saveRequestToPlanning()}
-      />
+          <LeaveRequestWindow
+            requestKind={requestKind}
+            sickRequest={sickRequest}
+            activeType={activeType}
+            leaveMoment={leaveMoment}
+            leaveHours={leaveHoursFor(leaveHours, leaveMoment)}
+            view={view}
+            now={now}
+            group={group}
+            workQuota={workQuota}
+            selectedList={selectedList}
+            leaveRemainingByType={leaveRemainingByType}
+            leaveRemainingByYear={leaveRemainingByYear}
+            cetRemaining={cetRemaining}
+            recoveryBalanceRemaining={recoveryBalance.remaining}
+            savingRequest={savingRequest}
+            selectionBlocked={
+              recoverySelectionInsufficient ||
+              recoverySelectionIncomplete ||
+              leaveSelectionOverBalance ||
+              cetSelectionOverBalance
+            }
+            calendarSlide={calendarSlide}
+            hasExistingAbsence={hasExistingAbsence}
+            onStepMonth={(direction) => setView(localDate(view.getFullYear(), view.getMonth() + direction, 1))}
+            onSelectMonth={(year, month) => setView(localDate(year, month, 1))}
+            onToday={goToday}
+            onTouchStart={startMonthSwipe}
+            onTouchEnd={endMonthSwipe}
+            onSelectDay={onSelectDay}
+            onSelectLeaveType={selectLeaveType}
+            onSelectLeaveMoment={selectLeaveMoment}
+            onSelectLeaveHours={selectLeaveHours}
+            onSelectRecoveryType={selectRecoveryType}
+            onSwitchRequest={(kind, type) => beginRequest(kind, undefined, type)}
+            onRemoveDate={removeSelectedDate}
+            onClearDates={clearSelectedDates}
+            onValidateAndOpenForm={() => void validateAndOpenForm()}
+            onSaveToPlanning={() => void saveRequestToPlanning()}
+            onCancel={cancelRequest}
+          />
         </Suspense>
       ) : null}
 
@@ -294,35 +319,6 @@ export function PlanningWorkspace({
       ) : null}
 
       <section className="planning-calendar-section" aria-label="Planning et congés">
-      {/* Pendant une demande de congé, le congé des dates qu'on va toucher,
-          juste au-dessus d'elles — CA, RTT, fractionnement, et le type choisi
-          s'il est autre — puis, pour un CA, leur durée : un RTT, un CA et une
-          demi-journée se posent dans la même demande. C'est le seul endroit
-          où ils se choisissent ; le bloc reste en haut de l'écran pendant
-          qu'on fait défiler le calendrier (09-responsive-refinements.css). */}
-      {requestKind === "leave" && !sickRequest ? (
-        <div className="planning-request-duration">
-          <span className="leave-moment-label" aria-hidden="true">Dates touchées</span>
-          <LeaveTypeTabs
-            types={(CALENDAR_LEAVE_TYPES as readonly SelectionType[]).includes(activeType) ? CALENDAR_LEAVE_TYPES : [...CALENDAR_LEAVE_TYPES, activeType]}
-            activeType={activeType}
-            selectedCounts={selectedCounts}
-            labels={CALENDAR_TYPE_LABELS}
-            ariaLabel="Congé des dates touchées"
-            onSelect={selectLeaveType}
-          />
-          {(DURATION_LEAVE_TYPES as readonly string[]).includes(activeType) ? (
-            <LeaveDurationControl
-              moment={leaveMoment}
-              hours={leaveHoursFor(leaveHours, leaveMoment)}
-              color={TYPE_COLORS[activeType]}
-              ariaLabel="Durée des dates touchées"
-              onSelectMoment={selectLeaveMoment}
-              onChangeHours={selectLeaveHours}
-            />
-          ) : null}
-        </div>
-      ) : (
       <div className="planning-leave-panel">
         <button
           className="primary-action planning-leave-action"
@@ -339,7 +335,6 @@ export function PlanningWorkspace({
           Faire un échange
         </button>
       </div>
-      )}
 
       {showSchoolVacations ? (
         <Suspense fallback={null}>
@@ -352,12 +347,6 @@ export function PlanningWorkspace({
         onTouchStart={startMonthSwipe}
         onTouchEnd={endMonthSwipe}
       >
-        {/* Le mois en tête du calendrier, toujours (depuis le 9 novembre
-            2026), et seul endroit où l'on change de période : son titre ouvre
-            le panneau du mois (année, douze mois, Aujourd'hui), ses flèches
-            l'encadrent. Pendant une demande, un souhait ou une récupération,
-            le panneau de la demande sépare le haut de la carte de la grille :
-            c'est ici qu'on lit et change le mois qu'on touche. */}
         <MonthNavigation
           year={view.getFullYear()}
           month={view.getMonth()}

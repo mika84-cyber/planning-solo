@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { MecenatSignupList } from "./MecenatSignupList";
 
 describe("MecenatSignupList", () => {
-  it("liste les dates d'inscription, la plus proche d'abord, avec « Retenir » et « Effacer »", () => {
+  it("liste les dates d'inscription, la plus proche d'abord, avec « Retenir », « Modifier » et « Effacer »", () => {
     const html = renderToStaticMarkup(
       <MecenatSignupList
         signups={[
@@ -11,6 +11,7 @@ describe("MecenatSignupList", () => {
           { id: "a", date: "2026-10-03", start: "", end: "", updatedAt: "" },
         ]}
         onAdd={vi.fn()}
+        onUpdate={vi.fn()}
         onRetain={vi.fn()}
         onDelete={vi.fn()}
         today={new Date(2026, 9, 24)}
@@ -20,9 +21,13 @@ describe("MecenatSignupList", () => {
     // La date passée sans suite se signale ; la suivante attend.
     expect(html).toMatch(/<li class="is-past"><time dateTime="2026-10-03"><b>Samedi 3 octobre<\/b><small>date passée · à retenir ou à effacer<\/small>[\s\S]*<li><time dateTime="2026-11-14"><b>Samedi 14 novembre<\/b><small>19:00 → 22:30 · en attente<\/small>/);
     expect(html).toContain('aria-label="Retenir le 3 octobre"');
+    expect(html).toContain('aria-label="Modifier le 3 octobre"');
+    expect(html).toContain('aria-label="Modifier le 14 novembre"');
     expect(html).toContain('aria-label="Effacer le 14 novembre"');
     expect(html).toContain("2 dates en attente");
-    expect(html).toContain('type="date"');
+    expect(html).toContain('aria-label="Calendrier des dates d’inscription"');
+    expect(html).toContain('aria-label="Mois précédent"');
+    expect(html).toContain('aria-label="Mois suivant"');
     expect(html).toContain("Heure de début");
     expect(html).toContain("Heure de fin");
   });
