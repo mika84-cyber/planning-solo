@@ -407,17 +407,19 @@ export function DayDetailDialog({
             {entries[dayDate]?.wish &&
               !dayLeave && (
                 <div className="wish-decision">
-                  <p>
-                    {entries[dayDate]?.wishMoment
-                      ? `Congé souhaité ${entries[dayDate]?.wishMoment === "morning" ? "le matin" : "l’après-midi"}`
-                      : "Congé souhaité"}
-                    , en attente de validation. Il ne compte pas dans votre
-                    solde.
-                  </p>
-                  <div>
+                  <div className="wish-decision-head">
+                    <span className="wish-decision-badge">
+                      <i aria-hidden="true" />
+                      {entries[dayDate]?.wishMoment
+                        ? `Congé souhaité ${entries[dayDate]?.wishMoment === "morning" ? "le matin" : "l’après-midi"}`
+                        : "Congé souhaité"}
+                    </span>
+                    <p>En attente de validation · hors solde</p>
+                  </div>
+                  <div className="wish-decision-actions">
                     <button
                       type="button"
-                      className="save-button"
+                      className="wish-convert-one"
                       onClick={() => convertWishDate(dayDate)}
                     >
                       Transformer en congé

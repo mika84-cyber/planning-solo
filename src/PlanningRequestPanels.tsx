@@ -390,9 +390,11 @@ export function WishConversionDialog({
       style={{ "--type-color": TYPE_COLORS[wishChoiceType(choice)] } as CSSProperties}
       onClick={onClick}
     >
+      <i aria-hidden="true" />
       {label}
     </button>
   );
+  const onlyCancelling = !toConvert.length && toCancel.length > 0;
   return (
     <div
       className="modal-backdrop"
@@ -405,24 +407,26 @@ export function WishConversionDialog({
         aria-modal="true"
         aria-labelledby="wish-conversion-title"
       >
-        <button className="modal-close" type="button" onClick={onClose} aria-label="Fermer">
-          ×
-        </button>
-        <span className="step-label">Congés souhaités</span>
-        <h2 id="wish-conversion-title">
-          {dates.length > 1 ? `Transformer ${dates.length} souhaits` : "Transformer ce souhait"}
-        </h2>
-        <p>Choisissez la nature des souhaits à transformer. Une ligne laissée vide reste un souhait. Vos soldes seront vérifiés à l’étape suivante.</p>
-        {dates.length > 1 ? (
-          <div className="wish-conversion-all">
-            <span>Tout en :</span>
-            <div className="wish-conversion-chips" role="group" aria-label="Appliquer une nature à tous les souhaits">
-              {WISH_MAIN_CHOICES.map(({ choice, label }) =>
-                chip(choice, label, allSame(choice), () => setAll(choice), `Tout en ${label}`),
-              )}
+        <div className="wish-conversion-head">
+          <button className="modal-close" type="button" onClick={onClose} aria-label="Fermer">
+            ×
+          </button>
+          <span className="step-label">Congés souhaités</span>
+          <h2 id="wish-conversion-title">
+            {dates.length > 1 ? `Transformer ${dates.length} souhaits` : "Transformer ce souhait"}
+          </h2>
+          <p>Choisissez la nature des souhaits à transformer. Une ligne laissée vide reste un souhait. Vos soldes seront vérifiés à l’étape suivante.</p>
+          {dates.length > 1 ? (
+            <div className="wish-conversion-all">
+              <span>Tout en :</span>
+              <div className="wish-conversion-chips" role="group" aria-label="Appliquer une nature à tous les souhaits">
+                {WISH_MAIN_CHOICES.map(({ choice, label }) =>
+                  chip(choice, label, allSame(choice), () => setAll(choice), `Tout en ${label}`),
+                )}
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
         <ul className="wish-conversion-list">
           {dates.map((date) => {
             const current = choices[date];
@@ -430,10 +434,17 @@ export function WishConversionDialog({
             const cancelled = current === WISH_CANCEL;
             const otherSelected = cancelled || WISH_OTHER_CHOICES.some(({ choice }) => choice === current);
             const moment = moments[date];
+            const rawDate = wishDateLabel(date);
+            const displayDate = rawDate.charAt(0).toUpperCase() + rawDate.slice(1);
+            const rowTone = current && !cancelled ? TYPE_COLORS[wishChoiceType(current as WishChoice)] : undefined;
             return (
-              <li key={date} className={cancelled ? "cancelled" : current ? undefined : "kept"}>
+              <li
+                key={date}
+                className={cancelled ? "cancelled" : current ? "picked" : "kept"}
+                style={rowTone ? ({ "--row-tone": rowTone } as CSSProperties) : undefined}
+              >
                 <span className="wish-conversion-date">
-                  {wishDateLabel(date)}
+                  {displayDate}
                   {moment ? <small>{moment === "morning" ? "matin" : "après-midi"}</small> : null}
                 </span>
                 <div className="wish-conversion-chips" role="group" aria-label={`Nature du ${longLabel}`}>
@@ -466,30 +477,32 @@ export function WishConversionDialog({
             );
           })}
         </ul>
-        <p className="wish-conversion-summary" aria-live="polite">
-          {toConvert.length || toCancel.length
-            ? [
-                toConvert.length || toCancel.length < dates.length
-                  ? wishConversionSummary(convertChoices, dates.length - toCancel.length, moments)
-                  : "",
-                toCancel.length ? `${toCancel.length} ${toCancel.length > 1 ? "souhaits annulés" : "souhait annulé"}` : "",
-              ].filter(Boolean).join(" · ")
-            : "Aucune nature choisie : tout reste en souhait."}
-        </p>
-        <button
-          className="validate-button wish-conversion-continue"
-          type="button"
-          disabled={!toConvert.length && !toCancel.length}
-          onClick={() => onContinue(convertChoices, toCancel)}
-        >
-          {!toConvert.length && !toCancel.length
-            ? "Choisissez au moins une nature"
-            : !toConvert.length
-              ? `Annuler ${toCancel.length > 1 ? `${toCancel.length} souhaits` : "ce souhait"}`
-            : toConvert.length === dates.length
-              ? "Continuer"
-              : `Continuer avec ${toConvert.length} ${toConvert.length > 1 ? "congés" : "congé"}`}
-        </button>
+        <footer className="wish-conversion-foot">
+          <p className="wish-conversion-summary" aria-live="polite">
+            {toConvert.length || toCancel.length
+              ? [
+                  toConvert.length || toCancel.length < dates.length
+                    ? wishConversionSummary(convertChoices, dates.length - toCancel.length, moments)
+                    : "",
+                  toCancel.length ? `${toCancel.length} ${toCancel.length > 1 ? "souhaits annulés" : "souhait annulé"}` : "",
+                ].filter(Boolean).join(" · ")
+              : "Aucune nature choisie : tout reste en souhait."}
+          </p>
+          <button
+            className={`wish-conversion-continue${onlyCancelling ? " is-cancel" : ""}`}
+            type="button"
+            disabled={!toConvert.length && !toCancel.length}
+            onClick={() => onContinue(convertChoices, toCancel)}
+          >
+            {!toConvert.length && !toCancel.length
+              ? "Choisissez au moins une nature"
+              : !toConvert.length
+                ? `Annuler ${toCancel.length > 1 ? `${toCancel.length} souhaits` : "ce souhait"}`
+              : toConvert.length === dates.length
+                ? "Continuer"
+                : `Continuer avec ${toConvert.length} ${toConvert.length > 1 ? "congés" : "congé"}`}
+          </button>
+        </footer>
       </section>
     </div>
   );

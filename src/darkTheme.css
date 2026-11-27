@@ -337,3 +337,24 @@ html[data-theme="dark"] .mecenat-mini-cal-day.off:not(.sel) { border-color: rgba
 html[data-theme="dark"] .mecenat-mini-cal-day.training:not(.sel) { border-color: rgba(255, 245, 235, 0.12); background: #5b5650; color: #f3eee8; }
 html[data-theme="dark"] .mecenat-mini-cal-day.holiday:not(.sel) { border-color: rgba(255, 245, 235, 0.1); background: #0c0a08; color: #f26b7a; }
 html[data-theme="dark"] .mecenat-mini-cal-day.sel { background: #5574bd; }
+
+/* Congés souhaités : carte de décision et fenêtre de transformation. */
+html[data-theme="dark"] .wish-decision { border-color: rgba(98, 204, 145, 0.34); background: rgba(59, 141, 97, 0.12); }
+html[data-theme="dark"] .wish-decision-badge { color: #9be8bd; }
+html[data-theme="dark"] .wish-decision-badge i { background: #59c487; }
+html[data-theme="dark"] .wish-decision .wish-convert-one { background: #2f8a57; color: #fff; }
+html[data-theme="dark"] .wish-decision .wish-convert-all { border-color: rgba(126, 162, 245, 0.44); background: rgba(96, 134, 224, 0.16); color: #b9d0ff; }
+html[data-theme="dark"] .wish-decision .wish-cancel-link { border-color: rgba(235, 114, 122, 0.38); background: rgba(224, 92, 102, 0.14); color: #ffb3b8; }
+html[data-theme="dark"] .wish-conversion-list li { border-color: rgba(255, 244, 232, 0.1); background: #25211d; }
+html[data-theme="dark"] .wish-conversion-list li.picked { border-color: color-mix(in srgb, var(--row-tone) 52%, rgba(255, 244, 232, 0.14)); background: color-mix(in srgb, var(--row-tone) 13%, #25211d); }
+html[data-theme="dark"] .wish-conversion-list li.cancelled { border-color: rgba(235, 114, 122, 0.38); background: rgba(224, 92, 102, 0.1); }
+html[data-theme="dark"] .wish-conversion-chips > button,
+html[data-theme="dark"] .wish-conversion-chips > select { border-color: rgba(255, 244, 232, 0.14); background: #1c1916; color: #f4eee6; }
+html[data-theme="dark"] .wish-conversion-chips > select { color: #b5aaa0; }
+html[data-theme="dark"] .wish-conversion-chips > button.active { border-color: transparent; background: color-mix(in srgb, var(--type-color) 70%, #0d0b0a); color: #fff; }
+html[data-theme="dark"] .wish-conversion-chips > button.active i { background: #fff; }
+html[data-theme="dark"] .wish-conversion-chips > select.active.cancel { border-color: #e27885; background: rgba(217, 93, 108, 0.2); color: #ffb3bc; }
+html[data-theme="dark"] .wish-conversion-foot { border-top-color: rgba(255, 244, 232, 0.11); background: #1c1916; }
+html[data-theme="dark"] .wish-conversion .wish-conversion-continue { background: #5574bd; color: #fff; }
+html[data-theme="dark"] .wish-conversion .wish-conversion-continue.is-cancel { background: #c9475b; color: #fff; }
+html[data-theme="dark"] .wish-conversion .wish-conversion-continue:disabled { border-color: rgba(255, 244, 232, 0.11); background: #25211d; color: #a69b8e; }

@@ -32,26 +32,25 @@
   stroke-width: 2;
 }
 .leave-range-box {
-  margin: -3px 0 17px;
-  border: 1px solid var(--bg);
-  border-radius: 12px;
-  padding: 12px;
-  background: var(--surface-high);
+  margin: 10px 0 4px;
+  border: 0;
+  padding: 0;
+  background: transparent;
 }
 .separate-date-button {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
-  min-height: 66px;
+  min-height: 58px;
   margin: 0;
-  border: 2px solid var(--accent);
-  border-radius: 12px;
-  padding: 11px 13px;
-  background: color-mix(in srgb, var(--accent) 8%, white);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, var(--border-control));
+  border-radius: 15px;
+  padding: 11px 14px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
   color: var(--accent);
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 5px 15px rgba(122, 111, 95, 0.12);
+  box-shadow: none;
 }
 .separate-date-button strong {
   font-size: 13px;

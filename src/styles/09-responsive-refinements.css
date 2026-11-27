@@ -1,37 +1,85 @@
-/* Décision sur un congé souhaité : le choix précède le formulaire habituel,
-   donc il s'affiche avant les champs de type et de période. */
+/* Décision sur un congé souhaité : carte éditoriale douce aux coins arrondis
+   et hiérarchie nette des 3 actions. */
 .wish-decision {
-  margin: 12px 0;
-  border: 1px solid color-mix(in srgb, var(--green) 35%, var(--line));
-  border-left: 4px solid var(--green);
-  border-radius: 0;
-  padding: 12px 13px;
-  background: color-mix(in srgb, var(--green) 7%, white);
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 4px;
+  border: 1.5px solid rgba(47, 138, 87, 0.34);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(47, 138, 87, 0.08);
+}
+.wish-decision-head {
+  display: grid;
+  gap: 4px;
+}
+.wish-decision-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #1f6b43;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+.wish-decision-badge i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2f8a57;
 }
 .wish-decision p {
-  margin: 0 0 10px;
-  color: var(--text);
-  font-size: 12px;
-  line-height: 1.4;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.35;
 }
-.wish-decision div {
-  display: flex;
-  flex-wrap: wrap;
+.wish-decision-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
-.wish-decision button {
-  min-height: 40px;
-  font-size: 13px;
+.wish-decision .wish-convert-one {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 13px;
+  background: #2f7a52;
+  color: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(47, 122, 82, 0.24);
 }
-/* Trois choix sur un souhait, comme le bas d'une demande : la
-   transformation de ce jour en plein, celle de tous les souhaits au trait
-   fin, l'annulation en simple lien. */
-.wish-decision div { display: grid; grid-template-columns: minmax(0, 1fr); }
-.wish-decision .save-button { width: 100%; min-height: 44px; }
-.wish-decision .wish-convert-all { width: 100%; min-height: 44px; border: 1px solid var(--border-control); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 750; cursor: pointer; }
-.wish-decision .wish-convert-all:hover { border-color: var(--accent); }
-.wish-decision .wish-cancel-link { justify-self: center; min-height: 34px; padding: 0 10px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.wish-decision .wish-cancel-link:hover { color: var(--text); }
+.wish-decision .wish-convert-all {
+  width: 100%;
+  min-height: 44px;
+  border: 1.5px solid rgba(74, 102, 168, 0.4);
+  border-radius: 13px;
+  background: rgba(74, 102, 168, 0.1);
+  color: #2e4a8c;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.wish-decision .wish-convert-all:hover { border-color: #4a66a8; }
+.wish-decision .wish-cancel-link {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(196, 61, 61, 0.3);
+  border-radius: 12px;
+  padding: 0 12px;
+  background: rgba(196, 61, 61, 0.08);
+  color: #a9243a;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+.wish-decision .wish-cancel-link:hover { background: rgba(196, 61, 61, 0.14); }
 
 /* Notes multiples sur une même journée : une puce par ligne, pour que deux
    ajouts ne se lisent pas comme une seule phrase. */
