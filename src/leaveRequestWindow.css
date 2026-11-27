@@ -9,7 +9,7 @@ body:has(.lrw-backdrop) { overflow: hidden; }
   z-index: 1100;
   display: grid;
   place-items: center;
-  padding: 12px;
+  padding: 14px 16px;
   background: rgba(20, 16, 13, 0.56);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -27,8 +27,8 @@ body:has(.lrw-backdrop) { overflow: hidden; }
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(416px, 100%);
-  max-height: calc(100dvh - 20px);
+  width: min(376px, 100%);
+  max-height: calc(100dvh - 24px);
   border: 1px solid var(--lrw-line);
   border-radius: 28px;
   background: var(--lrw-bg);
@@ -57,7 +57,7 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 15px 18px 9px;
+  padding: 18px 18px 12px;
 }
 
 .lrw-top h2 {
@@ -85,44 +85,76 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
 
 .lrw-close:hover { color: var(--lrw-ink); background: var(--lrw-soft); }
 
-/* 2. Sélecteurs Type + Durée */
+/* 2. Sélecteurs Type + Durée (mis en avant pour une lecture immédiate) */
 .lrw-drop-bar {
   display: flex;
-  gap: 7px;
-  padding: 0 16px 9px;
+  gap: 8px;
+  padding: 0 16px 12px;
 }
 
 .lrw-drop-wrap { position: relative; flex: 1 1 auto; min-width: 0; }
-.lrw-drop-duration { flex: 0.62 1 auto; }
+.lrw-drop-duration { flex: 0.58 1 auto; }
 
 .lrw-drop-pill {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  min-height: 36px;
-  border: 1px solid var(--lrw-line);
-  border-radius: 12px;
-  padding: 6px 11px;
-  background: var(--lrw-elev);
+  min-height: 50px;
+  border: 1.5px solid color-mix(in srgb, var(--lrw-ink) 20%, transparent);
+  border-radius: 15px;
+  padding: 7px 10px 7px 12px;
+  background: var(--lrw-soft);
   color: var(--lrw-ink);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 750;
+  text-align: left;
   cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
+}
+
+.lrw-drop-pill.lrw-drop-type {
+  border-color: color-mix(in srgb, var(--lrw-tone) 68%, var(--lrw-line));
+  background: color-mix(in srgb, var(--lrw-tone) 14%, var(--lrw-elev));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--lrw-tone) 16%, transparent);
 }
 
 .lrw-drop-pill.open,
-.lrw-drop-pill:hover { border-color: color-mix(in srgb, var(--lrw-tone) 55%, var(--lrw-line)); }
+.lrw-drop-pill:hover { border-color: color-mix(in srgb, var(--lrw-tone) 88%, var(--lrw-ink)); }
 
-.lrw-drop-value { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
-.lrw-drop-value strong { white-space: nowrap; }
-.lrw-drop-value small { color: var(--lrw-muted); font-size: 0.72rem; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrw-drop-stack { display: grid; gap: 2px; min-width: 0; }
+.lrw-drop-kicker {
+  color: var(--lrw-muted);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.lrw-drop-type .lrw-drop-kicker { color: color-mix(in srgb, var(--lrw-tone) 72%, var(--lrw-ink)); }
+.lrw-drop-single { font-size: 0.84rem; font-weight: 800; line-height: 1.15; white-space: nowrap; }
+
+.lrw-drop-value { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; line-height: 1.15; }
+.lrw-drop-value strong { font-size: 0.88rem; font-weight: 850; white-space: nowrap; }
+.lrw-drop-value small { color: var(--lrw-muted); font-size: 0.74rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lrw-drop-value small.warn { color: #d95d6c; font-weight: 800; }
 
-.lrw-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; display: inline-block; }
-.lrw-chev { color: var(--lrw-muted); font-size: 0.72rem; flex: none; }
+.lrw-dot { width: 9px; height: 9px; flex: none; border-radius: 50%; display: inline-block; }
+.lrw-chev {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--lrw-ink) 11%, transparent);
+  color: var(--lrw-ink);
+  font-size: 0.76rem;
+  line-height: 1;
+}
+.lrw-drop-type .lrw-chev { background: color-mix(in srgb, var(--lrw-tone) 26%, transparent); }
 
 .lrw-menu {
   position: absolute;
@@ -199,8 +231,8 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
 .lrw-from-to {
   display: flex;
   align-items: center;
-  margin: 0 16px 8px;
-  padding: 7px 12px;
+  margin: 0 16px 12px;
+  padding: 10px 14px;
   border: 1px solid var(--lrw-line);
   border-radius: 16px;
   background: var(--lrw-elev);
@@ -244,17 +276,17 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
   margin: 0;
   border: 0;
   border-radius: 0;
-  padding: 2px 14px 8px;
+  padding: 4px 14px 12px;
   background: transparent;
   box-shadow: none;
 }
 
-.lrw-cal .month-card-nav { margin: 0 2px 8px; }
+.lrw-cal .month-card-nav { margin: 0 2px 10px; }
 #request-panel.lrw-card .lrw-cal .month-card-nav .period-step {
-  width: 30px;
-  min-width: 30px;
-  height: 30px;
-  min-height: 30px;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
   border: 1px solid var(--lrw-line);
   border-radius: 50%;
   background: var(--lrw-elev);
@@ -263,9 +295,9 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
 }
 #request-panel.lrw-card .lrw-cal .month-card-nav .period-step:hover { background: var(--lrw-soft); }
 #request-panel.lrw-card .lrw-cal .month-card-nav .month-title-trigger {
-  min-height: 30px;
+  min-height: 32px;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.04rem;
   color: var(--lrw-ink);
 }
 
@@ -273,9 +305,9 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  padding-bottom: 5px;
+  padding-bottom: 6px;
   color: var(--lrw-muted);
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.06em;
 }
@@ -283,27 +315,27 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
 #request-panel.lrw-card .lrw-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 5px;
 }
 
-.lrw-empty { height: 39px; }
+.lrw-empty { height: 48px; }
 
 #request-panel.lrw-card .lrw-days .lrw-day {
   position: relative;
   display: grid;
   place-items: center;
   width: 100%;
-  height: 39px;
-  min-height: 39px;
+  height: 48px;
+  min-height: 48px;
   margin: 0;
   border: 1px solid rgba(44, 38, 33, 0.14);
-  border-radius: 10px;
+  border-radius: 11px;
   padding: 0;
   background: #fff;
   box-shadow: none;
   color: #231e19;
   font: inherit;
-  font-size: 0.86rem;
+  font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
   transform: none;
@@ -606,14 +638,33 @@ html[data-theme="dark"] #request-panel.lrw-card .lrw-cta:disabled {
 }
 .lrw-cta small { font-size: 0.76rem; font-weight: 700; opacity: 0.92; white-space: nowrap; }
 
-@media (max-width: 430px), (max-height: 700px) {
-  .lrw-backdrop { padding: 6px; }
-  .lrw-card { max-height: calc(100dvh - 12px); border-radius: 22px; }
+/* Sur les grands téléphones en portrait, la fenêtre s'étire en hauteur plutôt
+   qu'en largeur pour des cases hautes et confortables. */
+@media (min-height: 820px) {
+  .lrw-card { width: min(370px, 100%); }
+  .lrw-top { padding: 20px 18px 14px; }
+  .lrw-drop-bar { padding: 0 16px 14px; }
+  .lrw-from-to { margin: 0 16px 14px; padding: 11px 14px; }
+  #request-panel.lrw-card .lrw-days { gap: 6px 5px; }
+  .lrw-empty,
+  #request-panel.lrw-card .lrw-days .lrw-day {
+    height: 54px;
+    min-height: 54px;
+    font-size: 0.96rem;
+  }
+  .lrw-foot { padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); gap: 10px; }
+  .lrw-cta { min-height: 50px; }
+}
+
+/* Mode compact uniquement sur écrans courts en hauteur (iPhone SE, petits écrans). */
+@media (max-height: 700px) {
+  .lrw-backdrop { padding: 8px 12px; }
+  .lrw-card { max-height: calc(100dvh - 16px); border-radius: 22px; }
   .lrw-top { padding: 11px 14px 7px; }
   .lrw-top h2 { font-size: 1.08rem; }
   .lrw-drop-bar { padding: 0 12px 7px; }
   .lrw-drop-pill { min-height: 34px; padding: 5px 10px; }
-  .lrw-from-to { margin: 0 12px 6px; padding: 6px 8px 6px 10px; border-radius: 14px; }
+  .lrw-from-to { margin: 0 12px 6px; padding: 6px 10px; border-radius: 14px; }
   .lrw-cal { padding: 0 10px 6px; }
   .lrw-cal .month-card-nav { margin: 0 2px 5px; }
   #request-panel.lrw-card .lrw-days { gap: 3px; }

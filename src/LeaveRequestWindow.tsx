@@ -387,31 +387,34 @@ export function LeaveRequestWindow({
           <div className="lrw-drop-wrap">
             <button
               type="button"
-              className={`lrw-drop-pill${openMenu === "type" ? " open" : ""}`}
+              className={`lrw-drop-pill lrw-drop-type${openMenu === "type" ? " open" : ""}`}
               aria-expanded={openMenu === "type"}
               aria-label="Choisir le type d’absence"
               onClick={() => setOpenMenu((current) => (current === "type" ? null : "type"))}
             >
-              <span className="lrw-drop-value">
-                <i className="lrw-dot" style={{ background: activeColor }} aria-hidden="true" />
-                <strong>
-                  {requestKind === "leave" && !sickRequest
-                    ? activeLeaveMeta.short
-                    : requestKind === "recovery"
-                      ? "Récupération"
-                      : sickRequest
-                        ? "Maladie"
-                        : requestKind === "other"
-                          ? "Divers"
-                          : "Grève"}
-                </strong>
-                {requestKind === "leave" && !sickRequest && activeRemaining !== undefined ? (
-                  <small className={activeRemaining < 0 ? "warn" : undefined}>
-                    · {activeRemaining < 0 ? "dépassé" : `reste ${activeRemaining.toLocaleString("fr-FR")}\u00A0j`}
-                  </small>
-                ) : requestKind === "recovery" ? (
-                  <small>· {minutesLabel(recoveryBalanceRemaining)} dispo</small>
-                ) : null}
+              <span className="lrw-drop-stack">
+                <span className="lrw-drop-kicker">Type d’absence</span>
+                <span className="lrw-drop-value">
+                  <i className="lrw-dot" style={{ background: activeColor }} aria-hidden="true" />
+                  <strong>
+                    {requestKind === "leave" && !sickRequest
+                      ? activeLeaveMeta.short
+                      : requestKind === "recovery"
+                        ? "Récupération"
+                        : sickRequest
+                          ? "Maladie"
+                          : requestKind === "other"
+                            ? "Divers"
+                            : "Grève"}
+                  </strong>
+                  {requestKind === "leave" && !sickRequest && activeRemaining !== undefined ? (
+                    <small className={activeRemaining < 0 ? "warn" : undefined}>
+                      · {activeRemaining < 0 ? "dépassé" : `reste ${activeRemaining.toLocaleString("fr-FR")}\u00A0j`}
+                    </small>
+                  ) : requestKind === "recovery" ? (
+                    <small>· {minutesLabel(recoveryBalanceRemaining)} dispo</small>
+                  ) : null}
+                </span>
               </span>
               <span className="lrw-chev" aria-hidden="true">▾</span>
             </button>
@@ -477,7 +480,10 @@ export function LeaveRequestWindow({
                 aria-label="Durée du congé"
                 onClick={() => setOpenMenu((current) => (current === "duration" ? null : "duration"))}
               >
-                <span>{momentLabel}</span>
+                <span className="lrw-drop-stack">
+                  <span className="lrw-drop-kicker">Durée</span>
+                  <strong className="lrw-drop-single">{momentLabel}</strong>
+                </span>
                 <span className="lrw-chev" aria-hidden="true">▾</span>
               </button>
               {openMenu === "duration" ? (
@@ -509,7 +515,10 @@ export function LeaveRequestWindow({
                 aria-label="Mode de récupération"
                 onClick={() => setOpenMenu((current) => (current === "duration" ? null : "duration"))}
               >
-                <span>{activeRecoveryMeta.short}</span>
+                <span className="lrw-drop-stack">
+                  <span className="lrw-drop-kicker">Mode</span>
+                  <strong className="lrw-drop-single">{activeRecoveryMeta.short}</strong>
+                </span>
                 <span className="lrw-chev" aria-hidden="true">▾</span>
               </button>
               {openMenu === "duration" ? (
