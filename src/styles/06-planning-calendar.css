@@ -29,7 +29,7 @@
   margin: 0;
   border: 0;
   border-radius: 0;
-  padding: 0;
+  padding: 6px 0 0;
   background: transparent;
   box-shadow: none;
 }
@@ -86,64 +86,116 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 7px;
 }
+/* Hauteur constante sur 6 semaines (6 × 88 px + 5 × 7 px) : changer de mois ne
+   fait jamais bouger la barre de navigation ni les actions autour du calendrier. */
+.calendar-grid {
+  align-content: start;
+  min-height: 563px;
+}
 .weekdays {
   margin-bottom: 7px;
 }
-/* Le mois en tête du calendrier (MonthNavigation) : depuis le 9 novembre
-   2026, toujours, et seul endroit où l'on change de période : le titre ouvre
-   le panneau du mois, ses deux flèches l'encadrent ; avant, la barre ne s'y
-   répétait que pendant une demande, quand le panneau séparait la barre du
-   mois de la grille. */
+/* Le mois en tête du calendrier (MonthNavigation) : titre « Mois Année » calé
+   à gauche et capsule [ ‹ | Aujourd'hui | › ] calée à droite (immobile d'un
+   mois à l'autre). */
 .month-card-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 .month-card-title {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-width: 0;
   margin: 0;
   color: var(--text);
   font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.18rem;
+  font-weight: 700;
   letter-spacing: -.01em;
-  text-align: center;
+  line-height: 1;
+  text-align: left;
 }
-/* Le sélecteur se lit comme le titre : « Novembre 2026 » d'un seul tenant,
-   l'année un peu plus légère, le chevron à la couleur du planning au bout pour
-   dire qu'il s'ouvre ; ni cadre ni fond tant qu'on ne le touche pas, une
-   pastille douce une fois ouvert. */
+/* Capsule unifiée à droite : flèche précédente, Aujourd'hui, flèche suivante. */
+.month-card-controls {
+  display: inline-flex;
+  flex: none;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--border-control);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.month-card-controls .period-step {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent);
+  box-shadow: none;
+}
+.month-card-controls .period-step svg { width: 16px; }
+.month-nav-today {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border: 0;
+  border-right: 1px solid var(--border-soft);
+  border-left: 1px solid var(--border-soft);
+  border-radius: 0;
+  padding: 0 12px;
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.month-nav-today.is-current {
+  background: transparent;
+  color: var(--muted);
+}
+.month-card-controls :is(.period-step, .month-nav-today):hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+/* Le sélecteur du mois reprend la même pilule douce que la capsule de droite :
+   même hauteur, même bordure fine, texte bien lisible. */
 .month-card-picker { min-width: 0; }
 .month-card-picker .choice-picker-trigger {
   gap: 6px;
   min-height: 38px;
-  border-color: transparent;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border-control));
   border-radius: 999px;
-  padding: 0 10px 0 12px;
-  background: transparent;
-  color: inherit;
+  padding: 0 13px 0 15px;
+  background: color-mix(in srgb, var(--accent) 5%, #fff);
+  color: var(--text);
   font: inherit;
+  line-height: 1;
   white-space: nowrap;
   text-transform: capitalize;
   box-shadow: none;
-  transition: background-color 140ms ease;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
 }
-.month-card-year { font-weight: 500; }
+.month-card-year { font-weight: 600; }
 .month-card-picker .choice-picker-trigger svg {
-  width: 16px;
+  width: 15px;
   margin-left: -1px;
   stroke: var(--accent);
   stroke-width: 2.2;
   transition: transform 160ms ease;
 }
 .month-card-picker .choice-picker-trigger:is(:hover, [aria-expanded="true"]) {
-  border-color: transparent;
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--border-control));
   background: var(--accent-soft);
   color: var(--accent-strong);
   box-shadow: none;
@@ -162,7 +214,6 @@
 .month-card-picker .choice-picker-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .month-card-picker .choice-picker-options button { min-width: 0; min-height: 38px; padding: 6px 4px; font-size: 12.5px; }
 .month-card-picker .choice-picker-options button.today-month { border-color: var(--accent); }
-.month-card-picker .month-period-today { min-width: 0; min-height: 40px; margin-top: 2px; border: 1px solid var(--border-control); border-radius: 10px; background: var(--surface); color: var(--accent-strong); font-size: 14px; font-weight: 850; }
 .weekdays span {
   padding: 8px 2px;
   border-radius: 8px;
@@ -773,14 +824,38 @@
   .month-card {
     padding: 7px;
   }
-  /* Le titre tient sur sa ligne entre les deux flèches, même « Septembre
-     2026 » à 344 px en police agrandie : il suit la largeur de l'écran. */
+  /* Le titre à gauche et la capsule à droite tiennent sur une ligne, même avec
+     « Septembre 2026 » à 320 px. */
+  .month-card-nav {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
   .month-card-title {
-    font-size: min(1.2rem, 5.6vw);
+    font-size: clamp(0.88rem, 4vw, 1.08rem);
+  }
+  .month-card-picker .choice-picker-trigger {
+    gap: 4px;
+    min-height: 36px;
+    padding: 0 9px 0 11px;
+  }
+  .month-card-picker .choice-picker-trigger svg { width: 14px; }
+  .month-card-controls .period-step {
+    width: 28px;
+    height: 34px;
+    min-height: 34px;
+  }
+  .month-card-controls .period-step svg { width: 14px; }
+  .month-nav-today {
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: 0.72rem;
   }
   .weekdays,
   .calendar-grid {
     gap: 4px;
+  }
+  .calendar-grid {
+    min-height: 344px;
   }
   .weekdays {
     margin-bottom: 3px;

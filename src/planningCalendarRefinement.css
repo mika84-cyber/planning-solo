@@ -2,9 +2,11 @@
    congé » et « Faire un échange » s'y posent sans second ni troisième cadre
    (le mois, lui, est réglé dans styles/06-planning-calendar.css). */
 .planning-workspace-shell.framed .planning-calendar-section .planning-leave-panel {
+  margin-bottom: 0;
   border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 48%, transparent);
   border-radius: 0;
-  padding: 2px 0 6px;
+  padding: 2px 0 15px;
   background: transparent;
   box-shadow: none;
 }

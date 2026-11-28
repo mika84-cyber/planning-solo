@@ -19,14 +19,19 @@ html[data-theme="dark"] .calendar-grid .day.training:not(.leave-day, .recovery-d
 /* « CET » reste brun foncé sur le beige du CET : la conversion l'éclaircissait
    (gris clair sur beige, illisible). */
 html[data-theme="dark"] .calendar-grid .day .leave-calendar-marker-cet { color: #2c2621; }
-/* Titre du calendrier : --accent et --accent-strong ne sont pas convertis en
-   sombre (darkStyles.ts ne reconnaît pas ces noms) ; le chevron du sélecteur
-   s'éclaircit et le texte garde sa teinte une fois la liste ouverte. */
-html[data-theme="dark"] .month-card-picker .choice-picker-trigger svg { stroke: color-mix(in srgb, var(--accent) 55%, #fff); }
-html[data-theme="dark"] .month-card-picker .choice-picker-trigger:is(:hover, [aria-expanded="true"]) { color: inherit; }
-/* Dans le panneau du mois, les flèches de l'année et « Aujourd'hui » sont en
-   terracotta clair : --accent et --accent-strong ne sont pas convertis. */
-html[data-theme="dark"] .choice-picker-menu.month-card-picker :is(.month-period-year button, .month-period-today) { color: color-mix(in srgb, var(--accent) 55%, #fff); }
+/* Titre du calendrier : pilule bien lisible et contrastée en sombre, assortie
+   à la capsule de droite ; chevron éclairci. */
+html[data-theme="dark"] .month-card-picker .choice-picker-trigger { border-color: rgba(255, 244, 232, 0.28); background: #2f2924; color: #f8f3ec; }
+html[data-theme="dark"] .month-card-picker .choice-picker-trigger svg { stroke: #f0b18e; }
+html[data-theme="dark"] .month-card-picker .choice-picker-trigger:is(:hover, [aria-expanded="true"]) { border-color: color-mix(in srgb, var(--accent) 56%, rgba(255, 244, 232, 0.26)); background: color-mix(in srgb, var(--accent) 24%, #2f2924); color: #fff; }
+/* Dans le panneau du mois et sur la capsule de navigation, le terracotta
+   s'éclaircit : --accent et --accent-strong ne sont pas convertis. */
+html[data-theme="dark"] .choice-picker-menu.month-card-picker .month-period-year button { color: color-mix(in srgb, var(--accent) 55%, #fff); }
+html[data-theme="dark"] .month-card-controls { border-color: rgba(255, 244, 232, 0.16); background: #26221e; }
+html[data-theme="dark"] .month-card-controls .period-step { background: transparent; color: #e8a787; }
+html[data-theme="dark"] .month-nav-today { border-color: rgba(255, 244, 232, 0.12); background: color-mix(in srgb, var(--accent) 22%, #26221e); color: #f0bc9f; }
+html[data-theme="dark"] .month-nav-today.is-current { background: transparent; color: #b8aea3; }
+html[data-theme="dark"] .month-card-controls :is(.period-step, .month-nav-today):hover { background: color-mix(in srgb, var(--accent) 26%, #26221e); color: #f7ceb6; }
 
 /* Calendrier d'un échange : les couleurs du planning. Jour possible en beige
    coquille d'œuf, jour travaillé impossible en beige éteint sous sa croix,

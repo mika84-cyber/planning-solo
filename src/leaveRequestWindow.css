@@ -213,9 +213,11 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
 
 /* 4. Calendrier fluide en ruban continu */
 .lrw-cal { margin: 0; border: 0; padding: 4px 14px 12px; background: none; box-shadow: none; }
-.lrw-cal .month-card-nav { margin: 0 2px 10px; }
-#request-panel .lrw-cal .period-step { width: 32px; height: 32px; min-height: 32px; border: 1px solid var(--lrw-line); background: var(--lrw-elev); color: var(--lrw-ink); box-shadow: none; }
-#request-panel .lrw-cal .period-step:hover { background: var(--lrw-soft); }
+.lrw-cal .month-card-nav { gap: 6px; margin: 0 2px 10px; }
+#request-panel .lrw-cal .month-card-controls { border-color: var(--lrw-line); background: var(--lrw-elev); }
+#request-panel .lrw-cal .month-card-controls .period-step { width: 30px; height: 32px; min-height: 32px; border: 0; background: transparent; color: var(--lrw-ink); box-shadow: none; }
+#request-panel .lrw-cal .month-card-controls .month-nav-today { min-height: 32px; border-color: var(--lrw-line); }
+#request-panel .lrw-cal .month-card-controls :is(.period-step, .month-nav-today):hover { background: var(--lrw-soft); }
 #request-panel .lrw-cal .month-title-trigger { min-height: 32px; font-family: var(--font-display); font-size: 1.04rem; color: var(--lrw-ink); }
 
 .lrw-weekdays {
@@ -232,7 +234,9 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
 #request-panel .lrw-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  align-content: start;
   gap: 5px;
+  min-height: 313px;
 }
 
 .lrw-empty { height: 48px; }
@@ -415,7 +419,7 @@ html[data-theme="dark"] #request-panel .lrw-cta:disabled { border: 1px solid var
   .lrw-top { padding: 20px 18px 14px; }
   .lrw-drop-bar { padding: 0 16px 14px; }
   .lrw-from-to { margin: 0 16px 14px; padding: 11px 14px; }
-  #request-panel .lrw-days { gap: 6px 5px; }
+  #request-panel .lrw-days { gap: 6px 5px; min-height: 354px; }
   .lrw-empty, #request-panel .lrw-day { height: 54px; font-size: 0.96rem; }
   .lrw-foot { padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); gap: 10px; }
   .lrw-cta { min-height: 50px; }
@@ -430,13 +434,14 @@ html[data-theme="dark"] #request-panel .lrw-cta:disabled { border: 1px solid var
   .lrw-from-to { margin: 0 12px 6px; padding: 6px 10px; border-radius: 14px; }
   .lrw-cal { padding: 0 10px 6px; }
   .lrw-cal .month-card-nav { margin: 0 2px 5px; }
-  #request-panel .lrw-days { gap: 3px; }
+  #request-panel .lrw-days { gap: 3px; min-height: 225px; }
   .lrw-empty, #request-panel .lrw-day { height: 35px; border-radius: 9px; font-size: 0.82rem; }
   .lrw-detail-strip { padding: 2px 14px 5px; }
   .lrw-foot { padding: 9px 12px calc(10px + env(safe-area-inset-bottom)); gap: 7px; }
   .lrw-cta { min-height: 42px; border-radius: 13px; font-size: 0.84rem; }
 }
 @media (max-height: 600px) {
+  #request-panel .lrw-days { min-height: 201px; }
   .lrw-empty, #request-panel .lrw-day { height: 31px; font-size: 0.78rem; }
   .lrw-top { padding: 8px 14px 5px; }
   .lrw-drop-bar { padding: 0 12px 5px; }

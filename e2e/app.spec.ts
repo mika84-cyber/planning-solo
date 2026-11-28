@@ -274,13 +274,21 @@ async function sectionDock(page: Page) {
   return tabs;
 }
 
-/** Écart, en pixels, entre le centre du titre « Mois année » en tête du
- *  calendrier et le centre de l’espace laissé entre ses deux flèches. */
-async function periodTextOffset(page: Page) {
+/** Vérifie la barre du mois : titre à gauche et capsule (‹ Aujourd’hui ›) à
+ *  droite sur la même ligne, sans déborder de la barre. */
+async function monthNavAligned(page: Page) {
   return page.evaluate(() => {
-    const [previous, next] = [...document.querySelectorAll(".month-card-nav .period-step")].map((node) => node.getBoundingClientRect());
+    const nav = document.querySelector(".month-card-nav")!.getBoundingClientRect();
     const title = document.querySelector(".month-card-nav .choice-picker-trigger")!.getBoundingClientRect();
-    return (title.left + title.right) / 2 - (previous.right + next.left) / 2;
+    const controls = document.querySelector(".month-card-nav .month-card-controls")!.getBoundingClientRect();
+    const [previous, next] = [...document.querySelectorAll(".month-card-nav .period-step")].map((node) => node.getBoundingClientRect());
+    const today = document.querySelector(".month-card-nav .month-nav-today")!.getBoundingClientRect();
+    return {
+      sameRow: Math.abs((title.top + title.bottom) / 2 - (controls.top + controls.bottom) / 2) <= 4,
+      titleBeforeControls: title.right <= controls.left + 1,
+      controlsOrder: previous.right <= today.left + 1 && today.right <= next.left + 1,
+      fitsWidth: controls.right <= nav.right + 1 && title.left >= nav.left - 1,
+    };
   });
 }
 
@@ -299,10 +307,9 @@ async function pickCalendarMonth(page: Page, name: string) {
   await panel.getByRole("listbox", { name: "Mois du calendrier" }).getByRole("option", { name, exact: true }).click();
 }
 
-/** Revient au mois d’aujourd’hui par le panneau du mois. */
+/** Revient au mois d’aujourd’hui par le bouton intégré sous le titre du mois. */
 async function goToCurrentMonth(page: Page) {
-  const panel = await openMonthPanel(page);
-  await panel.getByRole("button", { name: "Aujourd’hui" }).click();
+  await page.locator(".month-card-nav").getByRole("button", { name: "Aujourd’hui" }).click();
 }
 
 /** Touche une journée travaillée du mois (la première par défaut) pour une
@@ -633,9 +640,14 @@ test("les pages et la navigation suivent exactement la largeur de leur en-tête"
   await prepareDemo(page);
   for (const width of [320, 412, 900, 1440, 1920]) {
     await page.setViewportSize({ width, height: 950 });
-    // Sur chaque largeur, le mois et l’année restent centrés entre leurs flèches.
+    // Sur chaque largeur, le mois et la capsule de navigation tiennent sur une ligne.
     await goToSection(page, "home");
-    await expect.poll(async () => Math.abs(await periodTextOffset(page))).toBeLessThanOrEqual(2);
+    await expect.poll(() => monthNavAligned(page)).toEqual({
+      sameRow: true,
+      titleBeforeControls: true,
+      controlsOrder: true,
+      fitsWidth: true,
+    });
     const navigation = page.locator('nav[aria-label="Navigation principale"]:visible');
     for (const [section, selector] of [["colleagues", ".colleague-sharing-page"], ["pay", ".pay-app-screen"]] as const) {
       await goToSection(page, section);
@@ -679,7 +691,7 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   await expect(planning.locator(".school-vacation-next")).toContainText(/^(Prochaines|En cours) : /);
   await expect(planning).toHaveCSS("border-left-width", accentSpine(page));
   await expect(planning).toHaveCSS("border-left-color", await cssTokenRgb(page, "--border-card"));
-  await expect(planning).toHaveCSS("border-bottom-width", "0px");
+  await expect(planning).toHaveCSS("border-bottom-width", accentSpine(page));
   await expect(planning).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(planning).toHaveCSS("background-image", "none");
   await expect(page.getByRole("button", { name: "Poser un congé" })).toHaveCSS(
@@ -697,8 +709,9 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   expect(leaveBox!.x).toBeGreaterThan(monthBox!.x + monthBox!.width);
   expect(yearBox!.x).toBeGreaterThan(monthBox!.x + monthBox!.width);
   expect(yearBox!.y).toBeGreaterThan(leaveBox!.y);
+  await expect(page.locator(".month-card-nav").getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
   const monthPanel = await openMonthPanel(page);
-  await expect(monthPanel.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
+  await expect(monthPanel.getByRole("button", { name: "Aujourd’hui" })).toHaveCount(0);
   await expect(monthPanel.getByRole("button", { name: "Année suivante" })).toBeVisible();
   await expect(monthPanel.getByRole("listbox", { name: "Mois du calendrier" }).getByRole("option")).toHaveCount(12);
   await page.keyboard.press("Escape");
@@ -736,7 +749,8 @@ test("changer d’année dans le calendrier change le compte de l’année et le
   await expect(yearCount).toHaveText(/^jours? travaillés? en 2025$/);
   await expect(leave.locator(".today-block-note")).toHaveText("en 2025");
   // Retour à aujourd'hui : les chiffres de l'année en cours reviennent.
-  await panel.getByRole("button", { name: "Aujourd’hui" }).click();
+  await page.keyboard.press("Escape");
+  await goToCurrentMonth(page);
   await expect(yearCount).toHaveText(/^jours? de travail restants? en 2026$/);
   await expect(leave.locator(".today-block-note")).toHaveText("à poser");
   await expect(leave.locator("strong")).toHaveText(thisYear!);
@@ -3772,6 +3786,29 @@ test("le mois, son panneau et ses flèches se lisent en tête du calendrier, pen
   const title = nav.locator(".month-card-title");
   await expect(nav).toBeVisible();
   await expect(title).toHaveText(/^novembre 2026$/i);
+  // Attendre que l'accueil au-dessus du planning soit chargé avant de mesurer
+  // la stabilité de la barre de navigation entre 6 semaines et 5 semaines.
+  await expect(page.locator(".today-overview")).toBeVisible();
+  const measureCalendarLayout = () => page.evaluate(() => {
+    const controls = document.querySelector(".month-card-nav .month-card-controls")!.getBoundingClientRect();
+    const grid = document.querySelector(".month-card .calendar-grid")!.getBoundingClientRect();
+    return {
+      x: controls.left,
+      y: controls.top + window.scrollY,
+      gridHeight: grid.height,
+      docHeight: document.documentElement.scrollHeight,
+    };
+  });
+  const novLayout = await measureCalendarLayout();
+  await nav.getByRole("button", { name: "Mois suivant" }).click();
+  await expect(title).toHaveText(/^décembre 2026$/i);
+  const decLayout = await measureCalendarLayout();
+  expect(Math.abs(decLayout.x - novLayout.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(decLayout.y - novLayout.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(decLayout.gridHeight - novLayout.gridHeight)).toBeLessThanOrEqual(1);
+  expect(Math.abs(decLayout.docHeight - novLayout.docHeight)).toBeLessThanOrEqual(1);
+  await nav.getByRole("button", { name: "Aujourd’hui" }).click();
+  await expect(title).toHaveText(/^novembre 2026$/i);
   await expect(page.locator(".calendar-toolbar")).toHaveCount(0);
   const panel = page.getByRole("dialog", MONTH_PANEL);
   const months = panel.getByRole("listbox", { name: "Mois du calendrier" }).getByRole("option");
@@ -3794,10 +3831,12 @@ test("le mois, son panneau et ses flèches se lisent en tête du calendrier, pen
   await panel.getByRole("button", { name: "Année précédente" }).click();
   await expect(title).toHaveText(/^mars 2026$/i);
   await expect(monthOption("novembre")).toHaveClass(/today-month/);
-  // « Aujourd'hui » ramène au mois en cours et ferme le panneau.
-  await panel.getByRole("button", { name: "Aujourd’hui" }).click();
-  await expect(title).toHaveText(/^novembre 2026$/i);
+  // « Aujourd'hui » n'est plus dans le panneau mais directement sous le mois.
+  await expect(panel.getByRole("button", { name: "Aujourd’hui" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
+  await nav.getByRole("button", { name: "Aujourd’hui" }).click();
+  await expect(title).toHaveText(/^novembre 2026$/i);
   await pickCalendarMonth(page, "mars");
   await expect(title).toHaveText(/^mars 2026$/i);
   await page.getByRole("button", { name: "Poser un congé" }).first().click();
@@ -5204,15 +5243,14 @@ test("l’en-tête et les années sont confortables", async ({ page }, testInfo)
   expect(leavePanelBox).not.toBeNull();
   expect(monthNavBox).not.toBeNull();
   expect(monthCardBox).not.toBeNull();
-  // Le titre du mois est centré entre ses deux flèches, qui l'encadrent, et
-  // son chevron dit qu'il s'ouvre.
-  expect(Math.abs(await periodTextOffset(page))).toBeLessThanOrEqual(2);
-  const arrows = nav.locator(".period-step");
-  const titleBox = await nav.locator(".choice-picker-trigger").boundingBox();
-  const previousArrowBox = await arrows.first().boundingBox();
-  const nextArrowBox = await arrows.last().boundingBox();
-  expect(previousArrowBox!.x + previousArrowBox!.width).toBeLessThanOrEqual(titleBox!.x);
-  expect(nextArrowBox!.x).toBeGreaterThanOrEqual(titleBox!.x + titleBox!.width - 1);
+  // Le titre du mois est à gauche et la capsule (‹ Aujourd’hui ›) à droite
+  // sur la même ligne, avec son chevron qui dit qu'il s'ouvre.
+  expect(await monthNavAligned(page)).toEqual({
+    sameRow: true,
+    titleBeforeControls: true,
+    controlsOrder: true,
+    fitsWidth: true,
+  });
   await expect(nav.locator(".choice-picker-trigger svg")).toBeVisible();
   // Les deux actions précèdent la barre du mois, qui ouvre le calendrier.
   expect(monthNavBox!.y).toBeGreaterThanOrEqual(leaveActionBox!.y + leaveActionBox!.height - 1);
