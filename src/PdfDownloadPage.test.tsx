@@ -10,7 +10,7 @@ describe("plannings PDF", () => {
     expect(pdfYears(new Date("2027-03-01")).pills).toEqual([2027, 2028, 2029]);
   });
 
-  it("montre les années en pastilles, la choisie en plein", () => {
+  it("montre les années en pastilles, l’interrupteur vacances et les deux groupes de documents", () => {
     const html = renderToStaticMarkup(
       <PdfDownloadPage
         narrowScreen
@@ -28,7 +28,10 @@ describe("plannings PDF", () => {
     // « Plus » pour les années suivantes, en attente tant qu'aucune n'est choisie.
     expect(html).toContain('class="choice-picker pdf-year-more"');
     expect(html).toContain("Plus");
-    // Vacances : Non / Oui en pastilles.
-    expect(html).toContain('<div class="pdf-vacation-pills" role="group" aria-label="Vacances scolaires sur le PDF"><button type="button" class="active" aria-pressed="true">Non</button><button type="button" aria-pressed="false">Oui</button></div>');
+    // Vacances : interrupteur neutre quand désactivé.
+    expect(html).toContain('role="switch" class="pdf-vac-switch" aria-checked="false" aria-label="Vacances scolaires sur le PDF"');
+    // Deux groupes de documents distincts.
+    expect(html).toContain("<h3>Mon planning</h3>");
+    expect(html).toContain("<h3>Tous les groupes</h3>");
   });
 });

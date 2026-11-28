@@ -280,7 +280,7 @@ export function HomeDashboard({
             <small>{longDate(now)}</small>
           </div>
           <button
-            className="primary-action add-action group-heading-action"
+            className={hasConfiguredGroup ? "soft-detail-button group-heading-action" : "primary-action add-action group-heading-action"}
             type="button"
             onClick={onChooseGroup}
             aria-label={
@@ -399,9 +399,7 @@ export function HomeDashboard({
               <small className="today-block-note today-note-text">
                 <span className="today-note-first">{nextNoteFirst}</span>
                 {nextNoteMore ? (
-                  <span className="today-note-more">
-                    +{nextNoteMore} <span>(voir)</span>
-                  </span>
+                  <span className="today-note-more">+{nextNoteMore}</span>
                 ) : null}
               </small>
               {chevron}

@@ -54,21 +54,18 @@ describe("LeaveBalancesSection", () => {
     // La classe de la carte est celle du type : c'est elle qui porte sa couleur
     // (--balance-color), sur le filet, le chiffre et sa mention. « restants » ou
     // « pris » suit le chiffre dans le même <strong>, puis la ligne d'explication.
-    expect(html).toMatch(/<button type="button" class="annual"[^>]*><span>Congés annuels<\/span><strong>28<i>restants<\/i><\/strong><small>1 déjà pris · 1 à venir<\/small>/);
-    expect(html).toMatch(/<button type="button" class="fraction"[^>]*><span>[^<]*fractionnement<\/span><strong>1<i>restant<\/i><\/strong><small>0 déjà pris · 0 à venir<\/small>/);
-    expect(html).toMatch(/<button type="button" class="sick"[^>]*><span>Maladie<\/span><strong>2<i>pris<\/i><\/strong><small>sans effet sur les congés<\/small>/);
-    expect(html).toMatch(/<button type="button" class="cet"[^>]*><span>[^<]+<\/span><strong>0<i>pris<\/i><\/strong><small>déduit du solde CET<\/small>/);
-    expect(html).toMatch(/<button type="button" class="strike"[^>]*>[\s\S]*?<small>retenue estimée dans Ma paie<\/small>/);
+    expect(html).toMatch(/<button type="button" class="annual leave-balance-stock"[^>]*><span class="leave-balance-stock-label"><span class="leave-balance-name-full">Congés annuels<\/span><span class="leave-balance-name-short" aria-hidden="true">CA<\/span><\/span><strong>28<i>j<\/i><\/strong><small class="leave-balance-detail"><span>1 déjà pris<\/span><i> · <\/i><span>1 à venir<\/span><\/small>/);
+    expect(html).toMatch(/<button type="button" class="fraction leave-balance-stock"[^>]*><span class="leave-balance-stock-label"><span class="leave-balance-name-full">[^<]*fractionnement<\/span><span class="leave-balance-name-short" aria-hidden="true">Fract\.<\/span><\/span><strong>1<i>j<\/i><\/strong>/);
+    expect(html).toMatch(/<button type="button" class="sick leave-balance-tracked"[^>]*><span class="leave-balance-copy"><span>Maladie<\/span><small>sans effet sur les congés<\/small><\/span><strong>2<i>pris<\/i><\/strong>/);
+    expect(html).toMatch(/<button type="button" class="cet leave-balance-tracked is-zero"[^>]*><span class="leave-balance-copy"><span>[^<]+<\/span><small>déduit du solde CET<\/small><\/span><strong>0<i>pris<\/i><\/strong>/);
+    expect(html).toMatch(/<button type="button" class="strike leave-balance-tracked is-zero"[^>]*>[\s\S]*?<small>retenue estimée dans Ma paie<\/small>/);
   });
 
-  it("donne à chaque solde à stock la part déjà consommée, pour sa jauge", () => {
+  it("affiche les trois soldes à poser en trio épuré sans barre de progression", () => {
     const html = renderSection();
-
-    // 2 pris ou à venir sur 30 : 7 % ; rien de pris : 0 %. Les absences
-    // seulement comptées (maladie, grève…) n'ont pas de jauge.
-    expect(html).toMatch(/class="annual" style="--used:7%"/);
-    expect(html).toMatch(/class="rtt" style="--used:0%"/);
-    expect(html).toMatch(/class="fraction" style="--used:0%"/);
-    expect(html).not.toMatch(/class="sick" style=/);
+    expect(html).toContain('class="annual leave-balance-stock"');
+    expect(html).toContain('class="rtt leave-balance-stock"');
+    expect(html).toContain('class="fraction leave-balance-stock"');
+    expect(html).not.toContain("--used:");
   });
 });

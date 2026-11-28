@@ -174,7 +174,7 @@ export function RequestChooserDialog({
         <button className="modal-close" type="button" onClick={onClose} aria-label="Fermer">
           ×
         </button>
-        <span className="step-label">Étape 1 sur 3</span>
+        <span className="step-label">Étape 1 sur 2</span>
         <h2 id="request-choice-title">Que voulez-vous poser&nbsp;?</h2>
         <p>
           {requestChooserDate

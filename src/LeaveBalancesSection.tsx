@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { ChoicePicker } from "./ChoicePicker";
 import { LeaveInfoCard } from "./LeaveInfoCard";
 import type { BalanceType, LeavePeriod } from "./appModel";
@@ -11,6 +10,12 @@ import {
   type CountedOnlyType,
   typeLabelFor,
 } from "./planningLogic";
+
+const STOCK_SHORT_LABELS: Record<BalanceType, string> = {
+  annual: "CA",
+  rtt: "RTT",
+  fraction: "Fract.",
+};
 
 type BalanceDetail = {
   date: string;
@@ -45,13 +50,6 @@ type LeaveBalancesSectionProps = {
   onOpenManualAdjustments: () => void;
 };
 
-/** Part du solde déjà consommée (pris, à venir et saisies sans date), de 0 à 100. */
-function usedShare(balance: LeaveBalance) {
-  const total = balance.used + balance.remaining;
-  if (total <= 0) return 0;
-  return Math.min(100, Math.max(0, Math.round((balance.used / total) * 100)));
-}
-
 export function LeaveBalancesSection({
   year,
   totalRemaining,
@@ -62,36 +60,42 @@ export function LeaveBalancesSection({
   onSelectBalance,
   onOpenManualAdjustments,
 }: LeaveBalancesSectionProps) {
-  const otherCountedTypes = [
-    ...COUNTED_ONLY_TYPES.filter((type) => type !== "sick" && type !== "strike"),
-    "strike" as const,
+  const otherCountedTypes: readonly CountedOnlyType[] = [
+    ...COUNTED_ONLY_TYPES.filter((type) => type !== "sick" && type !== "strike" && type !== "work_accident"),
+    "strike",
+    "work_accident",
   ];
-  const countedBalanceButton = (type: CountedOnlyType) => (
-    <button
-      type="button"
-      key={type}
-      className={type}
-      onClick={() => onSelectBalance(type)}
-      aria-label={`Afficher le détail de ${TYPE_LABELS[type]}`}
-    >
-      <span>{typeLabelFor(type, countedOnly[type].used)}</span>
-      <strong>
-        {countedOnly[type].used.toLocaleString("fr-FR")}
-        <i>pris</i>
-      </strong>
-      <small>
-        {type === "cet"
-          ? "déduit du solde CET"
-          : type === "strike"
-            ? "retenue estimée dans Ma paie"
-            : type === "other"
-              ? "compté dans les jours non travaillés"
-              : type === "work_accident"
-                ? "sans carence · CA superposés recrédités"
-                : "sans effet sur les congés"}
-      </small>
-    </button>
-  );
+  const countedBalanceButton = (type: CountedOnlyType) => {
+    const used = countedOnly[type].used;
+    return (
+      <button
+        type="button"
+        key={type}
+        className={`${type} leave-balance-tracked${used === 0 ? " is-zero" : ""}`}
+        onClick={() => onSelectBalance(type)}
+        aria-label={`Afficher le détail de ${TYPE_LABELS[type]}`}
+      >
+        <span className="leave-balance-copy">
+          <span>{typeLabelFor(type, used)}</span>
+          <small>
+            {type === "cet"
+              ? "déduit du solde CET"
+              : type === "strike"
+                ? "retenue estimée dans Ma paie"
+                : type === "other"
+                  ? "compté dans les jours non travaillés"
+                  : type === "work_accident"
+                    ? "sans carence · CA superposés recrédités"
+                    : "sans effet sur les congés"}
+          </small>
+        </span>
+        <strong>
+          {used.toLocaleString("fr-FR")}
+          <i>pris</i>
+        </strong>
+      </button>
+    );
+  };
   return (
     <section className="leave-balances-direct" aria-labelledby="leave-balances-title">
       <div className="leave-balances-heading">
@@ -116,23 +120,29 @@ export function LeaveBalancesSection({
       <div className="request-archive-content direct-balances-content">
         <LeaveInfoCard />
         <div className="leave-balance-grid">
+          <div className="leave-balance-subhead" aria-hidden="true">
+            <span>Soldes à poser</span>
+          </div>
           {balances.map((balance) => (
             <button
               type="button"
               key={balance.type}
-              className={balance.type}
-              // La part déjà consommée du solde, pour la jauge sous le chiffre.
-              style={{ "--used": `${usedShare(balance)}%` } as CSSProperties}
+              className={`${balance.type} leave-balance-stock`}
               onClick={() => onSelectBalance(balance.type)}
               aria-label={`Afficher le détail de ${leaveTypeLabel(balance.type)}`}
             >
-              <span>{typeLabelFor(balance.type, balance.remaining)}</span>
+              <span className="leave-balance-stock-label">
+                <span className="leave-balance-name-full">{typeLabelFor(balance.type, balance.remaining)}</span>
+                <span className="leave-balance-name-short" aria-hidden="true">{STOCK_SHORT_LABELS[balance.type]}</span>
+              </span>
               <strong>
                 {balance.remaining.toLocaleString("fr-FR")}
-                <i>restant{s(balance.remaining)}</i>
+                <i>j</i>
               </strong>
-              <small>
-                {balance.taken.toLocaleString("fr-FR")} déjà pris · {balance.upcoming.toLocaleString("fr-FR")} à venir
+              <small className="leave-balance-detail">
+                <span>{balance.taken.toLocaleString("fr-FR")} déjà pris</span>
+                <i> · </i>
+                <span>{balance.upcoming.toLocaleString("fr-FR")} à venir</span>
               </small>
               {balance.manualUsed > 0 ? (
                 <small className="manual-balance-note">
@@ -142,9 +152,11 @@ export function LeaveBalancesSection({
               ) : null}
             </button>
           ))}
+          <div className="leave-balance-subhead leave-balance-subhead-tracked" aria-hidden="true">
+            <span>Autres absences</span>
+          </div>
           {countedBalanceButton("sick")}
-          {/* Toutes les briques à la suite, sans volet à déplier : CET, garde
-              d'enfant et absences particulières après les quatre principales. */}
+          {/* Les sept suivis d'absences en mini-tuiles compactes à la suite. */}
           {otherCountedTypes.map(countedBalanceButton)}
         </div>
         <button

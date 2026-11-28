@@ -509,9 +509,6 @@ dialog.confirm-dialog .modal-card {
     grid-row: 2;
     margin: 0;
   }
-  .choice-grid button {
-    padding: 15px;
-  }
   .leave-choices {
     grid-template-columns: 1fr;
   }

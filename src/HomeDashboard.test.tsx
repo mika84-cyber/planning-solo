@@ -53,7 +53,7 @@ describe("HomeDashboard", () => {
   it("place le choix du groupe dans l’en-tête d’Aujourd’hui, sans carte à part", () => {
     const heading = (html: string) => html.slice(html.indexOf('<div class="today-overview-heading">'), html.indexOf('<div class="today-blocks">'));
     const chosen = renderToStaticMarkup(<HomeDashboard {...baseProps} hasConfiguredGroup />);
-    expect(heading(chosen)).toContain('<button class="primary-action add-action group-heading-action" type="button" aria-label="Je suis groupe 2. Modifier mon groupe">Je suis groupe 2</button>');
+    expect(heading(chosen)).toContain('<button class="soft-detail-button group-heading-action" type="button" aria-label="Je suis groupe 2. Modifier mon groupe">Je suis groupe 2</button>');
     expect(chosen).not.toContain("today-group-card");
     const unset = renderToStaticMarkup(<HomeDashboard {...baseProps} />);
     expect(heading(unset)).toContain('aria-label="Choisir mon groupe">Choisir mon groupe</button>');
@@ -188,7 +188,7 @@ describe("HomeDashboard", () => {
     expect(html).not.toContain("(voir)");
   });
 
-  it("montre la première note du jour et compte les autres, avec « (voir) »", () => {
+  it("montre la première note du jour et compte les autres en pastille courte", () => {
     const html = renderToStaticMarkup(<HomeDashboard
       {...baseProps}
       upcoming={[{
@@ -205,7 +205,7 @@ describe("HomeDashboard", () => {
       }]}
     />);
     expect(html).toContain('<span class="today-note-first">Psy 11h45</span>');
-    expect(html).toContain('<span class="today-note-more">+2 <span>(voir)</span></span>');
+    expect(html).toContain('<span class="today-note-more">+2</span>');
     expect(html).not.toContain("Mécénat 19h30 / minuit</span>");
     // Le lecteur d’écran entend toutes les notes du jour.
     expect(html).toContain('aria-label="Prochaines notes : Lun 09/11, Psy 11h45, Mécénat 19h30 / minuit, Courses. Afficher ce jour."');

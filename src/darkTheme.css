@@ -48,6 +48,10 @@ html[data-theme="dark"] .work-exchange-cycle-calendar .exchange-cycle-day.select
    lisible sur sombre. */
 html[data-theme="dark"] .leave-balance-grid > button strong { color: color-mix(in srgb, var(--balance-color) 72%, #fff); }
 html[data-theme="dark"] .leave-balance-grid > button strong i { color: inherit; }
+html[data-theme="dark"] .leave-balances-direct .leave-balance-grid button.leave-balance-stock { border-color: color-mix(in srgb, var(--balance-color) 32%, rgba(255, 244, 232, 0.14)); background: color-mix(in srgb, var(--balance-color) 11%, #231f1c); }
+html[data-theme="dark"] .leave-balance-grid > button.leave-balance-tracked.is-zero strong { color: #8c8176; }
+html[data-theme="dark"] .leave-balance-grid > button.leave-balance-tracked.is-zero .leave-balance-copy > span { color: #b5a99c; }
+html[data-theme="dark"] .leave-balance-grid > button.leave-balance-tracked.is-zero { border-left-color: color-mix(in srgb, var(--balance-color) 42%, rgba(255, 244, 232, 0.12)); }
 /* Les repères de type de congé gardent la couleur du mode clair. */
 html[data-theme="dark"] .leave-choices button > i { background: var(--person-color); }
 
@@ -373,3 +377,31 @@ html[data-theme="dark"] .wish-conversion .wish-conversion-continue:disabled { bo
 html[data-theme="dark"] .worked-days li { border-color: rgba(255, 244, 232, 0.17); background: #26221e; }
 html[data-theme="dark"] .worked-days li.worked-days-month b { color: #e8a787; }
 html[data-theme="dark"] .worked-days li.worked-days-year b { color: #8fd6ae; }
+
+/* Plannings PDF en sombre : réglages sobres, groupes éclaircis et cartes lisibles. */
+html[data-theme="dark"] .pdf-quick-settings { border-color: rgba(255, 244, 232, 0.12); background: #24201d; }
+html[data-theme="dark"] .pdf-quick-row,
+html[data-theme="dark"] .pdf-quick-group,
+html[data-theme="dark"] .pdf-quick-vacation { border-color: rgba(255, 244, 232, 0.12); }
+html[data-theme="dark"] .pdf-year-pills button { border-color: rgba(255, 244, 232, 0.14); background: transparent; color: #f4eee6; }
+html[data-theme="dark"] .pdf-year-pills button.active,
+html[data-theme="dark"] .pdf-year-more.active .choice-picker-trigger { border-color: #f4eee6; background: #f4eee6; color: #1c1917; }
+html[data-theme="dark"] .pdf-year-more .choice-picker-trigger { border-color: rgba(255, 244, 232, 0.24); background: transparent; color: #b6aa9d; }
+html[data-theme="dark"] .pdf-group-pills button { border-color: rgba(255, 244, 232, 0.15); background: transparent; color: color-mix(in srgb, var(--pill-tone) 76%, #fff); }
+html[data-theme="dark"] .pdf-group-pills button.active { border-color: var(--pill-tone); background: var(--pill-tone); color: #fff; }
+html[data-theme="dark"] .pdf-vac-track { background: rgba(255, 244, 232, 0.22); }
+html[data-theme="dark"] .pdf-vac-track i { background: #f4eee6; }
+html[data-theme="dark"] .pdf-vac-switch.active .pdf-vac-track { background: #b6643f; }
+html[data-theme="dark"] .pdf-doc-group-meta-accent { color: #e29671; }
+html[data-theme="dark"] .pdf-doc { border-color: rgba(255, 244, 232, 0.11); background: #24201d; color: #f4eee6; }
+html[data-theme="dark"] .pdf-doc:hover:not(:disabled) { border-color: color-mix(in srgb, var(--doc-tone) 55%, rgba(255, 244, 232, 0.2)); background: #2b2622; }
+html[data-theme="dark"] .pdf-doc-icon,
+html[data-theme="dark"] .pdf-doc-download { background: color-mix(in srgb, var(--doc-tone) 22%, #1c1917); color: color-mix(in srgb, var(--doc-tone) 68%, #fff); }
+html[data-theme="dark"] .pdf-doc:hover:not(:disabled) .pdf-doc-download { background: color-mix(in srgb, var(--doc-tone) 32%, #1c1917); }
+
+/* Accueil & pose de congé en sombre : groupe en pilule sobre, pastille note et CET/Jour exceptionnel éclaircis. */
+html[data-theme="dark"] .today-overview-heading .soft-detail-button.group-heading-action { border-color: rgba(212, 134, 96, 0.36); background: rgba(182, 100, 63, 0.14); color: #f0c2a8; }
+html[data-theme="dark"] .today-next-note .today-note-more { background: rgba(217, 114, 126, 0.18); color: #f4a4ae; }
+html[data-theme="dark"] .request-choice .request-choice-row.leave-choice-cet { --leave-choice-accent: #6c9cf0; }
+html[data-theme="dark"] .request-choice .request-choice-row.leave-choice-exceptional { --leave-choice-accent: #d89b4a; }
+html[data-theme="dark"] #request-panel .lrw-cal .month-card-picker .choice-picker-trigger { border-color: rgba(255, 244, 232, 0.22); background: #2d2722; color: #f8f3ec; }

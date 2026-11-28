@@ -1076,7 +1076,7 @@
 
 .pdf-download-intro { max-width: none; }
 
-.planning-pdf-dialog>.pdf-download-screen { margin: 0; border: 0; box-shadow: none; }
+.planning-pdf-dialog>.pdf-download-screen { width: 100%; min-height: 0; margin: 0; border: 0; box-shadow: none; }
 
 /* ---- Variantes selon la largeur ------------------------------------------ */
 

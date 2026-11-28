@@ -293,34 +293,6 @@
   font-size: 23px;
   cursor: pointer;
 }
-.choice-grid {
-  display: grid;
-  gap: 10px;
-  margin-top: 19px;
-}
-.choice-grid button {
-  display: grid;
-  gap: 5px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 17px;
-  background: var(--surface-high);
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-}
-.choice-grid button:hover {
-  border-color: var(--border-card);
-  background: var(--surface-high);
-}
-.choice-grid strong {
-  font-size: 16px;
-}
-.choice-grid span {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
 .field-label {
   display: block;
   margin: 14px 0 7px;

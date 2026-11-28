@@ -36,10 +36,10 @@
   .home-content-heading { align-items: flex-start; }
   .home-content-heading h2 { font-size: 1.25rem; }
   .home-content-heading > button { padding: 0 12px; }
-  .app-shell { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .app-shell { padding-bottom: calc(144px + env(safe-area-inset-bottom)); }
 }
 @media (min-width: 721px) {
-  .app-shell{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+  .app-shell{padding-bottom:calc(138px + env(safe-area-inset-bottom))}
 }
 
 /* Expérience d'application : barre stable, navigation depuis la droite et

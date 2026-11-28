@@ -529,10 +529,9 @@ test("toutes les rubriques utilisent des cartes blanches, des contours fins et d
   await expect(payslipChoice).toHaveCSS("color", "rgb(255, 255, 255)");
 
   await openPlanningPdf(page);
-  // Réglages et documents colorés : chaque tuile et chaque ligne a sa teinte.
-  const settingTints = await page.locator(".pdf-quick-setting").evaluateAll((tiles) => tiles.map((tile) => getComputedStyle(tile).backgroundColor));
-  expect(new Set(settingTints).size).toBe(3);
-  const docTones = await page.locator(".pdf-doc-download").evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor));
+  // Bandeau de réglages sobre et quatre documents chacun à sa couleur.
+  await expect(page.locator(".pdf-quick-settings")).toBeVisible();
+  const docTones = await page.locator(".pdf-doc-download").evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).color));
   expect(new Set(docTones).size).toBe(4);
   await closePlanningPdf(page);
 
@@ -908,9 +907,8 @@ test("toutes les briques de congés tiennent dans une grille équilibrée, sans 
   await expect(page.locator(".other-leave-balances")).toHaveCount(0);
   const cards = page.locator(".direct-balances-content > .leave-balance-grid > button");
   await expect(cards).toHaveCount(10);
-  // Les quatre soldes utiles d'abord, sur deux lignes de deux cartes ; les hauts
-  // sont regroupés à 2 px près, un arrondi de sous-pixel ne devant pas couper
-  // une ligne en deux.
+  // Trois soldes à poser alignés en tête (3 colonnes), puis les sept suivis
+  // d'absences en mini-tuiles compactes (2 colonnes).
   await expect(cards.nth(0)).toHaveClass(/annual/);
   await expect(cards.nth(3)).toHaveClass(/sick/);
   const rows = (boxes: DOMRect[]) => boxes.map((box) => box.top).sort((a, b) => a - b)
@@ -919,11 +917,15 @@ test("toutes les briques de congés tiennent dans une grille équilibrée, sans 
     boxes: nodes.map((node) => node.getBoundingClientRect().toJSON() as DOMRect),
     containerWidth: nodes[0]?.parentElement?.getBoundingClientRect().width || 0,
   }));
-  expect(rows(layout.boxes.slice(0, 4))).toHaveLength(2);
-  expect(rows(layout.boxes)).toHaveLength(5);
-  const widths = layout.boxes.map((box) => box.width);
-  expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
-  expect(Math.max(...widths)).toBeLessThan(layout.containerWidth * 0.6);
+  const stockBoxes = layout.boxes.slice(0, 3);
+  const trackedBoxes = layout.boxes.slice(3);
+  expect(rows(stockBoxes)).toHaveLength(1);
+  expect(rows(trackedBoxes)).toHaveLength(4);
+  const stockWidths = stockBoxes.map((box) => box.width);
+  const trackedWidths = trackedBoxes.map((box) => box.width);
+  expect(Math.max(...stockWidths) - Math.min(...stockWidths)).toBeLessThanOrEqual(2);
+  expect(Math.max(...trackedWidths) - Math.min(...trackedWidths)).toBeLessThanOrEqual(2);
+  expect(Math.max(...trackedWidths)).toBeLessThan(layout.containerWidth * 0.6);
   // « Reprendre mes absences précédentes » suit la grille, sur toute sa largeur.
   const previousAbsencesButton = page.locator(".direct-balances-content > .manual-adjustments-trigger");
   await expect(previousAbsencesButton).toBeVisible();
@@ -2346,11 +2348,18 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   expect(await pdfScreen.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toContain("pdf-art.jpg");
   await expect(pdfScreen).toHaveCSS("border-top-color", await cssTokenRgb(page, "--border-card"));
   await expect(pdfScreen.locator("> .native-screen-heading")).toHaveCSS("background-color", CHAPTER_TINT);
-  // Plus d’étapes numérotées : une ligne de réglages, puis la liste des documents.
+  // Plus d’étapes numérotées : un bandeau de réglages sobre, puis deux groupes de documents.
   await expect(pdfScreen.locator(".pdf-step-number")).toHaveCount(0);
   await expect(pdfScreen.locator(".pdf-quick-setting")).toHaveCount(3);
+  await expect(pdfScreen.locator(".pdf-doc-group h3")).toHaveText(["Mon planning", "Tous les groupes"]);
   await expect(pdfScreen.locator(".pdf-doc")).toHaveCount(4);
-  await expect(pdfScreen.getByRole("group", { name: "Vacances scolaires sur le PDF" }).getByRole("button", { name: "Non" })).toHaveAttribute("aria-pressed", "true");
+  const vacationSwitch = pdfScreen.getByRole("switch", { name: "Vacances scolaires sur le PDF" });
+  await expect(vacationSwitch).toHaveAttribute("aria-checked", "false");
+  await vacationSwitch.click();
+  await expect(vacationSwitch).toHaveAttribute("aria-checked", "true");
+  await expect(pdfScreen.locator(".pdf-doc-group-meta-accent")).toContainText("avec vacances");
+  await vacationSwitch.click();
+  await expect(vacationSwitch).toHaveAttribute("aria-checked", "false");
   await expect(pdfScreen).not.toContainText("Pour faciliter les échanges sur jours fériés");
   // Du plus personnel au plus général, avec des intitulés explicites.
   await expect(pdfScreen.locator(".pdf-doc strong")).toHaveText([
@@ -2370,7 +2379,7 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(pdfScreen.locator(".pdf-doc-selected strong")).toHaveText("Planning du groupe 3, sans congés");
   await expect(pdfScreen.locator(".pdf-doc-selected")).toContainText("Groupe 3 · le cycle de travail seul");
   // La ligne du groupe prend la couleur du groupe choisi (orange pour le 3).
-  await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-download")).toHaveCSS("background-color", "rgb(202, 119, 43)");
+  await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-download")).toHaveCSS("color", "rgb(202, 119, 43)");
   await expect(pdfScreen.getByRole("button", { name: /^Mon planning avec mes congés/ })).toContainText("Groupe 2 · vos congés et absences");
   await groupPills.getByRole("button", { name: "Groupe 2" }).click();
   await expect(pdfScreen.getByRole("button", { name: /^Mon planning sans congés/ })).toBeVisible();
@@ -2383,32 +2392,28 @@ test("menu, contact administrateur, paie et PDF restent accessibles", async ({ p
   await expect(yearPills.getByRole("button", { name: String(firstPdfYear) })).toHaveAttribute("aria-pressed", "true");
   await yearPills.getByRole("button", { name: String(firstPdfYear + 1) }).click();
   await expect(yearPills.getByRole("button", { name: String(firstPdfYear + 1) })).toHaveAttribute("aria-pressed", "true");
-  await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-settings")).toHaveText(new RegExp(`^${firstPdfYear + 1}`));
+  await expect(pdfScreen.locator(".pdf-doc-group-meta-accent")).toHaveText(new RegExp(`^${firstPdfYear + 1}`));
   // Au-delà, « Plus » ouvre la liste des années suivantes.
   await yearPills.getByRole("button", { name: "Autre année du PDF" }).click();
   await page.getByRole("listbox", { name: "Autre année du PDF" }).getByRole("option", { name: String(firstPdfYear + 4) }).click();
   await expect(yearPills.getByRole("button", { name: "Autre année du PDF" })).toHaveText(String(firstPdfYear + 4));
-  await expect(pdfScreen.locator(".pdf-doc-selected .pdf-doc-settings")).toHaveText(new RegExp(`^${firstPdfYear + 4}`));
+  await expect(pdfScreen.locator(".pdf-doc-group-meta-accent")).toHaveText(new RegExp(`^${firstPdfYear + 4}`));
   await yearPills.getByRole("button", { name: String(firstPdfYear) }).click();
   await expect(yearPills.getByRole("button", { name: String(firstPdfYear) })).toHaveAttribute("aria-pressed", "true");
   // Six années à partir de l’année en cours.
   const holidayFirstYear = Math.max(2026, new Date().getFullYear());
   await expect(pdfScreen.getByRole("button", { name: /^Fériés travaillés par groupe/ })).toContainText(`${holidayFirstYear}–${holidayFirstYear + 5} · pour échanger un férié entre groupes`);
   // Une ligne par document, empilées, sans débordement. Sur ordinateur, les
-  // trois réglages tiennent sur une seule ligne, à la même largeur ; sur
-  // téléphone, l'année prend toute une ligne, groupe et vacances la suivante.
+  // trois réglages tiennent sur une seule ligne ; sur téléphone, l'année
+  // occupe la première ligne, groupe et vacances la seconde.
   const docBoxes = await pdfScreen.locator(".pdf-doc").evaluateAll((docs) => docs.map((doc) => doc.getBoundingClientRect().toJSON()));
   for (let index = 1; index < docBoxes.length; index += 1) expect(docBoxes[index].y).toBeGreaterThan(docBoxes[index - 1].y + docBoxes[index - 1].height - 1);
   const settingBoxes = await pdfScreen.locator(".pdf-quick-setting").evaluateAll((tiles) => tiles.map((tile) => tile.getBoundingClientRect().toJSON()));
-  const settingsRow = await pdfScreen.locator(".pdf-quick-settings").boundingBox();
   if ((page.viewportSize()?.width || 0) <= 720) {
-    expect(settingBoxes[0].width).toBeCloseTo(settingsRow?.width ?? 0, 0);
     expect(settingBoxes[1].y).toBeGreaterThan(settingBoxes[0].y + settingBoxes[0].height - 1);
-    expect(Math.abs(settingBoxes[1].y - settingBoxes[2].y)).toBeLessThanOrEqual(1);
-    expect(Math.abs(settingBoxes[1].width - settingBoxes[2].width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(settingBoxes[1].y + settingBoxes[1].height / 2 - (settingBoxes[2].y + settingBoxes[2].height / 2))).toBeLessThanOrEqual(2);
   } else {
-    expect(Math.abs(settingBoxes[0].y - settingBoxes[2].y)).toBeLessThanOrEqual(1);
-    expect(Math.max(...settingBoxes.map(({ width }) => width)) - Math.min(...settingBoxes.map(({ width }) => width))).toBeLessThanOrEqual(1);
+    expect(Math.abs(settingBoxes[0].y + settingBoxes[0].height / 2 - (settingBoxes[2].y + settingBoxes[2].height / 2))).toBeLessThanOrEqual(2);
   }
   expect(await pdfScreen.evaluate((screen) => screen.scrollWidth <= screen.clientWidth + 1)).toBe(true);
   expect(Math.abs((await headerHeight()) - homeHeaderHeight)).toBeLessThan(0.5);
@@ -5526,10 +5531,9 @@ test("le Z Fold ouvert garde un grand en-tête et le balayage tactile", async ({
       page.locator(".leave-balance-grid button.strike").boundingBox(),
       page.locator(".leave-balance-grid button.cet").boundingBox(),
     ]);
-    expect(Math.abs(otherBox!.y - cetBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(cetBox!.y - strikeBox!.y)).toBeLessThanOrEqual(2);
     expect(Math.abs(otherBox!.width - strikeBox!.width)).toBeLessThanOrEqual(2);
-    expect(Math.abs(otherBox!.height - strikeBox!.height)).toBeLessThanOrEqual(2);
-    expect(otherBox!.x).toBeLessThan(cetBox!.x);
+    expect(cetBox!.x).toBeLessThan(strikeBox!.x);
     expect(strikeBox!.y).toBeGreaterThan(otherBox!.y + otherBox!.height);
   }).toPass({ timeout: 10_000 });
 
@@ -6102,26 +6106,26 @@ test("une grève met à jour le planning, les jours travaillés et la paie", asy
   await page.evaluate(() => document.fonts.ready);
   if ((page.viewportSize()?.width ?? 1000) <= 720) {
     await expect.poll(async () => {
-      const [strikeBox, accidentBox] = await Promise.all([
+      const [strikeBox, cetBox] = await Promise.all([
         strikeCard.boundingBox(),
-        otherGrid.locator("button.work_accident").boundingBox(),
+        otherGrid.locator("button.cet").boundingBox(),
       ]);
-      return strikeBox && accidentBox ? Math.abs(strikeBox.y - accidentBox.y) : Number.POSITIVE_INFINITY;
+      return strikeBox && cetBox ? Math.abs(strikeBox.y - cetBox.y) : Number.POSITIVE_INFINITY;
     }).toBeLessThanOrEqual(2);
   }
   // Les quatre mesures sont reprises ensemble : les relever une à une après
   // l'attente laissait passer un état intermédiaire de la grille.
   await expect(async () => {
-    const [balanceGridBox, strikeCardBox, otherCardBox, accidentCardBox] = await Promise.all([
+    const [balanceGridBox, strikeCardBox, otherCardBox, cetCardBox] = await Promise.all([
       otherGrid.boundingBox(),
       strikeCard.boundingBox(),
       otherGrid.locator("button.other").boundingBox(),
-      otherGrid.locator("button.work_accident").boundingBox(),
+      otherGrid.locator("button.cet").boundingBox(),
     ]);
-    expect(Math.abs(strikeCardBox!.y - accidentCardBox!.y)).toBeLessThanOrEqual(2);
-    expect(Math.abs(strikeCardBox!.width - accidentCardBox!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(strikeCardBox!.y - cetCardBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(strikeCardBox!.width - cetCardBox!.width)).toBeLessThanOrEqual(2);
     expect(strikeCardBox!.width).toBeGreaterThan(balanceGridBox!.width * 0.4);
-    expect(Math.abs(strikeCardBox!.height - accidentCardBox!.height)).toBeLessThanOrEqual(2);
+    expect(Math.abs(strikeCardBox!.height - cetCardBox!.height)).toBeLessThanOrEqual(2);
     expect(otherCardBox!.y).toBeLessThan(strikeCardBox!.y);
   }).toPass();
   await strikeCard.click();
@@ -6415,7 +6419,7 @@ test("la demande guide sans masquer les options avancées", async ({ page }) => 
   await page.getByRole("button", { name: "Poser un congé" }).click();
   const chooser = page.getByRole("dialog", { name: "Poser un congé" });
   await expect(chooser.getByRole("heading", { name: /Que voulez-vous poser/ })).toBeVisible();
-  await expect(chooser.getByText("Étape 1 sur 3")).toBeVisible();
+  await expect(chooser.getByText("Étape 1 sur 2")).toBeVisible();
   await chooser.getByRole("button", { name: /^CA/ }).click();
 
   const request = page.locator("#request-panel");
@@ -7638,24 +7642,24 @@ test("le groupe, les notes, les sauvegardes et le retour du formulaire restent a
   await expect(back).toHaveAttribute("href", "/");
 });
 
-test("le coup d’œil montre la première note du jour, puis « +1 (voir) »", async ({ page }) => {
+test("le coup d’œil montre la première note du jour, puis la pastille « +1 »", async ({ page }) => {
   await prepareDemo(page);
   // Demain, la démo porte une note de Mika et une d’Agnès : la première se
   // lit, l’autre se compte.
   const nextNote = page.locator(".today-next-note");
   await expect(nextNote.locator(".today-note-first")).toHaveText("Préparer les documents pour notre rendez-vous");
-  await expect(nextNote.locator(".today-note-more")).toHaveText("+1 (voir)");
+  await expect(nextNote.locator(".today-note-more")).toHaveText("+1");
   await expect(nextNote).not.toContainText("Je réserve la table");
   await expect(nextNote).toHaveAttribute(
     "aria-label",
     /^Prochaines notes : .+, Préparer les documents pour notre rendez-vous, Je réserve la table pour 19 h 30\. Afficher ce jour\.$/,
   );
-  // Une première note trop longue se coupe ; « +1 (voir) » reste entier,
+  // Une première note trop longue se coupe ; la pastille « +1 » reste entière,
   // sur la même ligne, dans le bloc.
   const more = nextNote.locator(".today-note-more");
   const [textBox, moreBox] = await Promise.all([nextNote.locator(".today-note-text").boundingBox(), more.boundingBox()]);
   expect(moreBox!.x + moreBox!.width).toBeLessThanOrEqual(textBox!.x + textBox!.width + 0.5);
-  expect(Math.abs(moreBox!.y - textBox!.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(moreBox!.y + moreBox!.height / 2 - (textBox!.y + textBox!.height / 2))).toBeLessThanOrEqual(2);
   expect(await more.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
   // Toucher le bloc ouvre ce jour, avec toutes ses notes.
   await nextNote.click();
@@ -8663,13 +8667,15 @@ test("les contacts proposent un bouton Copier et le bouton Retour en haut remont
   await prepareDemo(page);
   const topBtn = page.getByRole("button", { name: "Revenir en haut de la page" });
   await expect(topBtn).toHaveCount(0);
-  await page.evaluate(() => window.scrollTo(0, 600));
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect(topBtn).toBeVisible();
-  const [btnBox, dockBox] = await Promise.all([
+  const [btnBox, dockBox, cleanupBox] = await Promise.all([
     topBtn.boundingBox(),
     page.locator(".section-dock").boundingBox(),
+    page.locator(".calendar-bulk-delete-below").boundingBox(),
   ]);
   expect(btnBox!.y + btnBox!.height).toBeLessThanOrEqual(dockBox!.y);
+  if (cleanupBox) expect(cleanupBox.y + cleanupBox.height).toBeLessThanOrEqual(btnBox!.y + 1);
   await topBtn.click();
   await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
 

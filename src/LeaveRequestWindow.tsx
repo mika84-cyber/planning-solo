@@ -621,7 +621,7 @@ export function LeaveRequestWindow({
                 <button
                   type="button"
                   key={key}
-                  className={`day lrw-day ${info.kind}${ribbonClass ? ` ${ribbonClass}` : ""}${isToday ? " today" : ""}${existingLeave && !sel ? " has-leave" : ""}${halfMoment ? ` is-half half-${halfMoment}` : ""}`}
+                  className={`day lrw-day ${info.kind}${info.holiday ? " holiday" : ""}${ribbonClass ? ` ${ribbonClass}` : ""}${isToday ? " today" : ""}${existingLeave && !sel ? " has-leave" : ""}${halfMoment ? ` is-half half-${halfMoment}` : ""}`}
                   style={sel ? ({ "--day-tone": selectionColor(sel) } as CSSProperties) : undefined}
                   onClick={() => onSelectDay(cell)}
                   aria-pressed={Boolean(sel)}

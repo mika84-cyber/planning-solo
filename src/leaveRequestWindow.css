@@ -214,21 +214,28 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
 /* 4. Calendrier fluide en ruban continu */
 .lrw-cal { margin: 0; border: 0; padding: 4px 14px 12px; background: none; box-shadow: none; }
 .lrw-cal .month-card-nav { gap: 6px; margin: 0 2px 10px; }
+#request-panel .lrw-cal .month-card-title { font-size: 0.96rem; font-weight: 700; }
+#request-panel .lrw-cal .month-card-picker .choice-picker-trigger { min-height: 34px; height: 34px; padding: 0 11px; border-color: var(--lrw-line); background: var(--lrw-elev); color: var(--lrw-ink); }
 #request-panel .lrw-cal .month-card-controls { border-color: var(--lrw-line); background: var(--lrw-elev); }
 #request-panel .lrw-cal .month-card-controls .period-step { width: 30px; height: 32px; min-height: 32px; border: 0; background: transparent; color: var(--lrw-ink); box-shadow: none; }
 #request-panel .lrw-cal .month-card-controls .month-nav-today { min-height: 32px; border-color: var(--lrw-line); }
 #request-panel .lrw-cal .month-card-controls :is(.period-step, .month-nav-today):hover { background: var(--lrw-soft); }
-#request-panel .lrw-cal .month-title-trigger { min-height: 32px; font-family: var(--font-display); font-size: 1.04rem; color: var(--lrw-ink); }
 
 .lrw-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
   text-align: center;
-  padding-bottom: 6px;
+  margin-bottom: 6px;
   color: var(--lrw-muted);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.06em;
+}
+.lrw-weekdays span {
+  border-radius: 7px;
+  padding: 3px 0;
+  background: var(--lrw-elev);
 }
 
 #request-panel .lrw-days {
@@ -261,15 +268,15 @@ html[data-theme="dark"] .lrw-backdrop { background: rgba(10, 8, 6, 0.74); }
   cursor: pointer;
 }
 
-html[data-theme="dark"] #request-panel .lrw-day:is(.off, .holiday):not(.sel) { border-color: rgba(255, 245, 235, 0.1); background: #0c0a08; }
-#request-panel .lrw-day:is(.off, .holiday):not(.sel) { border-color: transparent; background: #1d1916; opacity: 1; }
+#request-panel .lrw-day.off:not(.sel) { border-color: transparent; background: #1d1916; color: #cbc2b8; font-weight: 650; opacity: 1; }
+html[data-theme="dark"] #request-panel .lrw-day.off:not(.sel) { border-color: rgba(255, 245, 235, 0.16); background: #0c0a08; color: #d5cdc3; }
 html[data-theme="dark"] #request-panel .lrw-day.work:not(.sel) { border-color: transparent; background: #eae2d5; color: #1c1916; }
-#request-panel .lrw-day.off:not(.sel) { color: #a9a096; font-weight: 600; }
-html[data-theme="dark"] #request-panel .lrw-day.off:not(.sel) { color: #7c7268; }
 #request-panel .lrw-day.training:not(.sel) { border-color: transparent; background: #969089; color: #fff; opacity: 1; font-weight: 700; }
 html[data-theme="dark"] #request-panel .lrw-day.training:not(.sel) { border-color: rgba(255, 245, 235, 0.12); background: #5b5650; color: #f3eee8; }
-#request-panel .lrw-day.holiday:not(.sel) { color: #f27482; font-weight: 750; }
-html[data-theme="dark"] #request-panel .lrw-day.holiday:not(.sel) { color: #f26b7a; }
+#request-panel .lrw-day.off.holiday:not(.sel) { color: #f48692; font-weight: 750; }
+html[data-theme="dark"] #request-panel .lrw-day.off.holiday:not(.sel) { border-color: rgba(244, 134, 146, 0.28); color: #f78c98; }
+#request-panel .lrw-day.work.holiday:not(.sel),
+html[data-theme="dark"] #request-panel .lrw-day.work.holiday:not(.sel) { color: #b3212a; font-weight: 800; }
 #request-panel .lrw-day:hover:not(.sel) { filter: brightness(0.94); }
 #request-panel .lrw-day.today::after { content: ""; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--lrw-accent); }
 #request-panel .lrw-day.has-leave:not(.sel) { border: 1.5px dashed rgba(44, 38, 33, 0.36); opacity: 0.56; }

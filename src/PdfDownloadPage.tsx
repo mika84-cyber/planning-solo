@@ -4,6 +4,7 @@ import { GROUP_OPTIONS, YEAR_OPTIONS, workedHolidaysYearRange } from "./planning
 import "./pdfDownloadPage.css";
 
 type PdfScope = "selected" | "all" | "my-leaves" | "worked-holidays";
+type PdfDocEntry = readonly [PdfScope, string, string, string, string];
 
 /** Couleurs des groupes, les mêmes que dans le choix du groupe. */
 const GROUP_TONES: Record<number, string> = { 1: "#3069b4", 2: "#298b69", 3: "#ca772b" };
@@ -46,7 +47,6 @@ type PdfDownloadPageProps = {
 };
 
 export function PdfDownloadPage({
-  narrowScreen,
   year,
   group,
   showSchoolVacations,
@@ -61,25 +61,48 @@ export function PdfDownloadPage({
   // choisir ici ne touche pas à votre groupe.
   const [pdfGroup, setPdfGroup] = useState(group);
   useEffect(() => setPdfGroup(group), [group]);
+
+  const personalDocs: readonly PdfDocEntry[] = [
+    ["my-leaves", "Mon planning avec mes congés", `Groupe ${group} · vos congés et absences de l’année`, "1 p.", "#a4532f"],
+    ["selected", pdfGroup === group ? "Mon planning sans congés" : `Planning du groupe ${pdfGroup}, sans congés`, `Groupe ${pdfGroup} · le cycle de travail seul`, "1 p.", GROUP_TONES[pdfGroup]],
+  ];
+  const teamDocs: readonly PdfDocEntry[] = [
+    ["all", "Planning des 3 groupes", `Groupes 1, 2 et 3 · une page par groupe · ${year}${showSchoolVacations ? " · vacances" : ""}`, "3 p.", "#4a5a78"],
+    ["worked-holidays", "Fériés travaillés par groupe", `${holidayYears.firstYear}–${holidayYears.lastYear} · pour échanger un férié entre groupes`, "1 p.", "#8a4f9e"],
+  ];
+
+  const renderDoc = ([scope, title, detail, pageCount, tone]: PdfDocEntry) => (
+    <button
+      key={scope}
+      type="button"
+      className={`pdf-doc pdf-doc-${scope}`}
+      style={{ "--doc-tone": tone } as CSSProperties}
+      disabled={exporting !== null}
+      onClick={() => onExport(scope, scope === "worked-holidays" ? false : showSchoolVacations, pdfGroup)}
+    >
+      <span className="pdf-doc-icon" aria-hidden="true">{DOC_ICONS[scope]}</span>
+      <span className="pdf-doc-copy">
+        <strong>{exporting === scope ? "Création…" : title}</strong>
+        <small>{detail}</small>
+      </span>
+      <span className="pdf-doc-download" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 19h14" /></svg>
+        <span className="pdf-doc-pages">{pageCount}</span>
+      </span>
+    </button>
+  );
+
   return (
     <section className="pdf-download-screen" id="planning-pdf" aria-labelledby="pdf-download-title">
       <div className="native-screen-heading pdf-download-intro">
         <span className="step-label">Plannings PDF</span>
         <h2 id="pdf-download-title">Télécharger les plannings en PDF</h2>
-        <p>
-          {narrowScreen
-            ? "Réglez l’année, le groupe et les vacances, puis touchez le document voulu."
-            : "Réglez l’année, le groupe et les vacances, puis cliquez sur le document voulu."}
-        </p>
       </div>
-      {/* Une ligne de réglages, puis la liste des documents : un toucher crée
-          le PDF. Chaque ligne rappelle les réglages qui la concernent. */}
+      {/* Un bandeau de réglages sobre, puis deux groupes de documents :
+          Mon planning (perso) et Tous les groupes (équipe et échanges). */}
       <section className="pdf-quick-settings" aria-label="Réglages du PDF">
         <div className="pdf-quick-setting pdf-quick-year">
           <span>Année</span>
-          {/* Trois années en pastilles, à partir de l'année en cours, comme
-              les groupes juste en dessous ; « Plus » ouvre la liste des
-              suivantes et montre l'année choisie au-delà. */}
           <div className="pdf-year-pills" role="group" aria-label="Année du PDF">
             {years.pills.map((value) => (
               <button
@@ -103,81 +126,57 @@ export function PdfDownloadPage({
             />
           </div>
         </div>
-        <div className="pdf-quick-setting pdf-quick-group" style={{ "--setting-tone": GROUP_TONES[pdfGroup] } as CSSProperties}>
-          <span>Groupe</span>
-          {/* Les trois groupes d'un coup d'œil, chacun à sa couleur. */}
-          <div className="pdf-group-pills" role="group" aria-label="Groupe du PDF">
-            {GROUP_OPTIONS.map(({ value }) => (
-              <button
-                key={value}
-                type="button"
-                className={pdfGroup === value ? "active" : undefined}
-                style={{ "--pill-tone": GROUP_TONES[value] } as CSSProperties}
-                aria-pressed={pdfGroup === value}
-                aria-label={`Groupe ${value}`}
-                onClick={() => setPdfGroup(value)}
-              >
-                {value}
-              </button>
-            ))}
+        <div className="pdf-quick-row">
+          <div className="pdf-quick-setting pdf-quick-group">
+            <span>Groupe</span>
+            <div className="pdf-group-pills" role="group" aria-label="Groupe du PDF">
+              {GROUP_OPTIONS.map(({ value }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={pdfGroup === value ? "active" : undefined}
+                  style={{ "--pill-tone": GROUP_TONES[value] } as CSSProperties}
+                  aria-pressed={pdfGroup === value}
+                  aria-label={`Groupe ${value}`}
+                  onClick={() => setPdfGroup(value)}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="pdf-quick-setting pdf-quick-vacation">
-          <span>Vacances</span>
-          {/* Non / Oui en pastilles, comme les années et les groupes. */}
-          <div className="pdf-vacation-pills" role="group" aria-label="Vacances scolaires sur le PDF">
-            {([false, true] as const).map((value) => (
-              <button
-                key={String(value)}
-                type="button"
-                className={showSchoolVacations === value ? "active" : undefined}
-                aria-pressed={showSchoolVacations === value}
-                onClick={() => onShowSchoolVacationsChange(value)}
-              >
-                {value ? "Oui" : "Non"}
-              </button>
-            ))}
+          <div className="pdf-quick-setting pdf-quick-vacation">
+            <button
+              type="button"
+              role="switch"
+              className={`pdf-vac-switch${showSchoolVacations ? " active" : ""}`}
+              aria-checked={showSchoolVacations}
+              aria-label="Vacances scolaires sur le PDF"
+              onClick={() => onShowSchoolVacationsChange((current) => !current)}
+            >
+              <span>Vacances</span>
+              <span className="pdf-vac-track" aria-hidden="true"><i /></span>
+            </button>
           </div>
         </div>
       </section>
-      {/* Un filet discret sépare les réglages des documents. */}
-      <div className="pdf-section-divider" aria-hidden="true"><span>Documents</span></div>
       <section className="pdf-doc-grid" aria-label="Documents à créer">
-        {([
-          // Du plus personnel au plus général : votre planning avec vos congés,
-          // le même sans congés, les trois groupes, puis les fériés travaillés.
-          ["my-leaves", "Mon planning avec mes congés", `Groupe ${group} · vos congés et absences de l’année`, "1 page", "#a4532f"],
-          ["selected", pdfGroup === group ? "Mon planning sans congés" : `Planning du groupe ${pdfGroup}, sans congés`, `Groupe ${pdfGroup} · le cycle de travail seul`, "1 page", GROUP_TONES[pdfGroup]],
-          ["all", "Planning des 3 groupes", "Groupes 1, 2 et 3 · une page par groupe", "3 pages", "#4a5a78"],
-          ["worked-holidays", "Fériés travaillés par groupe", `${holidayYears.firstYear}–${holidayYears.lastYear} · pour échanger un férié entre groupes`, "1 page", "#8a4f9e"],
-        ] as const).map(([scope, title, detail, pageCount, tone]) => {
-          const settings = scope === "worked-holidays"
-            ? "Sans vacances scolaires"
-            : `${year}${showSchoolVacations ? " · vacances scolaires" : ""}`;
-          return (
-            <button
-              key={scope}
-              type="button"
-              className={`pdf-doc pdf-doc-${scope}`}
-              style={{ "--doc-tone": tone } as CSSProperties}
-              disabled={exporting !== null}
-              onClick={() => onExport(scope, scope === "worked-holidays" ? false : showSchoolVacations, pdfGroup)}
-            >
-              <span className="pdf-doc-icon" aria-hidden="true">{DOC_ICONS[scope]}</span>
-              <span className="pdf-doc-copy">
-                <strong>{exporting === scope ? "Création…" : title}</strong>
-                <small>{detail}</small>
-                <span className="pdf-doc-settings">{settings}</span>
-              </span>
-              <span className="pdf-doc-action">
-                <span className="pdf-doc-download" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 19h14" /></svg>
-                </span>
-                <span className="pdf-doc-pages">{pageCount}</span>
-              </span>
-            </button>
-          );
-        })}
+        <div className="pdf-doc-group">
+          <div className="pdf-doc-group-head">
+            <h3>Mon planning</h3>
+            <span className="pdf-doc-group-meta pdf-doc-group-meta-accent">
+              {`${year}${showSchoolVacations ? " · avec vacances" : ""}`}
+            </span>
+          </div>
+          {personalDocs.map(renderDoc)}
+        </div>
+        <div className="pdf-doc-group">
+          <div className="pdf-doc-group-head">
+            <h3>Tous les groupes</h3>
+            <span className="pdf-doc-group-meta">Équipe &amp; échanges</span>
+          </div>
+          {teamDocs.map(renderDoc)}
+        </div>
       </section>
     </section>
   );
