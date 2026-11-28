@@ -20,14 +20,13 @@
    .app-shell > .planning-workspace-shell (feuille 14). */
 .planning-workspace-shell.framed {
   display: grid;
-  gap: 14px;
-  margin-top: 18px;
-  border: 1.5px solid var(--app-frame-strong);
-  border-left: 0;
-  border-radius: 18px;
-  padding: 20px 20px 20px 0;
+  gap: 0;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   background: none;
-  box-shadow: var(--app-subtle-shadow);
+  box-shadow: none;
 }
 .planning-workspace-shell.framed .planning-command-section,
 .planning-workspace-shell.framed .planning-calendar-section {
@@ -36,47 +35,22 @@
   gap: 10px;
   width: 100%;
   border: 1.5px solid var(--border-card);
-  border-radius: 27px;
-  padding: clamp(11px, 1.5vw, 16px);
+  border-radius: 22px;
+  padding: clamp(12px, 1.5vw, 16px);
   background: var(--surface-high);
   box-shadow: 0 17px 38px rgba(67, 52, 40, 0.11);
 }
-.planning-workspace-shell.framed .home-planning-heading .home-content-heading {
-  min-height: 0;
-}
-.planning-workspace-shell.framed .home-planning-heading .step-label {
-  color: var(--accent);
-  letter-spacing: 0.14em;
-}
-.planning-workspace-shell.framed .home-planning-heading h2 {
-  margin-top: 3px;
-  color: var(--text);
-}
-/* Le compteur des jours travaillés puis les vacances scolaires, posés à même
-   la page ; le mois se change en tête du calendrier (feuille 06). */
-.planning-settings-body {
-  display: grid;
-  gap: 6px;
-}
+.planning-workspace-shell.framed .home-planning-heading { margin-bottom: 2px; border: 0; padding: 0; background: none; }
+.planning-workspace-shell.framed .home-planning-heading .home-content-heading { min-height: 0; }
+.planning-workspace-shell.framed .home-planning-heading .step-label { color: var(--accent); letter-spacing: 0.14em; }
+.planning-workspace-shell.framed .home-planning-heading h2 { margin-top: 2px; color: var(--text); }
+.planning-settings-body { display: grid; gap: 6px; }
 
 @media (max-width: 720px) {
-  /* Sur téléphone, les deux cartes se posent directement sur la page. */
-  .planning-workspace-shell.framed {
-    gap: 10px;
-    margin-top: 10px;
-    border: 0;
-    border-radius: 0;
-    padding: 0;
-    box-shadow: none;
-  }
+  .planning-workspace-shell.framed { gap: 0; margin-top: 10px; }
   .planning-workspace-shell.framed .planning-command-section,
-  .planning-workspace-shell.framed .planning-calendar-section {
-    border-radius: 18px;
-    padding: 10px;
-  }
-  .planning-workspace-shell.framed .home-planning-heading h2 {
-    font-size: 1.2rem;
-  }
+  .planning-workspace-shell.framed .planning-calendar-section { border-radius: 18px; padding: 12px; }
+  .planning-workspace-shell.framed .home-planning-heading h2 { font-size: 1.2rem; }
 }
 
 /* ---- Choisir un planning (PDF) ------------------------------------------- */
@@ -89,9 +63,11 @@
 }
 .planning-workspace-shell.framed .planning-export-pdf {
   width: auto;
-  min-height: 32px;
+  min-height: 33px;
   padding: 5px 12px;
-  font-size: 0.72rem;
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border-control));
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  font-size: 0.74rem;
 }
 .planning-export-pdf::after {
   content: "";
@@ -176,11 +152,12 @@
    donner le reste de l'année. */
 .worked-days {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  flex: 1 1 190px;
-  min-width: 190px;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.18fr);
+  gap: 6px 8px;
+  flex: 1 1 220px;
+  min-width: 220px;
   margin: 0;
-  padding: 4px 0 2px;
+  padding: 2px 0;
   list-style: none;
 }
 .planning-workspace-shell.framed .controls .worked-days {
@@ -191,33 +168,57 @@
   min-width: 0;
 }
 .worked-days li {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  gap: 4px;
   min-width: 0;
-  padding: 0 4px;
+  border: 1px solid var(--border-control);
+  border-radius: 13px;
+  background: var(--surface-soft);
 }
-.worked-days li + li {
-  border-left: 1px solid var(--line);
+.worked-days li.worked-days-month {
+  grid-area: 1 / 1 / span 2 / 2;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 12px 13px;
+  border-radius: 15px;
+}
+.worked-days li:is(.worked-days-leave, .worked-days-year) {
+  grid-column: 2;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
 }
 .worked-days li b {
+  flex: none;
   color: var(--text);
   font-family: var(--font-display);
-  font-size: 1.9rem;
+  font-size: 2.1rem;
   font-weight: 600;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+.worked-days li.worked-days-month b { color: #9a4a2e; }
+.worked-days li:is(.worked-days-leave, .worked-days-year) b {
+  font-family: inherit;
+  font-size: 1.08rem;
+  font-weight: 800;
   line-height: 1;
 }
-.worked-days li.worked-days-month b {
-  color: #9a4a2e;
-}
+.worked-days li.worked-days-year b { color: #2b6f4e; }
 .worked-days li small {
   color: #6b5d50;
   font-size: 0.7rem;
   font-weight: 700;
-  line-height: 1.2;
-  text-align: center;
+  line-height: 1.22;
+  text-align: left;
   text-wrap: balance;
+}
+.worked-days li.worked-days-month small {
+  color: var(--text);
+  font-size: 0.74rem;
+  opacity: 0.84;
 }
 
 @media (max-width: 720px) {

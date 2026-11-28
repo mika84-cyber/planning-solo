@@ -29,24 +29,42 @@
 }
 
 .school-vacation-settings {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 0;
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
   border: 0;
   border-top: 1px solid var(--line);
   border-radius: 0;
-  padding: 9px 2px 0;
+  padding: 10px 2px 0;
   background: none;
 }
-.school-vacation-row { display: flex; flex: 1 1 100%; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
+.school-vacation-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; }
 /* Sous la ligne, la période en cours ou la prochaine de la zone. */
-.school-vacation-next { flex: 1 1 100%; margin: -8px 0 0; padding: 0 2px; color: var(--muted); font-size: .76rem; font-weight: 650; line-height: 1.3; }
-.school-vacation-zone { display: inline-flex; align-items: baseline; gap: 5px; min-height: 0; margin: 0; border: 0; padding: 4px 2px; background: transparent; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
-.school-vacation-zone strong { font-size: .92rem; font-weight: 800; }
-.school-vacation-zone small { color: var(--muted); font-size: .8rem; font-weight: 700; text-decoration: underline; text-decoration-color: rgba(44, 38, 33, .35); text-underline-offset: 3px; }
+.school-vacation-next { margin: 0; color: var(--muted); font-size: .75rem; font-weight: 650; line-height: 1.3; }
+.school-vacation-zone { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 7px; min-height: 0; margin: 0; border: 0; padding: 0; background: transparent; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.school-vacation-zone strong { font-size: .9rem; font-weight: 800; }
+.school-vacation-zone small {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px 2px 8px;
+  border: 1px solid color-mix(in srgb, #7446d6 32%, var(--border-control));
+  border-radius: 999px;
+  background: color-mix(in srgb, #7446d6 10%, var(--surface));
+  color: #5b37ad;
+  font-size: .73rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+.school-vacation-zone small::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-top: -2px;
+  border-right: 1.8px solid currentColor;
+  border-bottom: 1.8px solid currentColor;
+  transform: rotate(45deg);
+}
 .school-vacation-switch {
   display: grid;
   flex: none;
@@ -60,24 +78,25 @@
 }
 .school-vacation-switch > span {
   position: relative;
-  grid-row: 1 / span 2;
   width: 44px;
   height: 26px;
-  border: 2px solid #9d91b5;
+  border: 1.5px solid color-mix(in srgb, #8c70c4 52%, var(--border-control));
   border-radius: 999px;
-  background: #e5e0ed;
+  background: color-mix(in srgb, #8c70c4 14%, var(--surface));
+  transition: background .16s ease, border-color .16s ease;
 }
 .school-vacation-switch > span i {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
-  background: var(--surface);
+  background: #8c70c4;
+  transition: transform .16s ease, background .16s ease;
 }
-.school-vacation-switch.active > span { border-color: #7255ad; background: #8c70c4; }
-.school-vacation-switch.active > span i { transform: translateX(18px); }
+.school-vacation-switch.active > span { border-color: #7255ad; background: #7f60c2; }
+.school-vacation-switch.active > span i { background: #fff; transform: translateX(18px); }
 
 .school-zone-picker {
   display: grid;
@@ -131,4 +150,9 @@
 @media (max-width: 720px) {
   .day.school-vacation-day { --vacation-bar: 5px; }
 }
+html[data-theme="dark"] .school-vacation-zone small { border-color: rgba(182, 158, 235, 0.36); background: rgba(138, 108, 206, 0.18); color: #cbb9f5; }
+html[data-theme="dark"] .school-vacation-switch > span { border-color: rgba(182, 158, 235, 0.42); background: #191614; }
+html[data-theme="dark"] .school-vacation-switch > span i { background: #a993db; }
+html[data-theme="dark"] .school-vacation-switch.active > span { border-color: #9e82de; background: #7d5ec2; }
+html[data-theme="dark"] .school-vacation-switch.active > span i { background: #fff; }
 

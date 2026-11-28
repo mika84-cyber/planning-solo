@@ -58,7 +58,118 @@ var checkState = {};
 var files = {};        // justificatifs joints, en memoire uniquement
 var pageSnapshots = [null], pageIndex = 0, pageCount = 1;
 var observation = document.getElementById('observation');
-observation.addEventListener('input', scheduleSave);
+var obsPreview = document.getElementById('obsPreview');
+var obsPreviewHead = document.getElementById('obsPreviewHead');
+var obsPreviewBody = document.getElementById('obsPreviewBody');
+var obsValidateBtn = document.getElementById('obsValidate');
+var obsEditBtn = document.getElementById('obsEdit');
+var obsClearBtn = document.getElementById('obsClear');
+var obsHintEl = document.getElementById('obsHint');
+var obsValidated = false;
+var obsFlashTimer = null;
+var OBS_TITLE = 'OBSERVATIONS :';
+function obsGeometry(){
+  if(!M || !PW || !PH) return null;
+  if(M.id === 'conges') return { x:257.4, y:37.19, w:101.0, h:84.67, headH:27.36, bw:1.15, titleSize:9.8 };
+  if(M.id === 'recup')  return { x:254.7, y:61.55, w:110.0, h:89.27, headH:27.60, bw:1.15, titleSize:10.0 };
+  if(M.id === 'annul')  return { x:254.7, y:48.95, w:110.0, h:90.83, headH:29.04, bw:1.15, titleSize:10.0 };
+  if(M.obs) return { x:M.obs[0], y:M.obs[1], w:M.obs[2], h:M.obs[3], headH:M.obs[4], bw:1.5, titleSize:10.0 };
+  var w = Math.min(112, PW * .19), h = 48;
+  return { x:(PW - w) / 2, y:46, w:w, h:h, headH:15, bw:1.15, titleSize:9.8 };
+}
+function layoutObs(){
+  if(!obsPreview) return;
+  var clean = observation ? observation.value.replace(/\s+/g, ' ').trim() : '';
+  if(!obsValidated || !clean || pageIndex !== 0 || !M){
+    obsPreview.hidden = true;
+    return;
+  }
+  var wPaper = paper.clientWidth || bg.clientWidth;
+  var g = obsGeometry();
+  if(!wPaper || !g){ obsPreview.hidden = true; return; }
+  var p = wPaper / PW;
+  var bPx = Math.max(1, Math.round(g.bw * p));
+  obsPreview.hidden = false;
+  obsPreview.style.left = (g.x * p - bPx / 2) + 'px';
+  obsPreview.style.top = ((PH - g.y - g.h) * p - bPx / 2) + 'px';
+  obsPreview.style.width = (g.w * p + bPx) + 'px';
+  obsPreview.style.height = (g.h * p + bPx) + 'px';
+  obsPreview.style.borderWidth = bPx + 'px';
+  if(obsPreviewHead){
+    obsPreviewHead.textContent = OBS_TITLE;
+    obsPreviewHead.style.height = (g.headH * p) + 'px';
+    obsPreviewHead.style.fontSize = (g.titleSize * p) + 'px';
+    obsPreviewHead.style.borderBottomWidth = bPx + 'px';
+  }
+  if(obsPreviewBody){
+    obsPreviewBody.textContent = clean;
+    obsPreviewBody.style.fontSize = (5.9 * p) + 'px';
+    obsPreviewBody.style.lineHeight = (6.2 * p) + 'px';
+    obsPreviewBody.style.padding = (3.5 * p) + 'px ' + (7 * p) + 'px';
+  }
+}
+function syncObsUI(){
+  if(!observation) return;
+  var text = observation.value.trim();
+  if(!text) obsValidated = false;
+  observation.readOnly = obsValidated;
+  if(obsValidateBtn){
+    obsValidateBtn.hidden = obsValidated;
+    obsValidateBtn.disabled = !text;
+  }
+  if(obsEditBtn) obsEditBtn.hidden = !obsValidated;
+  if(obsClearBtn) obsClearBtn.hidden = !text;
+  if(obsHintEl){
+    obsHintEl.textContent = obsValidated
+      ? 'Aperçu affiché sur le document. Cliquez sur « Modifier » ou sur le cadre pour changer le texte.'
+      : text
+        ? 'Cliquez sur « Valider » pour voir le rendu directement sur le document.'
+        : 'Si elle est remplie, l’observation est intégrée directement au bas du formulaire.';
+  }
+  layoutObs();
+}
+function setObservationText(text, autoShow){
+  if(!observation) return;
+  observation.value = text || '';
+  obsValidated = Boolean(autoShow && observation.value.trim());
+  syncObsUI();
+}
+function editObservation(){
+  if(!observation) return;
+  obsValidated = false;
+  syncObsUI();
+  observation.scrollIntoView({ behavior:'smooth', block:'center' });
+  observation.focus();
+  try{ observation.setSelectionRange(observation.value.length, observation.value.length); }catch(e){}
+}
+observation.addEventListener('input', function(){
+  obsValidated = false;
+  syncObsUI();
+  scheduleSave();
+});
+observation.addEventListener('click', function(){
+  if(observation.readOnly) editObservation();
+});
+if(obsValidateBtn) obsValidateBtn.addEventListener('click', function(){
+  if(!observation || !observation.value.trim()) return;
+  obsValidated = true;
+  syncObsUI();
+  scheduleSave();
+  if(obsPreview && !obsPreview.hidden){
+    obsPreview.scrollIntoView({ behavior:'smooth', block:'center' });
+    clearTimeout(obsFlashTimer);
+    obsPreview.classList.remove('obs-flash');
+    void obsPreview.offsetWidth;
+    obsPreview.classList.add('obs-flash');
+    obsFlashTimer = setTimeout(function(){ obsPreview.classList.remove('obs-flash'); }, 1200);
+  }
+});
+if(obsEditBtn) obsEditBtn.addEventListener('click', editObservation);
+if(obsPreview) obsPreview.addEventListener('click', editObservation);
+if(obsClearBtn) obsClearBtn.addEventListener('click', function(){
+  setObservationText('', false);
+  scheduleSave();
+});
 
 /* ================= stockage ================= */
 var store = (function(){
@@ -380,7 +491,7 @@ function loadSheet(idx){
       inputs.push(el);
     } else if(f.txt !== undefined){
       el = document.createElement('div');
-      el.className = 'cell ink';
+      el.className = 'cell ink' + (f.a === 'left' ? ' left' : '');
       el.textContent = f.txt;
     } else {
       el = document.createElement('div');
@@ -448,7 +559,7 @@ function loadSheet(idx){
   });
 
   files = {};
-  if(observation) observation.value = '';
+  setObservationText('', false);
   buildAtt();
   clearSig(); pdfDone = false;
   applyZoom(); layout();
@@ -496,8 +607,8 @@ function layout(){
     z.style.left = L+'px'; z.style.top = T+'px';
     z.style.width = Wd+'px'; z.style.height = h+'px';
     // Les dates restent alignées sur les pointillés, avec un léger retrait vers la droite
-    // pour un rendu plus équilibré dans toutes les rubriques.
-    var dateLead = (f.k === 'date' && f.a === 'left') ? 9*s : 0;
+    // pour un rendu plus équilibré dans toutes les rubriques (hors date après « le : »).
+    var dateLead = (f.k === 'date' && f.a === 'left' && f.n !== 'date_sig') ? 9*s : 0;
     var textLeft = (f.cx ? f.cx[0]*s : L) - dateLead;
     var textWidth = (f.cx ? (f.cx[1]-f.cx[0])*s : Wd) + dateLead;
     el.style.left = textLeft+'px';
@@ -519,6 +630,7 @@ function layout(){
 
   sizeSig(s);
   if(M.sig2) sizeSig2(s);
+  layoutObs();
   if(M.swap) Array.prototype.forEach.call(lineOrder.querySelectorAll('button'), function(b){
     b.setAttribute('aria-pressed', String(b.getAttribute('data-order') === (swapped() ? '2' : '')));
   });
@@ -1379,6 +1491,7 @@ function updatePageUI(){
   document.getElementById('pagePrev').disabled=pageIndex===0;
   document.getElementById('pageNext').disabled=pageIndex===pageCount-1;
   document.getElementById('pageRemove').disabled=pageCount===1;
+  layoutObs();
 }
 function switchPage(n){
   if(n<0 || n>=pageCount || n===pageIndex) return;
@@ -1432,7 +1545,7 @@ function restore(){
   return store.get(key()).then(function(raw){
     if(!raw) return;
     var d = JSON.parse(raw);
-    if(observation) observation.value = d.o || '';
+    setObservationText(d.o || '', true);
     (d.v || []).forEach(function(v, i){
       if(!inputs[i]) return;
       inputs[i].value = v;
@@ -1514,7 +1627,7 @@ document.getElementById('btnReset').addEventListener('click', function(){
   cells.forEach(function(c){ c.el.textContent = ''; c.el.classList.remove('has'); });
   (M.checks || []).forEach(function(c){ checkState[c.n] = false; paintCheck(c); });
   files = {};
-  if(observation) observation.value = '';
+  setObservationText('', false);
   calLastView = null;
   calRangeHelpShown = false;
   hideRangeHelp();
@@ -1655,8 +1768,8 @@ async function drawPdfSheet(ctx, snap){
     if(f.k === 'hour' && f.bl){
       x = mx - width/2; baseline = (f.bl + (f.dy || 0))*K;
     } else if(f.a === 'left'){
-      // Même alignement que sur l'écran : les dates démarrent au début du trait pointillé.
-      var lead = f.k === 'date' ? 16*K : 0;
+      // Même alignement que sur l'écran : les dates démarrent au début du trait pointillé (hors « le : »).
+      var lead = (f.k === 'date' && f.n !== 'date_sig') ? 16*K : 0;
       x = x0+5*K-lead; baseline = midY + size*0.35;
     } else {
       x = mx - width/2; baseline = midY + size*0.35;
@@ -1852,41 +1965,33 @@ async function buildPdfBytes(){
        central libre entre les deux zones de signature, sans créer de page. */
     var obsPage = doc.getPages()[0];
     var obsBold = ctx.font;
-    var ps = obsPage.getSize();
-    /* Sur la demande de congés, le cadre Observation reprend exactement
-       la hauteur des deux cadres de signature. Il reste centré dans l'espace
-       libre, avec un petit retrait de chaque côté pour ne toucher aucun cadre. */
-    var boxW = (M.id === 'conges') ? 101.5 : Math.min(112, ps.width * .19);
-    var boxH = (M.id === 'conges') ? 84.8 : 48;
-    var boxX = (M.id === 'conges') ? 257.1 : (ps.width - boxW) / 2;
-    var boxY = (M.id === 'conges') ? 36.9 : 46;
-    /* Une feuille peut fixer son cadre : x, y depuis le bas, largeur, hauteur
-       et hauteur du bandeau de titre. */
-    if(M.obs){ boxX = M.obs[0]; boxY = M.obs[1]; boxW = M.obs[2]; boxH = M.obs[3]; }
+    var g = obsGeometry();
+    var boxX = g.x, boxY = g.y, boxW = g.w, boxH = g.h, boxBw = g.bw;
+    var obsInk = PDFLib.rgb(.05,.05,.05);
     obsPage.drawRectangle({
       x:boxX, y:boxY, width:boxW, height:boxH,
-      /* Même trait que les cadres de signature voisins, plus appuyé. */
-      borderWidth:1.3,
-      borderColor:PDFLib.rgb(.08,.08,.08),
-      color:PDFLib.rgb(1,1,1), opacity:.97
+      /* Même épaisseur et même alignement que les deux cadres de signature voisins. */
+      borderWidth:boxBw,
+      borderColor:obsInk,
+      color:PDFLib.rgb(1,1,1), opacity:1
     });
     /* Ligne de séparation du titre, alignée sur celles des cadres voisins. */
-    var obsHeaderY = (M.id === 'conges') ? 94.3 : boxY + boxH - (M.obs ? M.obs[4] : 15);
+    var obsHeaderY = boxY + boxH - g.headH;
     obsPage.drawLine({
       start:{x:boxX,y:obsHeaderY}, end:{x:boxX+boxW,y:obsHeaderY},
-      thickness:1.1, color:PDFLib.rgb(.08,.08,.08)
+      thickness:boxBw, color:obsInk
     });
     /* Le titre suit ceux des cadres voisins (« SIGNATURE DE L'AGENT : ») :
-       même graisse, même taille, centré dans sa bande, avec ses deux-points. */
-    var obsTitle = 'OBSERVATION :';
-    var obsTitleSize = 8.2;
+       même police grasse, même corps, centré dans sa bande, avec ses deux-points. */
+    var obsTitle = OBS_TITLE;
+    var obsTitleSize = g.titleSize;
     var obsTitleWidth = obsBold.widthOfTextAtSize(obsTitle, obsTitleSize);
     var obsBandTop = boxY + boxH;
     obsPage.drawText(obsTitle, {
       x:boxX + (boxW - obsTitleWidth) / 2,
       y:(obsHeaderY + obsBandTop) / 2 - obsTitleSize * .35,
       size:obsTitleSize, font:obsBold,
-      color:PDFLib.rgb(.08,.08,.08)
+      color:obsInk
     });
     var clean=obsText.replace(/\s+/g,' ').trim();
     var words=clean.split(' '), lines=[], line='', fontSize=5.9, usable=boxW-10;
@@ -1896,14 +2001,14 @@ async function buildPdfBytes(){
       else line=test;
     }
     if(line) lines.push(line);
-    var maxLines=(M.id === 'conges') ? 8 : M.obs ? Math.floor((obsHeaderY - boxY - 14) / 6.2) + 1 : 6;
+    var maxLines = Math.max(1, Math.floor((obsHeaderY - boxY - 14) / 6.2) + 1);
     if(lines.length>maxLines){
       lines=lines.slice(0,maxLines);
       var last=lines[maxLines-1];
       while(last && obsBold.widthOfTextAtSize(last+'…',fontSize)>usable) last=last.slice(0,-1);
       lines[maxLines-1]=last+'…';
     }
-    var y=(M.id === 'conges' || M.obs) ? obsHeaderY-11 : boxY+boxH-18;
+    var y = obsHeaderY - 11;
     lines.forEach(function(t){
       obsPage.drawText(t,{x:boxX+7,y:y,size:fontSize,font:obsBold,color:PDFLib.rgb(INK[0]/255,INK[1]/255,INK[2]/255)});
       y-=6.2;
@@ -2182,7 +2287,7 @@ async function applyPlanningImport(data){
     paintCheck(c);
   });
   files={};
-  if(observation) observation.value='';
+  setObservationText('', false);
 
   function put(name,value){
     var i=byName[name];
@@ -2253,7 +2358,7 @@ function applyFerieImport(data){
     setVal(i,'',true);
   });
   clearSig2();
-  if(observation) observation.value='';
+  setObservationText('', false);
   var p=data.profile||{};
   if(p.group){
     var d=profileRead(); d.groupe=String(p.group);
@@ -2310,7 +2415,7 @@ function applyExchangeImport(data){
     setVal(i,'',true);
   });
   clearSig2();
-  if(observation) observation.value='';
+  setObservationText('', false);
   function put(name,value){ var i=byName[name]; if(i!==undefined && value) onEdit(i,value); }
   var p=data.profile||{};
   if(p.group){
@@ -2607,7 +2712,7 @@ function takeSheet(entry, origin){
       };
     });
     pageCount = pageSnapshots.length; pageIndex = 0; files = {};
-    if(observation) observation.value = entry.o;
+    setObservationText(entry.o || '', true);
     applyPageState(pageSnapshots[0]); updatePageUI();
     return restoreSavedSignature();
   }).then(function(){
@@ -2638,7 +2743,7 @@ document.getElementById('takeUndo').addEventListener('click', function(){
   }
   ready.then(function(){
     pageSnapshots = u.pages; pageCount = u.pages.length; pageIndex = u.pageIndex;
-    if(observation) observation.value = u.o;
+    setObservationText(u.o || '', true);
     applyPageState(pageSnapshots[pageIndex]); updatePageUI();
     takeId = u.id; scheduleSave();
     say('Reprise annulée.'); showToast('Reprise annulée');

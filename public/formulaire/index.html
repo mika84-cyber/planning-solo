@@ -83,6 +83,10 @@
     <div id="sighint2" hidden>Signature du collègue</div>
     <canvas id="sig2" hidden aria-label="Signature du collègue"></canvas>
     <button type="button" id="sigclear2" hidden>Effacer sa signature</button>
+    <button type="button" id="obsPreview" hidden aria-label="Observation sur le document — cliquer pour modifier">
+      <span class="obs-prev-head" id="obsPreviewHead">OBSERVATIONS :</span>
+      <span class="obs-prev-body" id="obsPreviewBody"></span>
+    </button>
   </div>
 </div>
 
@@ -204,9 +208,16 @@
 <div class="att-note" id="attNote"></div>
 
 <div id="observationBox">
-  <label for="observation">Observation (facultatif)</label>
+  <div class="obsHead">
+    <label for="observation">Observation (facultatif)</label>
+    <div class="obsActions">
+      <button type="button" class="btn" id="obsValidate" disabled>Valider</button>
+      <button type="button" class="btn ghost" id="obsEdit" hidden>Modifier</button>
+      <button type="button" class="btn ghost" id="obsClear" hidden>Effacer</button>
+    </div>
+  </div>
   <textarea id="observation" maxlength="350" placeholder="Précisez ici une information utile si nécessaire."></textarea>
-  <div class="obsHint">Si elle est remplie, l’observation est intégrée directement au bas du formulaire.</div>
+  <div class="obsHint" id="obsHint">Si elle est remplie, l’observation est intégrée directement au bas du formulaire.</div>
 </div>
 
 <div class="edit" id="edit">

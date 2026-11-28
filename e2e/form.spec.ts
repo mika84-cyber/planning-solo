@@ -278,6 +278,15 @@ test("la demande d’échange se remplit, reporte les dates chez le collègue et
     return false;
   })).toBe(true);
   await page.locator("#observation").fill("Échange convenu avec ma collègue.");
+  await page.locator("#obsValidate").click();
+  await expect(page.locator("#obsPreview")).toBeVisible();
+  await expect(page.locator("#obsPreviewHead")).toHaveText("OBSERVATIONS :");
+  await expect(page.locator("#obsPreviewBody")).toHaveText("Échange convenu avec ma collègue.");
+  await page.locator("#obsEdit").click();
+  await expect(page.locator("#obsPreview")).toBeHidden();
+  await page.locator("#observation").fill("Échange confirmé avec ma collègue.");
+  await page.locator("#obsValidate").click();
+  await expect(page.locator("#obsPreviewBody")).toHaveText("Échange confirmé avec ma collègue.");
 
   if (testInfo.project.name !== "ordinateur") return;
   page.on("dialog", (dialog) => dialog.accept());

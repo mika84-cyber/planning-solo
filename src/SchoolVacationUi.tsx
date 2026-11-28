@@ -41,7 +41,7 @@ export function SchoolVacationSettings({
           onClick={() => setZonesOpen((open) => !open)}
         >
           <strong>Vacances scolaires</strong>
-          <small>· {zoneLabel}</small>
+          <small>{zoneLabel}</small>
         </button>
         <button
           className={`school-vacation-switch${visible ? " active" : ""}`}

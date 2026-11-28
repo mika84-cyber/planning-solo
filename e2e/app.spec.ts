@@ -679,23 +679,24 @@ test("mon planning et ses réglages partagent un seul cadre et l’export conser
   await expect(planning.locator(".school-vacation-next")).toContainText(/^(Prochaines|En cours) : /);
   await expect(planning).toHaveCSS("border-left-width", accentSpine(page));
   await expect(planning).toHaveCSS("border-left-color", await cssTokenRgb(page, "--border-card"));
-  await expect(planning.locator("> .home-planning-heading")).toHaveCSS("background-color", CHAPTER_TINT);
+  await expect(planning).toHaveCSS("border-bottom-width", "0px");
   await expect(planning).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(planning).toHaveCSS("background-image", "none");
   await expect(page.getByRole("button", { name: "Poser un congé" })).toHaveCSS(
     "background-color",
     "rgb(152, 84, 56)",
   );
-  // Le premier chiffre est en terracotta, les trois colonnes côte à côte ;
-  // « Aujourd'hui » vit dans le panneau du mois, avec l'année et les douze
-  // mois.
+  // Le premier chiffre est en terracotta à gauche, absences et reste de
+  // l'année empilés à droite ; « Aujourd'hui » vit dans le panneau du mois.
   await expect(planning.locator(".worked-days-month b")).toHaveCSS("color", "rgb(154, 74, 46)");
-  const [monthBox, yearBox] = await Promise.all([
+  const [monthBox, leaveBox, yearBox] = await Promise.all([
     planning.locator(".worked-days-month").boundingBox(),
+    planning.locator(".worked-days-leave").boundingBox(),
     planning.locator(".worked-days-year").boundingBox(),
   ]);
+  expect(leaveBox!.x).toBeGreaterThan(monthBox!.x + monthBox!.width);
   expect(yearBox!.x).toBeGreaterThan(monthBox!.x + monthBox!.width);
-  expect(Math.abs(yearBox!.y - monthBox!.y)).toBeLessThan(2);
+  expect(yearBox!.y).toBeGreaterThan(leaveBox!.y);
   const monthPanel = await openMonthPanel(page);
   await expect(monthPanel.getByRole("button", { name: "Aujourd’hui" })).toBeVisible();
   await expect(monthPanel.getByRole("button", { name: "Année suivante" })).toBeVisible();

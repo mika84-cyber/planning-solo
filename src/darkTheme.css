@@ -363,3 +363,8 @@ html[data-theme="dark"] .wish-conversion-foot { border-top-color: rgba(255, 244,
 html[data-theme="dark"] .wish-conversion .wish-conversion-continue { background: #5574bd; color: #fff; }
 html[data-theme="dark"] .wish-conversion .wish-conversion-continue.is-cancel { background: #c9475b; color: #fff; }
 html[data-theme="dark"] .wish-conversion .wish-conversion-continue:disabled { border-color: rgba(255, 244, 232, 0.11); background: #25211d; color: #a69b8e; }
+
+/* Repères du mois dans Mon planning (Proposition 3 : nombres colorés, cases neutres). */
+html[data-theme="dark"] .worked-days li { border-color: rgba(255, 244, 232, 0.17); background: #26221e; }
+html[data-theme="dark"] .worked-days li.worked-days-month b { color: #e8a787; }
+html[data-theme="dark"] .worked-days li.worked-days-year b { color: #8fd6ae; }
